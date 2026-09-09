@@ -1,0 +1,21 @@
+# ===== STT NOVA P&S Hub — Git ignore =====
+# ความลับ clasp (ห้าม commit เด็ดขาด)
+.clasprc.json
+.clasp.json
+deploy/.clasp.json
+deploy/.deployid
+
+# ไฟล์สำรองอัตโนมัติ (บทเรียนจาก NOVA: .BAK 299 ไฟล์ = 92% ของโฟลเดอร์)
+*.BAK
+*.BAK[0-9]*
+*.tmp
+*.orig
+
+# Node
+node_modules/
+
+# ไฟล์ระบบ / ชั่วคราว
+Thumbs.db
+.DS_Store
+_probe.txt
+_cur.html

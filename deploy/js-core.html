@@ -1,0 +1,141 @@
+<script>
+var AUTH = '';        // PIN ที่ล็อกอินอยู่ — ส่งไปกับทุกคำขอ
+var ME   = null;      // ข้อมูลผู้ใช้ปัจจุบัน
+
+function $(id){ return document.getElementById(id); }
+function show(id){ $(id).classList.remove('hide'); }
+function hide(id){ $(id).classList.add('hide'); }
+function say(id, text, kind){
+  var el = $(id);
+  el.className = 'msg ' + (kind || 'info');
+  el.textContent = text;
+}
+function clearMsg(id){ var el = $(id); el.className = 'msg'; el.textContent = ''; }
+
+/* ---------- เข้าสู่ระบบ ---------- */
+function doLogin(){
+  var emp = $('empId').value.trim();
+  var pin = $('pin').value.trim();
+  if(!emp || !pin){ say('loginMsg','กรุณากรอกรหัสพนักงานและ PIN','err'); return; }
+  $('btnLogin').disabled = true;
+  say('loginMsg','กำลังตรวจสอบ...','info');
+  google.script.run
+    .withSuccessHandler(function(r){
+      $('btnLogin').disabled = false;
+      if(!r || !r.ok){ say('loginMsg', (r && r.msg) || 'เข้าสู่ระบบไม่สำเร็จ','err'); return; }
+      AUTH = pin; ME = r;
+      clearMsg('loginMsg');
+      enterApp();
+    })
+    .withFailureHandler(function(e){
+      $('btnLogin').disabled = false;
+      say('loginMsg','เกิดข้อผิดพลาด: ' + e.message,'err');
+    })
+    .loginEmpPin(emp, pin);
+}
+
+/* ---------- ลงทะเบียนรับ PIN ครั้งแรก ---------- */
+function showReg(){ hide('viewLogin'); show('viewReg'); }
+function backToLogin(){ hide('viewReg'); show('viewLogin'); clearMsg('regMsg'); }
+
+function doRegister(){
+  var emp  = $('regEmp').value.trim();
+  var name = $('regName').value.trim();
+  if(!emp || !name){ say('regMsg','กรุณากรอกรหัสพนักงานและชื่อ','err'); return; }
+  $('btnReg').disabled = true;
+  say('regMsg','กำลังลงทะเบียน...','info');
+  google.script.run
+    .withSuccessHandler(function(r){
+      $('btnReg').disabled = false;
+      if(!r || !r.ok){ say('regMsg',(r && r.msg) || 'ลงทะเบียนไม่สำเร็จ','err'); return; }
+      say('regMsg','สำเร็จ! คุณ ' + r.name + ' (' + r.roleLabel + ')\nรหัส PIN ของคุณคือ  ' + r.pin +
+                   '\nจดไว้ให้ดี ใช้เข้าระบบครั้งต่อไป','ok');
+      $('regMsg').style.whiteSpace = 'pre-line';
+      $('regMsg').style.fontSize = '17px';
+    })
+    .withFailureHandler(function(e){
+      $('btnReg').disabled = false;
+      say('regMsg','เกิดข้อผิดพลาด: ' + e.message,'err');
+    })
+    .registerUser(emp, name);
+}
+
+/* ---------- เข้าหน้าหลัก ---------- */
+function enterApp(){
+  hide('viewLogin'); hide('viewReg');
+  $('who').textContent = ME.label + ' · ' + ME.roleLabel;
+  show('who'); show('btnOut');
+  if(ME.role === 'ADMIN') show('btnDiag');
+  renderMenu();
+  show('viewMenu');
+}
+
+function logout(){
+  AUTH = ''; ME = null;
+  hide('viewMenu'); hide('viewDiag'); hide('who'); hide('btnOut'); hide('btnDiag');
+  $('empId').value = ''; $('pin').value = '';
+  clearMsg('loginMsg');
+  show('viewLogin');
+}
+
+/* ---------- เมนู ---------- */
+/* ตอนนี้ยังเป็นโครง — โมดูลจริงจะทยอยเปิดตามเฟส */
+var MODULES = [
+  { id:'p2',  t:'PO ค้างรับ',            d:'ติดตามของที่ยังไม่เข้า (ข้ามปีได้)', roles:['PURCHASE','ADMIN','EXEC'], phase:1 },
+  { id:'s1',  t:'สโตร์รับสินค้า',         d:'กดรับของตาม PO · ใช้มือถือได้',      roles:['STORE','PURCHASE','ADMIN'], phase:2 },
+  { id:'p3',  t:'แผนการจ่ายเงิน',         d:'วางบิล · ตั้งเบิก',                 roles:['PURCHASE','ADMIN','EXEC'], phase:4 },
+  { id:'c1',  t:'ต้นทุน / ราคากลาง',      d:'ราคาซื้อล่าสุด · ต้นทุนเฉลี่ย',      roles:['PURCHASE','ADMIN','EXEC'], phase:3 },
+  { id:'s2',  t:'Stock Card',            d:'ยอดคงเหลือ 3 คลัง แบบทันที',         roles:['STORE','PURCHASE','ADMIN','EXEC'], phase:3 },
+  { id:'s3',  t:'นับสต๊อกประจำเดือน',     d:'ปิดงวด · ออกใบขอซื้อ',              roles:['STORE','ADMIN'], phase:4 },
+  { id:'p7',  t:'Dashboard KPI',         d:'ลดต้นทุน · ผู้ขายใหม่',              roles:['ADMIN','EXEC','PURCHASE'], phase:6 },
+  { id:'p5',  t:'งานผู้รับเหมา',          d:'สัญญา · ใบรับเงิน',                  roles:['PURCHASE','ADMIN'], phase:7 }
+];
+
+function renderMenu(){
+  var box = $('tiles'); box.innerHTML = '';
+  var n = 0;
+  MODULES.forEach(function(m){
+    if(m.roles.indexOf(ME.role) < 0) return;
+    n++;
+    var d = document.createElement('div');
+    d.className = 'tile soon';
+    d.innerHTML = '<b>' + m.t + '</b><span>' + m.d +
+                  '</span><div style="margin-top:8px"><span class="pill soon">เฟส ' + m.phase + '</span></div>';
+    box.appendChild(d);
+  });
+  $('menuNote').textContent = 'บทบาทของคุณเห็น ' + n + ' โมดูล · ตอนนี้เป็นโครงระบบ ยังไม่เปิดใช้งานจริง';
+}
+
+/* ---------- ตรวจระบบ (ADMIN) ---------- */
+function openDiag(){
+  hide('viewMenu'); show('viewDiag');
+  $('diagBody').innerHTML = '<p class="small">กำลังตรวจ...</p>';
+  google.script.run
+    .withSuccessHandler(function(r){
+      var h = '<p class="small">เวอร์ชัน ' + r.version + ' · ' + r.build +
+              ' · ผ่าน ' + r.passed + ' / ' + r.checks.length +
+              ' · รวม ' + r.totalMs + ' ms</p>';
+      h += '<table><tr><th>รายการตรวจ</th><th>ผล</th><th>เวลา</th><th>รายละเอียด</th></tr>';
+      r.checks.forEach(function(c){
+        h += '<tr><td>' + c.name + '</td>' +
+             '<td class="' + (c.ok ? 'ok' : 'bad') + '">' + (c.ok ? 'ผ่าน' : 'ไม่ผ่าน') + '</td>' +
+             '<td>' + c.ms + ' ms</td>' +
+             '<td>' + (c.ok ? c.detail : c.error) + '</td></tr>';
+      });
+      h += '</table>';
+      $('diagBody').innerHTML = h;
+    })
+    .withFailureHandler(function(e){
+      $('diagBody').innerHTML = '<p class="bad">ตรวจไม่สำเร็จ: ' + e.message + '</p>';
+    })
+    .psDiag(AUTH);
+}
+function closeDiag(){ hide('viewDiag'); show('viewMenu'); }
+
+/* ---------- Enter = ล็อกอิน ---------- */
+document.addEventListener('keydown', function(e){
+  if(e.key !== 'Enter') return;
+  if(!$('viewLogin').classList.contains('hide')) doLogin();
+  else if(!$('viewReg').classList.contains('hide')) doRegister();
+});
+</script>

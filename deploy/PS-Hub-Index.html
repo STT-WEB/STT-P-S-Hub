@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <title>NOVA – Purchase &amp; Store Hub</title>
+  <?!= include('styles') ?>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    NOVA – PURCHASE &amp; STORE HUB
+    <small>จัดซื้อ · คลังสินค้า · สุธี แท็งเกอร์ แอนด์ สเปเชียลทรัค</small>
+  </div>
+  <div class="sp"></div>
+  <span class="who hide" id="who"></span>
+  <button class="tbtn hide" id="btnDiag" onclick="openDiag()">ตรวจระบบ</button>
+  <button class="tbtn hide" id="btnOut" onclick="logout()">ออกจากระบบ</button>
+  <!-- ป้ายเวอร์ชัน = หลักฐานเดียวที่พิสูจน์ว่าโค้ดขึ้นจริง (ดึงจาก 00-config.js) -->
+  <span class="ver" id="ver"><?= PS_VERSION ?></span>
+</div>
+
+<div class="wrap">
+
+  <!-- ============ เข้าสู่ระบบ ============ -->
+  <div id="viewLogin">
+    <div class="card" style="max-width:440px;margin:40px auto">
+      <h2>เข้าสู่ระบบ</h2>
+      <p class="small" style="margin:0 0 6px">ใช้รหัสพนักงานและ PIN 6 หลักเดียวกับระบบ NOVA</p>
+
+      <label for="empId">รหัสพนักงาน</label>
+      <input type="tel" id="empId" inputmode="numeric" autocomplete="off" placeholder="เช่น 6204004">
+
+      <label for="pin">PIN 6 หลัก</label>
+      <input type="password" id="pin" inputmode="numeric" autocomplete="off" placeholder="••••••">
+
+      <button class="btn" id="btnLogin" onclick="doLogin()">เข้าสู่ระบบ</button>
+      <button class="btn ghost" onclick="showReg()">ยังไม่มี PIN — ลงทะเบียนครั้งแรก</button>
+
+      <div class="msg" id="loginMsg"></div>
+    </div>
+  </div>
+
+  <!-- ============ ลงทะเบียนรับ PIN ============ -->
+  <div id="viewReg" class="hide">
+    <div class="card" style="max-width:440px;margin:40px auto">
+      <h2>ลงทะเบียนรับ PIN</h2>
+      <p class="small" style="margin:0 0 6px">
+        ใช้ได้เฉพาะคนที่ผู้ดูแลระบบกำหนดสิทธิ์ P&amp;S ไว้แล้ว · ลงทะเบียนได้ครั้งเดียว
+      </p>
+
+      <label for="regEmp">รหัสพนักงาน</label>
+      <input type="tel" id="regEmp" inputmode="numeric" autocomplete="off">
+
+      <label for="regName">ชื่อ (ตามที่ลงทะเบียนไว้)</label>
+      <input type="text" id="regName" autocomplete="off">
+
+      <button class="btn" id="btnReg" onclick="doRegister()">ขอรหัส PIN</button>
+      <button class="btn ghost" onclick="backToLogin()">กลับหน้าเข้าสู่ระบบ</button>
+
+      <div class="msg" id="regMsg"></div>
+    </div>
+  </div>
+
+  <!-- ============ เมนูหลัก ============ -->
+  <div id="viewMenu" class="hide">
+    <div class="card">
+      <h2>เมนูหลัก</h2>
+      <p class="small" id="menuNote" style="margin:0 0 14px"></p>
+      <div class="tiles" id="tiles"></div>
+    </div>
+  </div>
+
+  <!-- ============ ตรวจระบบ (ADMIN) ============ -->
+  <div id="viewDiag" class="hide">
+    <div class="card">
+      <h2>ตรวจระบบ</h2>
+      <div id="diagBody"></div>
+      <button class="btn ghost" onclick="closeDiag()">กลับเมนู</button>
+    </div>
+  </div>
+
+</div>
+
+<?!= include('js-core') ?>
+</body>
+</html>
