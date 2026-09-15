@@ -13,6 +13,8 @@ deploy/.deployid
 
 # ข้อมูลจริงสำหรับชุดทดสอบ (ใหญ่ + เป็นข้อมูลบริษัท)
 _tests/real-data.json
+_tests/raw-sheets.json
+preview*.html
 
 # Node
 node_modules/

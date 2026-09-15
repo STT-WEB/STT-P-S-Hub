@@ -57,12 +57,25 @@ function cacheDrop_(keys) {
 }
 
 /** ---------- หาคอลัมน์จาก "ชื่อหัวตาราง" ไม่ใช่ตำแหน่ง (แทรกคอลัมน์แล้วไม่พัง) ---------- */
+/**
+ * หาคอลัมน์จาก "ชื่อหัวตาราง" — ต้องเทียบแบบตรงตัวก่อนเสมอ
+ *
+ * บทเรียน 15 ก.ย. 2569: ไฟล์ RR ของ My Account มีทั้ง sumGoodamnt และ goodamnt
+ * และมีทั้ง vendornameeng กับ VendorName ถ้าเทียบแบบ "มีคำนี้อยู่ข้างใน" อย่างเดียว
+ * จะไปโดนคอลัมน์ผิดที่อยู่ก่อน → ยอดเงินรับเข้าเพี้ยนทั้งไฟล์
+ * จึงต้องกวาดหาแบบตรงตัวให้ครบทุกคอลัมน์ก่อน แล้วค่อยยอมให้เป็นการเดาแบบใกล้เคียง
+ */
 function colIdx_(hdr, names) {
-  for (var j = 0; j < hdr.length; j++) {
-    var h = String(hdr[j]).toLowerCase().trim();
-    for (var k = 0; k < names.length; k++) {
-      if (h.indexOf(String(names[k]).toLowerCase()) >= 0) return j;
-    }
+  var h = [];
+  for (var j = 0; j < hdr.length; j++) h.push(String(hdr[j]).toLowerCase().trim());
+
+  for (var k = 0; k < names.length; k++) {                 // รอบที่ 1 — ตรงตัวเป๊ะ
+    var want = String(names[k]).toLowerCase().trim();
+    for (var a = 0; a < h.length; a++) if (h[a] === want) return a;
+  }
+  for (var k2 = 0; k2 < names.length; k2++) {              // รอบที่ 2 — มีคำนี้อยู่ข้างใน
+    var w2 = String(names[k2]).toLowerCase().trim();
+    for (var b = 0; b < h.length; b++) if (h[b].indexOf(w2) >= 0) return b;
   }
   return -1;
 }

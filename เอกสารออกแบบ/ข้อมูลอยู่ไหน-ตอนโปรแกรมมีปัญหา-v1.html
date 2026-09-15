@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ข้อมูลอยู่ไหน — ใช้ตอนโปรแกรมมีปัญหา · P&S Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&family=Inter:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --brand:#E41824; --brand-700:#A8101A; --brand-tint:#FEECEE; --brand-line:#F7C9CE;
+  --ink:#12151A; --ink-2:#1B2028;
+  --bg:#F4F5F7; --surface:#fff; --surface-2:#FAFBFC; --line:#E4E7EC; --line-2:#EFF1F4;
+  --text:#12151A; --text-2:#475062; --text-3:#79828F;
+  --c-buy:#1D6FD1; --c-buy-t:#EAF2FD; --c-store:#0E7C86; --c-store-t:#E4F5F6;
+  --c-sys:#4A5565; --c-sys-t:#EEF0F3;
+  --ok:#0E8A52; --ok-t:#E6F6EE; --warn:#B5710A; --warn-t:#FFF6E5;
+  --r:12px; --r-lg:16px;
+  --sh:0 1px 2px rgba(16,20,28,.06),0 1px 3px rgba(16,20,28,.04);
+  --sh2:0 2px 6px rgba(16,20,28,.07),0 8px 24px rgba(16,20,28,.06);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);
+  font-family:"Sarabun","Leelawadee UI",Tahoma,system-ui,sans-serif;font-size:15.5px;line-height:1.75}
+.num{font-family:"Inter",ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums}
+.top{background:linear-gradient(103deg,var(--ink) 0%,var(--ink-2) 60%,#252C36 100%);color:#fff}
+.top::after{content:"";display:block;height:3px;
+  background:linear-gradient(90deg,var(--brand) 0%,var(--brand) 34%,rgba(228,24,36,.25) 60%,rgba(228,24,36,0) 100%)}
+.top .in{max-width:980px;margin:0 auto;padding:30px 20px 26px}
+.eyebrow{font-size:11.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;
+  color:rgba(255,255,255,.62);margin:0 0 6px}
+.top h1{margin:0 0 8px;font-size:29px;font-weight:700;letter-spacing:-.3px}
+.top p{margin:0;color:rgba(255,255,255,.8);font-size:15px}
+.wrap{max-width:980px;margin:0 auto;padding:26px 20px 70px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);
+  padding:22px 24px;margin:16px 0;box-shadow:var(--sh)}
+h2{font-size:19px;margin:0 0 4px;letter-spacing:-.2px}
+h2 .n{display:inline-flex;width:27px;height:27px;border-radius:8px;background:var(--brand);color:#fff;
+  align-items:center;justify-content:center;font-size:14px;margin-inline-end:9px;vertical-align:2px}
+h3{font-size:15.5px;margin:20px 0 6px}
+p{margin:8px 0}
+.lead{color:var(--text-2)}
+.tw{overflow-x:auto;margin-top:12px}
+table{width:100%;border-collapse:collapse;font-size:14.2px;min-width:560px}
+th,td{padding:10px 12px;text-align:start;vertical-align:top;border-bottom:1px solid var(--line-2)}
+th{background:var(--surface-2);font-size:12.5px;letter-spacing:.4px;text-transform:uppercase;
+  color:var(--text-3);font-weight:600;white-space:nowrap}
+tbody tr:last-child td{border-bottom:0}
+.tag{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.t-buy{background:var(--c-buy-t);color:var(--c-buy)}
+.t-store{background:var(--c-store-t);color:var(--c-store)}
+.t-sys{background:var(--c-sys-t);color:var(--c-sys)}
+.t-ok{background:var(--ok-t);color:var(--ok)}
+.t-warn{background:var(--warn-t);color:var(--warn)}
+.mono{font-family:"Inter",ui-monospace,Consolas,monospace;font-size:13.4px;
+  background:var(--surface-2);border:1px solid var(--line-2);border-radius:6px;padding:1px 6px}
+.callout{border-inline-start:4px solid var(--brand);background:var(--brand-tint);
+  border:1px solid var(--brand-line);border-inline-start-width:4px;border-radius:10px;padding:14px 18px;margin:16px 0}
+.callout.ok{border-color:#BFE6D2;background:var(--ok-t);border-inline-start-color:var(--ok)}
+.steps{counter-reset:s;list-style:none;padding:0;margin:14px 0 0}
+.steps li{counter-increment:s;position:relative;padding:12px 0 12px 44px;border-bottom:1px solid var(--line-2)}
+.steps li:last-child{border-bottom:0}
+.steps li::before{content:counter(s);position:absolute;inset-inline-start:0;top:12px;width:28px;height:28px;
+  border-radius:9px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:700}
+.grid{display:grid;gap:12px;grid-template-columns:1fr}
+@media(min-width:720px){.grid{grid-template-columns:1fr 1fr 1fr}}
+.box{background:var(--surface-2);border:1px solid var(--line-2);border-radius:var(--r);padding:15px 17px}
+.box b{display:block;font-size:15px}
+.box .s{color:var(--text-3);font-size:13px}
+.foot{color:var(--text-3);font-size:13px;text-align:center;margin-top:26px}
+</style>
+</head>
+<body>
+<div class="top"><div class="in">
+  <p class="eyebrow">NOVA – Purchase &amp; Store Hub · v0.6.0</p>
+  <h1>ข้อมูลอยู่ไหน — ใช้ตอนโปรแกรมมีปัญหา</h1>
+  <p>เว็บแอปเป็นแค่ "หน้าต่าง" ข้อมูลจริงอยู่ใน Google Sheet เสมอ เปิดดูเองได้ตลอดเวลาโดยไม่ต้องพึ่งหน้าเว็บ</p>
+</div></div>
+
+<div class="wrap">
+
+<div class="callout">
+  <b>หลักที่วางไว้ตั้งแต่ต้น</b> — ระบบนี้ไม่มีฐานข้อมูลลับที่เปิดดูเองไม่ได้
+  ทุกตัวเลขที่หน้าเว็บแสดง มาจากแถวในชีตที่เปิดอ่านได้ด้วยตาเปล่า
+  ถ้าเว็บล่ม ข้อมูลไม่หายและไม่ถูกล็อก — เปิดไฟล์อ่านต่อได้ทันที
+</div>
+
+<div class="card">
+  <h2><span class="n">1</span>ข้อมูลทั้งระบบอยู่ใน 3 ไฟล์</h2>
+  <p class="lead">ทั้งสามไฟล์อยู่ในโฟลเดอร์ <b>P&amp;S Hub</b> บน Google Drive</p>
+  <div class="tw"><table>
+    <thead><tr><th>ไฟล์</th><th>แท็บสำคัญ</th><th>มีอะไรอยู่ข้างใน</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><b>STT-PS-RR-ALL</b><br><span class="tag t-store">การรับเข้า</span></td>
+        <td><span class="mono">RR_ALL</span></td>
+        <td><b>ใบรับของทุกใบทุกปี</b> — ของเข้าเมื่อไหร่ ใบไหน จากใคร จำนวนเท่าไหร่ อ้าง PO ใบใด<br>
+            ปัจจุบัน 7,512 บรรทัด · 2,408 ใบรับ · ปี 2569<br>
+            <span class="tag t-warn">ห้ามลบแถว</span> ต้นทุนเฉลี่ยใช้ยอดสะสมจากตารางนี้</td>
+      </tr>
+      <tr>
+        <td><b>STT-PS-2569</b><br><span class="tag t-buy">ข้อมูลดิบรายปี</span></td>
+        <td><span class="mono">PO_LINE</span><br><span class="mono">MATCH_LINK</span><br>
+            <span class="mono">IMPORT_LOG</span><br><span class="mono">LOG</span></td>
+        <td>ใบสั่งซื้อทุกบรรทัดของปีนี้ ดึงดิบจาก My Account ไม่แก้อะไรเลย (7,950 บรรทัด)<br>
+            ผลการจับคู่ใบรับ ↔ บรรทัด PO พร้อมบอกว่าจับคู่ด้วยชั้นไหน (7,375 คู่)<br>
+            ประวัติการนำเข้าทุกครั้ง · ประวัติการแก้ข้อมูลทุกครั้ง</td>
+      </tr>
+      <tr>
+        <td><b>STT-DB-MASTER</b><br><span class="tag t-sys">ตารางกลาง</span></td>
+        <td><span class="mono">PS_PO_INDEX</span><br><span class="mono">PS_PO_EDIT</span><br>
+            <span class="mono">คู่มือฐานข้อมูล</span></td>
+        <td>ตารางที่หน้าเว็บอ่าน — ทุกบรรทัด PO พร้อมยอดรับ ยอดค้าง และสถานะ<br>
+            เฉพาะสิ่งที่คนกรอกเอง (แยกจากข้อมูลดิบ ดึงใหม่ทับกี่รอบก็ไม่หาย)<br>
+            สารบัญอธิบายทุกตารางทุกคอลัมน์เป็นภาษาไทย</td>
+      </tr>
+    </tbody>
+  </table></div>
+</div>
+
+<div class="card">
+  <h2><span class="n">2</span>เปิดแล้วอ่านออกเลย ไม่ต้องเดาว่าคอลัมน์ไหนคืออะไร</h2>
+  <p class="lead">ทุกแท็บถูกจัดไว้ให้อ่านด้วยตาเปล่าตั้งแต่ตอนกด "ติดตั้งโครงข้อมูล"</p>
+  <div class="grid">
+    <div class="box"><b>ตรึงหัวตาราง</b><span class="s">เลื่อนลงกี่พันแถวก็ยังเห็นชื่อคอลัมน์</span></div>
+    <div class="box"><b>มีตัวกรองทุกแท็บ</b><span class="s">กดกรอง/เรียงในชีตได้เองเหมือนใช้ Excel</span></div>
+    <div class="box"><b>คำอธิบายไทยที่หัวคอลัมน์</b><span class="s">เอาเมาส์ชี้หัวคอลัมน์แล้วขึ้นคำอธิบาย</span></div>
+    <div class="box"><b>วันที่เป็น วว/ดด/ปปปป</b><span class="s">ไม่ใช่ตัวเลขดิบให้ต้องแปลเอง</span></div>
+    <div class="box"><b>เงินมีลูกน้ำ 2 ตำแหน่ง</b><span class="s">อ่านยอดได้ทันที</span></div>
+    <div class="box"><b>แท็บ "คู่มือฐานข้อมูล"</b><span class="s">เปิดไฟล์เดียวรู้ครบว่าอะไรอยู่ไหน</span></div>
+  </div>
+  <p style="margin-top:16px">ในเว็บมีเมนู <b>🔗 เปิดฐานข้อมูลตรง</b> (กลุ่มงานระบบ) รวมลิงก์ทุกไฟล์ทุกแท็บไว้ให้กดทีเดียว —
+     แต่ลิงก์ชุดเดียวกันนี้ก็เขียนไว้ในแท็บ <b>คู่มือฐานข้อมูล</b> ด้วย เผื่อวันที่เว็บเปิดไม่ได้</p>
+</div>
+
+<div class="card">
+  <h2><span class="n">3</span>คำถามที่จัดซื้อถามบ่อย — เปิดชีตตอบเองได้</h2>
+  <div class="tw"><table>
+    <thead><tr><th>อยากรู้ว่า</th><th>เปิดไฟล์</th><th>ทำยังไง</th></tr></thead>
+    <tbody>
+      <tr><td><b>PO ใบนี้ของมาแล้วหรือยัง</b></td><td>STT-PS-RR-ALL / <span class="mono">RR_ALL</span></td>
+          <td>กดตัวกรองที่คอลัมน์ <span class="mono">pono</span> แล้วพิมพ์เลขที่ PO — เห็นทุกใบรับที่อ้าง PO ใบนั้น</td></tr>
+      <tr><td><b>ของตัวนี้เคยซื้อราคาเท่าไหร่</b></td><td>STT-PS-RR-ALL / <span class="mono">RR_ALL</span></td>
+          <td>กรองคอลัมน์ <span class="mono">goodcode_n</span> ด้วยรหัสสินค้า แล้วเรียง <span class="mono">docudate</span> จากใหม่ไปเก่า</td></tr>
+      <tr><td><b>ใบรับใบนี้ระบบจับคู่ให้ถูกไหม</b></td><td>STT-PS-2569 / <span class="mono">MATCH_LINK</span></td>
+          <td>กรอง <span class="mono">rr_docuno</span> ด้วยเลขที่ใบรับ — คอลัมน์ <span class="mono">tier</span> บอกว่าจับคู่ด้วยชั้นไหน
+              (C1 = ตรงครบทั้งรหัส จ๊อบ ชื่อ ราคา)</td></tr>
+      <tr><td><b>ตอนนี้ค้างรับอะไรอยู่บ้าง</b></td><td>STT-DB-MASTER / <span class="mono">PS_PO_INDEX</span></td>
+          <td>กรองคอลัมน์ <span class="mono">status</span> เอาเฉพาะ "ยังไม่รับ" กับ "รับบางส่วน"
+              แล้วเรียง <span class="mono">amnt_remain</span> จากมากไปน้อย</td></tr>
+      <tr><td><b>ใครแก้อะไรไว้บ้าง</b></td><td>STT-PS-2569 / <span class="mono">LOG</span></td>
+          <td>ทุกแถวบอก เวลา · ใคร · แก้อะไร · จากอะไรเป็นอะไร · เหตุผล</td></tr>
+      <tr><td><b>ดึงข้อมูลเข้าครั้งล่าสุดเมื่อไหร่</b></td><td>STT-PS-2569 / <span class="mono">IMPORT_LOG</span></td>
+          <td>ดูแถวล่างสุด — บอกเวลา ใครกด อ่านมากี่แถว เขียนลงกี่แถว ข้ามกี่แถว</td></tr>
+    </tbody>
+  </table></div>
+</div>
+
+<div class="card">
+  <h2><span class="n">4</span>ถ้าหน้าเว็บเปิดไม่ได้จริง ๆ</h2>
+  <ol class="steps">
+    <li><b>เปิดชีตทำงานต่อไปก่อน</b> — ข้อมูลครบทุกแถว ไม่มีอะไรหาย งานประจำวันไม่สะดุด</li>
+    <li><b>ดูว่าข้อมูลล่าสุดถึงวันไหน</b> — เปิด <span class="mono">IMPORT_LOG</span> ดูแถวล่างสุด
+        ถ้าเก่าเกินไปให้ดึง PO/RR จาก My Account มาดูควบคู่</li>
+    <li><b>สิ่งที่คนกรอกเองยังอยู่ครบ</b> — อยู่ในแท็บ <span class="mono">PS_PO_EDIT</span> แยกจากข้อมูลดิบ
+        เว็บพังหรือดึงข้อมูลใหม่ทับ ก็ไม่หาย</li>
+    <li><b>บอก Candy</b> — พร้อมข้อความ error ที่ขึ้นบนจอ จะได้ไล่จากของจริง ไม่ต้องเดา</li>
+  </ol>
+  <div class="callout ok" style="margin-top:18px">
+    <b>ทำไมถึงกล้าพูดแบบนี้</b> — เว็บแอปไม่ได้เก็บข้อมูลไว้กับตัวเองเลยสักแถวเดียว
+    มันอ่านจาก Google Sheet ทุกครั้งที่เปิดหน้า และเขียนกลับลง Google Sheet ทันทีที่กดบันทึก
+    เว็บล่ม = หน้าต่างปิด ไม่ใช่ข้อมูลหาย
+  </div>
+</div>
+
+<p class="foot">NOVA – Purchase &amp; Store Hub · v0.6.0 · 15 ก.ย. 2569</p>
+</div>
+</body>
+</html>

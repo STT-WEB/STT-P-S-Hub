@@ -1,0 +1,192 @@
+<script>
+/* ============ หน้าฐานข้อมูล PO — เห็นทุกบรรทัดจาก My Account (P1) ============ */
+var DB = { page:1, size:100, q:'', status:'', month:'', cat:'', vendor:'', intl:'', sort:'value' };
+
+function openPoDb(){ setView('viewPoDb'); DB.page = 1; loadPoDb(); }
+
+function dbSet(k, v){ DB[k] = (DB[k] === v) ? '' : v; DB.page = 1; loadPoDb(); }
+function dbPick(k, v){ DB[k] = v; DB.page = 1; loadPoDb(); }
+function dbSearch(){ DB.q = $('dbQ').value.trim(); DB.page = 1; loadPoDb(); }
+function dbPage(d){ DB.page += d; loadPoDb(); }
+function dbReset(){
+  DB = { page:1, size:DB.size, q:'', status:'', month:'', cat:'', vendor:'', intl:'', sort:'value' };
+  if($('dbQ')) $('dbQ').value = '';
+  loadPoDb();
+}
+
+function loadPoDb(){
+  $('dbBody').innerHTML = '<p class="small">กำลังโหลด...</p>';
+  var t0 = new Date().getTime();
+  google.script.run
+    .withSuccessHandler(function(r){ renderPoDb(r, new Date().getTime()-t0); })
+    .withFailureHandler(function(e){
+      $('dbBody').innerHTML = '<div class="msg err" style="display:block">โหลดไม่สำเร็จ: ' +
+        esc(e.message) + '</div>';
+    })
+    .getPoAll(AUTH, DB);
+}
+
+var MONTH_TH = ['','ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+var STATUS_CHIPS = [
+  { k:'',          t:'ทั้งหมด' },
+  { k:'open',      t:'ค้างรับ' },
+  { k:'partial',   t:'รับบางส่วน' },
+  { k:'done',      t:'รับครบ' },
+  { k:'closed',    t:'ปิดรายการ' },
+  { k:'cancelled', t:'ยกเลิก' }
+];
+var SORTS = [
+  { k:'value',  t:'มูลค่าค้างมาก → น้อย' },
+  { k:'amnt',   t:'ยอดสั่งมาก → น้อย' },
+  { k:'age',    t:'เก่าสุด → ใหม่สุด' },
+  { k:'date',   t:'วันที่ใหม่ → เก่า' },
+  { k:'po',     t:'เลขที่ PO' },
+  { k:'vendor', t:'ชื่อผู้ขาย' }
+];
+
+function renderPoDb(r, ms){
+  var h = '';
+
+  /* --- สรุปทั้งฐานข้อมูล --- */
+  h += '<div class="statrow">' +
+       stat(Number(r.all.lines).toLocaleString(), 'บรรทัดทั้งหมด', 'var(--text)') +
+       stat(Number(r.all.docs).toLocaleString(), 'ใบ PO', 'var(--text)') +
+       stat(r.canPrice ? money(r.all.amnt) : 'ซ่อน', r.canPrice ? 'ยอดสั่งรวม (บาท)' : 'สโตร์ไม่เห็นราคา',
+            r.canPrice ? 'var(--text)' : 'var(--text-3)') +
+       stat(r.canPrice ? money(r.all.openVal) : '—', 'ค้างรับ (บาท)', 'var(--brand)') +
+       '</div>';
+
+  /* --- ชิปสถานะ --- */
+  h += '<div class="secthead"><h3>สถานะ</h3><div class="line"></div>' +
+       '<span class="small">' + ms + ' ms</span></div><div class="chips">';
+  STATUS_CHIPS.forEach(function(c){
+    var n = c.k === ''          ? r.all.lines
+          : c.k === 'open'      ? r.all.open
+          : c.k === 'partial'   ? r.all.partial
+          : c.k === 'done'      ? r.all.done
+          : c.k === 'cancelled' ? r.all.cancelled
+          : c.k === 'closed'    ? r.all.closed : null;
+    h += '<button class="chip2' + (DB.status === c.k ? ' on' : '') +
+         '" onclick="dbPick(\'status\',\'' + c.k + '\')">' + esc(c.t) +
+         (n !== null ? '<span class="cn">' + Number(n).toLocaleString() + '</span>' : '') + '</button>';
+  });
+  h += '</div>';
+
+  /* --- ตัวกรองอื่น --- */
+  h += '<div class="filterbar">';
+  h += '<div class="fb"><label>เดือน</label><select onchange="dbPick(\'month\',this.value)">' +
+       '<option value="">ทุกเดือน</option>';
+  r.opts.months.sort(function(a,b){ return a.k - b.k; }).forEach(function(m){
+    h += '<option value="' + m.k + '"' + (DB.month == m.k ? ' selected' : '') + '>' +
+         MONTH_TH[m.k] + ' (' + Number(m.n).toLocaleString() + ')</option>';
+  });
+  h += '</select></div>';
+
+  h += '<div class="fb"><label>หมวดสินค้า</label><select onchange="dbPick(\'cat\',this.value)">' +
+       '<option value="">ทุกหมวด</option>';
+  r.opts.cats.sort(function(a,b){ return a.k < b.k ? -1 : 1; }).forEach(function(c){
+    var lbl = /^[1-7]$/.test(c.k) ? c.k + ' · สโตร์กดรับ'
+            : /^[89]$/.test(c.k)  ? c.k + ' · ข้าม' : c.k;
+    h += '<option value="' + esc(c.k) + '"' + (DB.cat === c.k ? ' selected' : '') + '>' +
+         esc(lbl) + ' (' + Number(c.n).toLocaleString() + ')</option>';
+  });
+  h += '</select></div>';
+
+  h += '<div class="fb"><label>ผู้ขาย</label><select onchange="dbPick(\'vendor\',this.value)">' +
+       '<option value="">ทุกราย</option>';
+  r.opts.vendors.forEach(function(v){
+    h += '<option value="' + esc(v.k) + '"' + (DB.vendor === v.k ? ' selected' : '') + '>' +
+         esc(v.k.length > 34 ? v.k.slice(0,33) + '…' : v.k) + ' (' + v.n + ')</option>';
+  });
+  h += '</select></div>';
+
+  h += '<div class="fb"><label>ในประเทศ / ต่างประเทศ</label><select onchange="dbPick(\'intl\',this.value)">' +
+       '<option value="">ทั้งหมด</option>' +
+       '<option value="N"' + (DB.intl==='N'?' selected':'') + '>ในประเทศ</option>' +
+       '<option value="Y"' + (DB.intl==='Y'?' selected':'') + '>ต่างประเทศ</option></select></div>';
+
+  // สโตร์ไม่เห็นราคา → ซ่อนตัวเลือกเรียงที่อ้างถึงเงินด้วย
+  if(!r.canPrice && (DB.sort === 'value' || DB.sort === 'amnt')) DB.sort = 'date';
+  h += '<div class="fb"><label>เรียงตาม</label><select onchange="dbPick(\'sort\',this.value)">';
+  SORTS.filter(function(x){ return r.canPrice || (x.k !== 'value' && x.k !== 'amnt'); }).forEach(function(x){
+    h += '<option value="' + x.k + '"' + (DB.sort===x.k?' selected':'') + '>' + esc(x.t) + '</option>';
+  });
+  h += '</select></div>';
+  h += '<div class="fb" style="justify-content:flex-end">' +
+       '<button class="btn ghost" style="width:auto;margin-top:0;padding-inline:18px" onclick="dbReset()">ล้างตัวกรอง</button></div>';
+  h += '</div>';
+
+  /* --- สรุปผลกรอง --- */
+  var filtered = (r.filtered.lines !== r.all.lines);
+  h += '<div class="secthead"><h3>ผลการกรอง</h3><div class="line"></div>' +
+       '<span class="small">' + Number(r.filtered.lines).toLocaleString() + ' บรรทัด · ' +
+       Number(r.filtered.docs).toLocaleString() + ' ใบ' +
+       (r.canPrice ? ' · ยอดสั่ง ' + money(r.filtered.amnt) +
+                     ' · ค้างรับ ' + money(r.filtered.openVal) : '') + '</span>';
+  if(r.canEdit) h += '<button class="tbtn" style="background:var(--c-buy);border-color:var(--c-buy)" ' +
+                     'id="dbEx" onclick="dbExport()">ส่งออกเป็น Google Sheet</button>';
+  h += '</div>';
+
+  /* --- ตาราง --- */
+  if(!r.rows.length){
+    h += '<div class="card" style="text-align:center;color:var(--text-3)">ไม่พบรายการที่ตรงกับเงื่อนไข</div>';
+  } else {
+    h += '<div class="tblwrap"><table><thead><tr>' +
+      '<th>เลขที่ PO</th><th>สินค้า</th><th>ผู้ขาย</th><th>จ๊อบ</th>' +
+      '<th style="text-align:end">สั่ง</th><th style="text-align:end">รับแล้ว</th><th style="text-align:end">ค้าง</th>' +
+      (r.canPrice ? '<th style="text-align:end">ราคา/หน่วย</th><th style="text-align:end">ยอดสั่ง</th><th style="text-align:end">ค้าง ฿</th>' : '') +
+      '<th style="text-align:end">อายุ (วัน)</th><th>สถานะ</th><th></th>' +
+      '</tr></thead><tbody>';
+    r.rows.forEach(function(x){
+      var sc = x.cancelled ? 'b-cancel' : (x.closed ? 'b-sys' :
+               (x.remain > 0 ? (x.received + x.manual > 0 ? 'b-warn2' : 'b-open') : 'b-live'));
+      var ac = x.age > 90 ? 'var(--bad)' : (x.age > 60 ? 'var(--warn)' : 'var(--text-3)');
+      h += '<tr' + (x.cancelled ? ' class="rcancel"' : '') + '>' +
+        '<td class="nw"><b>' + esc(x.po) + '</b>' + (x.intlPo ? ' <span class="tag2 t-intl">ตปท.</span>' : '') +
+          '<div class="sub">บรรทัด ' + esc(x.ln) + ' · ' + esc(x.date) + '</div></td>' +
+        '<td style="min-width:200px;max-width:280px"><div class="clamp2" title="' + esc(x.name) + '">' +
+          esc(x.name) + '</div>' +
+          '<div class="sub mono">' + esc(x.code) + (x.cat ? ' · หมวด ' + esc(x.cat) : '') + '</div></td>' +
+        '<td style="min-width:136px;max-width:190px"><div class="clamp2" title="' + esc(x.vendor) + '">' +
+          esc(x.vendor) + '</div></td>' +
+        '<td class="nw">' + (x.job ? esc(x.job) : '<span class="muted">—</span>') + '</td>' +
+        '<td class="num nw">' + qty(x.ordered) + ' <span class="sub">' + esc(x.unit) + '</span></td>' +
+        '<td class="num nw">' + ((x.received + x.manual) > 0 ? qty(x.received + x.manual) : '<span class="muted">—</span>') + '</td>' +
+        '<td class="num nw">' + (x.remain > 0 ? '<b>' + qty(x.remain) + '</b>' : '<span class="muted">—</span>') + '</td>' +
+        (r.canPrice ? '<td class="num nw">' + money(x.price) + '</td>' +
+                      '<td class="num nw">' + money(x.amnt) + '</td>' +
+                      '<td class="num nw">' + (x.value > 0 ? money(x.value) : '<span class="muted">—</span>') + '</td>' : '') +
+        '<td class="num nw" style="color:' + ac + '">' + x.age + '</td>' +
+        '<td class="nw"><span class="badge ' + sc + '">' + esc(x.status) + '</span>' + tagsOf(x) + '</td>' +
+        '<td class="nw"><button class="editbtn" title="ดูใบรับของ PO ใบนี้" ' +
+          'onclick="poRr(\'' + esc(x.po) + '\')">ใบรับ</button>' +
+          (r.canEdit && !x.cancelled
+            ? ' <button class="editbtn" onclick="opEdit(\'' + esc(x.poid) + '\',\'' + esc(x.ln) +
+              '\',\'' + esc(x.po) + '\')">แก้</button>' : '') + '</td>' +
+        '</tr>';
+    });
+    h += '</tbody></table></div>';
+
+    h += '<div class="pager">' +
+      '<button class="btn ghost" style="width:auto" ' + (r.page<=1?'disabled':'') + ' onclick="dbPage(-1)">ก่อนหน้า</button>' +
+      '<span class="small">หน้า ' + r.page + ' / ' + r.pages + ' · แสดง ' + r.size + ' บรรทัด/หน้า</span>' +
+      '<button class="btn ghost" style="width:auto" ' + (r.page>=r.pages?'disabled':'') + ' onclick="dbPage(1)">ถัดไป</button></div>';
+  }
+  $('dbBody').innerHTML = h;
+}
+
+/* ---- ส่งออกตามตัวกรองปัจจุบัน ---- */
+function dbExport(){
+  busy('dbEx', true, 'กำลังส่งออก...');
+  google.script.run
+    .withSuccessHandler(function(r){
+      busy('dbEx', false, 'ส่งออกเป็น Google Sheet');
+      showExported(r);            // กล่องแจ้งผลตัวเดียวกับหน้ารับเข้า (อยู่ใน ui-rrdb)
+    })
+    .withFailureHandler(function(e){
+      busy('dbEx', false, 'ส่งออกเป็น Google Sheet');
+      alert('ส่งออกไม่สำเร็จ: ' + e.message);
+    })
+    .exportPoAll(AUTH, DB);
+}
+</script>

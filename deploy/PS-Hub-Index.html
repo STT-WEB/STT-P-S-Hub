@@ -100,6 +100,57 @@
   </div>
 
 
+
+  <!-- ========== ฐานข้อมูล PO (ทุกบรรทัดจาก My Account) ========== -->
+  <div id="viewPoDb" class="hide">
+    <div class="page-head">
+      <p class="eyebrow">จัดซื้อ</p>
+      <h1>ฐานข้อมูล PO</h1>
+      <p>ทุกบรรทัดที่ดึงมาจาก My Account — ค้นหา กรอง เรียง และแก้ข้อมูลได้จากที่นี่</p>
+    </div>
+    <div class="card card-pad-sm" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+      <div class="field" style="flex:1 1 280px;margin-top:0">
+        <label for="dbQ">ค้นหา — เลขที่ PO · รหัส/ชื่อสินค้า · ผู้ขาย · จ๊อบ · หมายเหตุ</label>
+        <input type="text" id="dbQ" placeholder="พิมพ์แล้วกด Enter" onkeydown="if(event.key==='Enter')dbSearch()">
+      </div>
+      <button class="btn" style="width:auto;padding-inline:24px;margin-top:0" onclick="dbSearch()">ค้นหา</button>
+      <button class="btn ghost" style="width:auto;padding-inline:20px;margin-top:0" onclick="backToMenu()">กลับเมนู</button>
+    </div>
+    <div id="dbBody"></div>
+  </div>
+
+  <!-- ========== ฐานข้อมูลการรับเข้า (RR) ========== -->
+  <div id="viewRrDb" class="hide">
+    <div class="page-head">
+      <p class="eyebrow">จัดซื้อ · คลังสินค้า</p>
+      <h1>ฐานข้อมูลการรับเข้า</h1>
+      <p>ใบรับของทุกใบทุกปีจาก My Account — ของมาเมื่อไหร่ ใบไหน ตรงกับ PO ใบใด</p>
+    </div>
+    <div class="card card-pad-sm" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+      <div class="field" style="flex:1 1 280px;margin-top:0">
+        <label for="rrQ">ค้นหา — เลขที่ใบรับ · เลขที่ PO · ใบกำกับ · รหัส/ชื่อสินค้า · ผู้ขาย · จ๊อบ</label>
+        <input type="text" id="rrQ" placeholder="พิมพ์แล้วกด Enter" onkeydown="if(event.key==='Enter')rrSearch()">
+      </div>
+      <button class="btn" style="width:auto;padding-inline:24px;margin-top:0" onclick="rrSearch()">ค้นหา</button>
+      <button class="btn ghost" style="width:auto;padding-inline:20px;margin-top:0" onclick="backToMenu()">กลับเมนู</button>
+    </div>
+    <div id="rrBody"></div>
+  </div>
+
+  <!-- ========== เปิดฐานข้อมูลตรง (ใช้ตอนหน้าเว็บมีปัญหา) ========== -->
+  <div id="viewDbLinks" class="hide">
+    <div class="page-head">
+      <p class="eyebrow">งานระบบ</p>
+      <h1>เปิดฐานข้อมูลตรง</h1>
+      <p>ถ้าหน้าเว็บมีปัญหา เปิดไฟล์ Google Sheet ข้างล่างนี้ดูข้อมูลดิบได้ทันที</p>
+    </div>
+    <div class="card card-pad-sm" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+      <div style="flex:1 1 auto" class="small">ลิงก์ทั้งหมดนี้อยู่ในแท็บ <b>คู่มือฐานข้อมูล</b> ของไฟล์ STT-DB-MASTER ด้วย</div>
+      <button class="btn ghost" style="width:auto;padding-inline:20px;margin-top:0" onclick="backToMenu()">กลับเมนู</button>
+    </div>
+    <div id="dlBody"></div>
+  </div>
+
   <!-- ========== PO ค้างรับ ========== -->
   <div id="viewOpenPO" class="hide">
     <div class="page-head">
@@ -113,6 +164,7 @@
         <input type="text" id="opQ" placeholder="พิมพ์แล้วกด Enter" onkeydown="if(event.key==='Enter')opSearch()">
       </div>
       <button class="btn" style="width:auto;padding-inline:24px;margin-top:0" onclick="opSearch()">ค้นหา</button>
+      <button class="btn ghost" style="width:auto;padding-inline:20px;margin-top:0" id="opRb" onclick="opRebuild()">คำนวณค้างรับใหม่</button>
       <button class="btn ghost" style="width:auto;padding-inline:20px;margin-top:0" onclick="backToMenu()">กลับเมนู</button>
     </div>
     <div id="opBody"></div>
@@ -147,6 +199,8 @@
 </div>
 
 <?!= include('js-core') ?>
+<?!= include('ui-podb') ?>
+<?!= include('ui-rrdb') ?>
 <?!= include('ui-openpo') ?>
 <?!= include('ui-import') ?>
 </body>

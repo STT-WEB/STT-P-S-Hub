@@ -38,9 +38,16 @@ var SCHEMA = {
 
   /* ===== ตารางกลางใน STT-DB-MASTER (เพิ่มใหม่ ไม่แตะของเดิม) ===== */
   MASTER: {
-    PS_OPEN_PO:      ['poid','listno','docuno','year_th','docudate','shipdate','goodcode_n','goodname',
-                      'unit','vendorcode','vendorname','jobcode','ordered','received','remain','price',
-                      'amnt_remain','cat','age_days','status','updated_at'],
+    /* ตารางกลางของฝั่งจัดซื้อ — "ทุกบรรทัด" ไม่ใช่เฉพาะค้างรับ
+       หน้าฐานข้อมูล PO และหน้า PO ค้างรับ อ่านจากตารางเดียวกันนี้
+       → ตัวเลขสองหน้าไม่มีทางไม่ตรงกัน */
+    PS_PO_INDEX:     ['poid','listno','docuno','year_th','month','docudate','shipdate','newship',
+                      'goodcode_n','goodname','unit','vendorcode','vendorname','jobcode','jobname',
+                      'cat','is_intl','cancelled','ordered','recv_rr','recv_manual','remain',
+                      'price','amnt','amnt_remain','billed_amount','intl_status','note','closed',
+                      'status','age_days','updated_at'],
+    PS_PO_EDIT:      ['poid','listno','docuno','recv_manual','recv_date','billed_amount','billed_note',
+                      'newship','note','intl_status','closed','close_reason','by_emp','updated_at'],
     PS_PRICE_LATEST: ['goodcode_n','goodname','unit','last_price','last_date','last_vendor','wac_policy',
                       'source','n_buy_12m','min_price','max_price','updated_at'],
     PS_ITEM_MASTER:  ['goodcode_n','goodname','unit','cat','type','warehouse','min_qty','max_qty',
@@ -90,6 +97,12 @@ function psSetup(auth) {
     var a = ensureRegistry_(year, 'YEAR', yearId, 'STT-PS-' + year);
     var b = ensureRegistry_('ALL', 'RRALL', rrId, 'STT-PS-RR-ALL');
     return a + ' · ' + b;
+  });
+
+  // ทำให้เปิดชีตดูเองได้ตอนหน้าเว็บมีปัญหา (ตรึงหัว · ตัวกรอง · คำอธิบายไทย · แท็บคู่มือ)
+  step('จัดหน้าตาฐานข้อมูล + เขียนแท็บคู่มือ', function () {
+    var b = psBeautify(auth);
+    return 'จัดแล้ว ' + b.tabs + ' แท็บ' + (b.errors.length ? ' · ข้าม ' + b.errors.length : '');
   });
 
   step('ล้างแคช', function () {

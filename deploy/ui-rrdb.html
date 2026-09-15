@@ -1,0 +1,307 @@
+<script>
+/* ============ หน้าฐานข้อมูลการรับเข้า (RR) ============ */
+var RR = { page:1, size:100, q:'', year:'', month:'', vendor:'', mstat:'', pono:'', sort:'date' };
+
+function openRrDb(){ setView('viewRrDb'); RR.page = 1; loadRrDb(); }
+function rrPick(k, v){ RR[k] = v; RR.page = 1; loadRrDb(); }
+function rrSearch(){ RR.q = $('rrQ').value.trim(); RR.page = 1; loadRrDb(); }
+function rrPage(d){ RR.page += d; loadRrDb(); }
+function rrReset(){
+  RR = { page:1, size:RR.size, q:'', year:'', month:'', vendor:'', mstat:'', pono:'', sort:'date' };
+  if($('rrQ')) $('rrQ').value = '';
+  loadRrDb();
+}
+/* เปิดหน้ารับเข้าโดยกรองเฉพาะ PO ใบเดียว (เรียกจากหน้าฐานข้อมูล PO) */
+function openRrForPo(pono){
+  rrReset();
+  RR.pono = pono;
+  setView('viewRrDb');
+  loadRrDb();
+}
+
+var RR_CHIPS = [
+  { k:'',      t:'ทั้งหมด' },
+  { k:'ok',    t:'ตรงกับ PO' },
+  { k:'cross', t:'PO ปีก่อน' },
+  { k:'todo',  t:'ยังไม่จับคู่' },
+  { k:'nopo',  t:'ไม่ได้อ้าง PO' }
+];
+var RR_SORTS = [
+  { k:'date',   t:'วันที่ใหม่ → เก่า' },
+  { k:'amnt',   t:'จำนวนเงินมาก → น้อย' },
+  { k:'rr',     t:'เลขที่ใบรับ' },
+  { k:'po',     t:'เลขที่ PO' },
+  { k:'vendor', t:'ชื่อผู้ขาย' }
+];
+var RR_BADGE = { ok:'b-live', cross:'b-sys', todo:'b-warn2', nopo:'b-open' };
+
+function loadRrDb(){
+  $('rrBody').innerHTML = '<p class="small">กำลังโหลด...</p>';
+  var t0 = new Date().getTime();
+  google.script.run
+    .withSuccessHandler(function(r){ renderRrDb(r, new Date().getTime()-t0); })
+    .withFailureHandler(function(e){
+      $('rrBody').innerHTML = '<div class="msg err" style="display:block">โหลดไม่สำเร็จ: ' +
+        esc(e.message) + '</div>';
+    })
+    .getRrAll(AUTH, RR);
+}
+
+function renderRrDb(r, ms){
+  var h = '';
+
+  h += '<div class="statrow">' +
+       stat(Number(r.all.docs).toLocaleString(), 'ใบรับทั้งหมด', 'var(--text)') +
+       stat(Number(r.all.lines).toLocaleString(), 'บรรทัดรับเข้า', 'var(--text)') +
+       stat(r.canPrice ? money(r.all.amnt) : 'ซ่อน',
+            r.canPrice ? 'มูลค่ารับเข้ารวม (บาท)' : 'สโตร์ไม่เห็นราคา',
+            r.canPrice ? 'var(--text)' : 'var(--text-3)') +
+       stat(Number(r.all.ok).toLocaleString() + ' / ' + Number(r.all.lines).toLocaleString(),
+            'จับคู่กับ PO ได้', 'var(--ok)') +
+       '</div>';
+
+  if(RR.pono){
+    h += '<div class="msg ok" style="display:block">กรองเฉพาะใบรับของ <b>' + esc(RR.pono) + '</b> ' +
+         '<button class="tbtn" style="margin-inline-start:10px" onclick="rrPick(\'pono\',\'\')">ดูทั้งหมด</button></div>';
+  }
+
+  h += '<div class="secthead"><h3>สถานะการจับคู่</h3><div class="line"></div>' +
+       '<span class="small">' + ms + ' ms</span></div><div class="chips">';
+  RR_CHIPS.forEach(function(c){
+    var n = c.k === '' ? r.all.lines : r.all[c.k];
+    h += '<button class="chip2' + (RR.mstat === c.k ? ' on' : '') +
+         '" onclick="rrPick(\'mstat\',\'' + c.k + '\')">' + esc(c.t) +
+         '<span class="cn">' + Number(n).toLocaleString() + '</span></button>';
+  });
+  h += '</div>';
+
+  h += '<div class="filterbar">';
+  h += '<div class="fb"><label>ปี พ.ศ.</label><select onchange="rrPick(\'year\',this.value)">' +
+       '<option value="">ทุกปี</option>';
+  r.opts.years.forEach(function(y){
+    h += '<option value="' + esc(y.k) + '"' + (RR.year === y.k ? ' selected' : '') + '>' +
+         esc(y.k) + ' (' + Number(y.n).toLocaleString() + ')</option>';
+  });
+  h += '</select></div>';
+
+  h += '<div class="fb"><label>เดือน</label><select onchange="rrPick(\'month\',this.value)">' +
+       '<option value="">ทุกเดือน</option>';
+  r.opts.months.sort(function(a,b){ return a.k - b.k; }).forEach(function(m){
+    h += '<option value="' + m.k + '"' + (RR.month == m.k ? ' selected' : '') + '>' +
+         MONTH_TH[m.k] + ' (' + Number(m.n).toLocaleString() + ')</option>';
+  });
+  h += '</select></div>';
+
+  h += '<div class="fb"><label>ผู้ขาย</label><select onchange="rrPick(\'vendor\',this.value)">' +
+       '<option value="">ทุกราย</option>';
+  r.opts.vendors.forEach(function(v){
+    h += '<option value="' + esc(v.k) + '"' + (RR.vendor === v.k ? ' selected' : '') + '>' +
+         esc(v.k.length > 34 ? v.k.slice(0,33) + '…' : v.k) + ' (' + v.n + ')</option>';
+  });
+  h += '</select></div>';
+
+  // สโตร์ไม่เห็นราคา → ซ่อนตัวเลือกเรียงที่อ้างถึงเงินด้วย
+  if(!r.canPrice && RR.sort === 'amnt') RR.sort = 'date';
+  h += '<div class="fb"><label>เรียงตาม</label><select onchange="rrPick(\'sort\',this.value)">';
+  RR_SORTS.filter(function(x){ return r.canPrice || x.k !== 'amnt'; }).forEach(function(x){
+    h += '<option value="' + x.k + '"' + (RR.sort===x.k?' selected':'') + '>' + esc(x.t) + '</option>';
+  });
+  h += '</select></div>';
+  h += '<div class="fb" style="justify-content:flex-end">' +
+       '<button class="btn ghost" style="width:auto;margin-top:0;padding-inline:18px" onclick="rrReset()">ล้างตัวกรอง</button></div>';
+  h += '</div>';
+
+  h += '<div class="secthead"><h3>ผลการกรอง</h3><div class="line"></div>' +
+       '<span class="small">' + Number(r.filtered.lines).toLocaleString() + ' บรรทัด · ' +
+       Number(r.filtered.docs).toLocaleString() + ' ใบรับ' +
+       (r.canPrice ? ' · ' + money(r.filtered.amnt) + ' บาท' : '') + '</span>';
+  if(r.canPrice) h += '<button class="tbtn" style="background:var(--c-store);border-color:var(--c-store)" ' +
+                      'id="rrEx" onclick="rrExport()">ส่งออกเป็น Google Sheet</button>';
+  h += '</div>';
+
+  if(!r.rows.length){
+    h += '<div class="card" style="text-align:center;color:var(--text-3)">ไม่พบรายการที่ตรงกับเงื่อนไข</div>';
+  } else {
+    h += '<div class="tblwrap"><table><thead><tr>' +
+      '<th>ใบรับ</th><th>สินค้า</th><th>ผู้ขาย</th><th>เลขที่ PO</th><th>จ๊อบ</th>' +
+      '<th style="text-align:end">จำนวน</th>' +
+      (r.canPrice ? '<th style="text-align:end">ราคา/หน่วย</th><th style="text-align:end">จำนวนเงิน</th>' : '') +
+      '<th>สถานะจับคู่</th></tr></thead><tbody>';
+    r.rows.forEach(function(x){
+      h += '<tr>' +
+        '<td class="nw"><b>' + esc(x.rr) + '</b>' +
+          '<div class="sub">บรรทัด ' + esc(x.ln) + ' · ' + esc(x.date) +
+          (x.invno ? ' · ใบกำกับ ' + esc(x.invno) : '') + '</div></td>' +
+        '<td style="min-width:200px;max-width:280px"><div class="clamp2" title="' + esc(x.name) + '">' +
+          esc(x.name) + '</div><div class="sub mono">' + esc(x.code) + '</div></td>' +
+        '<td style="min-width:136px;max-width:190px"><div class="clamp2" title="' + esc(x.vendor) + '">' +
+          esc(x.vendor) + '</div></td>' +
+        '<td class="nw">' + (x.pono
+            ? '<button class="editbtn" onclick="poRr(\'' + esc(x.pono) + '\')">' + esc(x.pono) + '</button>'
+            : '<span class="muted">—</span>') + '</td>' +
+        '<td class="nw">' + (x.job ? esc(x.job) : '<span class="muted">—</span>') + '</td>' +
+        '<td class="num nw">' + qty(x.qty) + ' <span class="sub">' + esc(x.unit) + '</span></td>' +
+        (r.canPrice ? '<td class="num nw">' + money(x.price) + '</td>' +
+                      '<td class="num nw">' + money(x.amnt) + '</td>' : '') +
+        '<td class="nw"><span class="badge ' + (RR_BADGE[x.mk] || 'b-sys') + '">' + esc(x.mt) + '</span>' +
+          (x.tier ? ' <span class="tag2 t-intl">' + esc(x.tier) + '</span>' : '') + '</td>' +
+        '</tr>';
+    });
+    h += '</tbody></table></div>';
+    h += '<div class="pager">' +
+      '<button class="btn ghost" style="width:auto" ' + (r.page<=1?'disabled':'') + ' onclick="rrPage(-1)">ก่อนหน้า</button>' +
+      '<span class="small">หน้า ' + r.page + ' / ' + r.pages + ' · แสดง ' + r.size + ' บรรทัด/หน้า</span>' +
+      '<button class="btn ghost" style="width:auto" ' + (r.page>=r.pages?'disabled':'') + ' onclick="rrPage(1)">ถัดไป</button></div>';
+  }
+  $('rrBody').innerHTML = h;
+}
+
+function rrExport(){
+  busy('rrEx', true, 'กำลังส่งออก...');
+  google.script.run
+    .withSuccessHandler(function(r){
+      busy('rrEx', false, 'ส่งออกเป็น Google Sheet');
+      showExported(r);
+    })
+    .withFailureHandler(function(e){
+      busy('rrEx', false, 'ส่งออกเป็น Google Sheet');
+      alert('ส่งออกไม่สำเร็จ: ' + e.message);
+    })
+    .exportRrAll(AUTH, RR);
+}
+
+/* ============ กล่อง "PO ใบนี้รับมาแล้วกี่ครั้ง" ============ */
+function poRr(pono){
+  var w = document.createElement('div');
+  w.className = 'modal';
+  w.innerHTML = '<div class="box"><div class="mh"><b>ใบรับของ ' + esc(pono) + '</b>' +
+    '<div class="sub">กำลังค้น...</div></div><div class="mb" id="prBody">' +
+    '<p class="small">กำลังโหลด...</p></div>' +
+    '<div class="mf"><button class="btn ghost" onclick="this.closest(\'.modal\').remove()">ปิด</button>' +
+    '<button class="btn" style="width:auto;padding-inline:24px" ' +
+    'onclick="this.closest(\'.modal\').remove();openRrForPo(\'' + esc(pono) + '\')">ดูในหน้ารับเข้า</button></div></div>';
+  document.body.appendChild(w);
+  w.onclick = function(e){ if(e.target === w) w.remove(); };
+
+  google.script.run
+    .withSuccessHandler(function(r){
+      var b = document.getElementById('prBody');
+      if(!b) return;
+      var sub0 = b.closest('.box').querySelector('.mh .sub');
+      if(!r.rows.length){
+        if(sub0) sub0.textContent = 'ไม่พบใบรับ';
+        b.innerHTML = '<div class="msg warn" style="display:block">ยังไม่มีใบรับที่อ้าง PO ใบนี้ — ' +
+          'แปลว่าของยังไม่เข้า หรือเข้าแล้วแต่ยังไม่ได้คีย์ใบรับใน My Account</div>';
+        return;
+      }
+      var s = '<div class="statrow">' +
+        stat(Number(r.docs).toLocaleString(), 'ใบรับ', 'var(--text)') +
+        stat(Number(r.lines).toLocaleString(), 'บรรทัด', 'var(--text)') +
+        stat(qty(r.qty), 'จำนวนรวม', 'var(--text)') +
+        stat(r.canPrice ? money(r.amnt) : '—', 'มูลค่ารวม (บาท)', 'var(--c-store)') + '</div>';
+      s += '<div class="tblwrap"><table><thead><tr><th>ใบรับ</th><th>วันที่</th><th>สินค้า</th>' +
+           '<th style="text-align:end">จำนวน</th>' +
+           (r.canPrice ? '<th style="text-align:end">จำนวนเงิน</th>' : '') +
+           '<th>จับคู่</th></tr></thead><tbody>';
+      r.rows.forEach(function(x){
+        s += '<tr><td class="nw"><b>' + esc(x.rr) + '</b><div class="sub">บรรทัด ' + esc(x.ln) + '</div></td>' +
+          '<td class="nw">' + esc(x.date) + '</td>' +
+          '<td style="min-width:200px"><div class="clamp2">' + esc(x.name) + '</div>' +
+          '<div class="sub mono">' + esc(x.code) + '</div></td>' +
+          '<td class="num nw">' + qty(x.qty) + ' <span class="sub">' + esc(x.unit) + '</span></td>' +
+          (r.canPrice ? '<td class="num nw">' + money(x.amnt) + '</td>' : '') +
+          '<td class="nw"><span class="badge ' + (RR_BADGE[x.mk] || 'b-sys') + '">' + esc(x.mt) + '</span></td>' +
+          '</tr>';
+      });
+      s += '</tbody></table></div>';
+      b.innerHTML = s;
+      var sub = b.closest('.box').querySelector('.mh .sub');
+      if(sub) sub.textContent = r.docs + ' ใบรับ · ' + r.lines + ' บรรทัด';
+    })
+    .withFailureHandler(function(e){
+      var b = document.getElementById('prBody');
+      if(b) b.innerHTML = '<div class="msg err" style="display:block">' + esc(e.message) + '</div>';
+    })
+    .getRrOfPo(AUTH, pono);
+}
+
+/* ============ กล่องแจ้งผลส่งออก (ใช้ร่วมกันทั้ง PO และ RR) ============ */
+function showExported(r){
+  var w = document.createElement('div');
+  w.className = 'modal';
+  w.innerHTML = '<div class="box"><div class="mh"><b>ส่งออกเรียบร้อย</b>' +
+    '<div class="sub">' + Number(r.rows).toLocaleString() + ' บรรทัด</div></div>' +
+    '<div class="mb"><p>ไฟล์ <b>' + esc(r.name) + '</b> อยู่ในโฟลเดอร์ P&amp;S Hub แล้ว</p>' +
+    '<p class="small" style="word-break:break-all">' + esc(r.url) + '</p></div>' +
+    '<div class="mf"><button class="btn ghost" onclick="this.closest(\'.modal\').remove()">ปิด</button>' +
+    '<a class="btn" style="width:auto;padding-inline:24px;text-decoration:none;text-align:center" ' +
+    'href="' + esc(r.url) + '" target="_blank" rel="noopener">เปิดไฟล์</a></div></div>';
+  document.body.appendChild(w);
+  w.onclick = function(e){ if(e.target === w) w.remove(); };
+}
+
+/* ============ หน้า "เปิดฐานข้อมูลตรง" — ใช้ตอนหน้าเว็บมีปัญหา ============ */
+function openDbLinks(){
+  setView('viewDbLinks');
+  $('dlBody').innerHTML = '<p class="small">กำลังอ่านไฟล์...</p>';
+  google.script.run
+    .withSuccessHandler(renderDbLinks)
+    .withFailureHandler(function(e){
+      $('dlBody').innerHTML = '<div class="msg err" style="display:block">' + esc(e.message) + '</div>';
+    })
+    .getDbLinks(AUTH);
+}
+
+function renderDbLinks(r){
+  var h = '<div class="msg ok" style="display:block">ทุกแท็บตรึงหัวตารางและใส่ตัวกรองไว้แล้ว ' +
+          'หัวคอลัมน์ทุกช่องมีคำอธิบายไทยกำกับ (เอาเมาส์ชี้ที่หัวคอลัมน์) ' +
+          'และในไฟล์ STT-DB-MASTER มีแท็บ <b>คู่มือฐานข้อมูล</b> อธิบายครบทุกตาราง</div>';
+  r.files.forEach(function(f){
+    h += '<div class="card"><div class="secthead" style="margin-top:0">' +
+         '<h3>' + esc(f.name) + '</h3><div class="line"></div>' +
+         (f.ok ? '<span class="badge b-live">เปิดได้</span>'
+               : '<span class="badge b-open">ยังไม่ได้ติดตั้ง</span>') + '</div>' +
+         '<p class="small" style="margin-top:0">' + esc(f.what) + '</p>';
+    if(f.ok){
+      h += '<div class="chips">';
+      f.tabs.forEach(function(t){
+        h += t.url
+          ? '<a class="chip2" target="_blank" rel="noopener" style="text-decoration:none" href="' +
+            esc(t.url) + '">' + esc(t.name) +
+            (t.rows !== null ? '<span class="cn">' + Number(t.rows).toLocaleString() + '</span>' : '') + '</a>'
+          : '<span class="chip2" style="opacity:.5">' + esc(t.name) + ' (ยังไม่มีแท็บ)</span>';
+      });
+      h += '</div><p class="small" style="margin-bottom:0"><a href="' + esc(f.url) +
+           '" target="_blank" rel="noopener">เปิดทั้งไฟล์</a></p>';
+    }
+    h += '</div>';
+  });
+  if(ME.role === 'ADMIN'){
+    h += '<div class="card"><div class="secthead" style="margin-top:0"><h3>จัดหน้าตาฐานข้อมูล</h3>' +
+         '<div class="line"></div></div>' +
+         '<p class="small">ตรึงหัว · ใส่ตัวกรอง · จัดรูปแบบวันที่และตัวเลข · ใส่คำอธิบายไทยที่หัวคอลัมน์ · ' +
+         'เขียนแท็บคู่มือใหม่ — กดซ้ำกี่ครั้งก็ได้ ไม่แตะข้อมูล</p>' +
+         '<button class="btn" id="dlFix" onclick="dbBeautify()">จัดหน้าตาฐานข้อมูลใหม่</button>' +
+         '<div id="dlMsg"></div></div>';
+  }
+  $('dlBody').innerHTML = h;
+}
+
+function dbBeautify(){
+  busy('dlFix', true, 'กำลังจัด...');
+  google.script.run
+    .withSuccessHandler(function(r){
+      busy('dlFix', false, 'จัดหน้าตาฐานข้อมูลใหม่');
+      $('dlMsg').innerHTML = '<div class="msg ok" style="display:block">จัดเรียบร้อย ' + r.tabs +
+        ' แท็บ · ' + r.ms + ' ms' +
+        (r.errors && r.errors.length ? '<br>ข้าม: ' + esc(r.errors.join(' · ')) : '') +
+        (r.guideUrl ? '<br><a href="' + esc(r.guideUrl) + '" target="_blank" rel="noopener">เปิดแท็บคู่มือฐานข้อมูล</a>' : '') +
+        '</div>';
+    })
+    .withFailureHandler(function(e){
+      busy('dlFix', false, 'จัดหน้าตาฐานข้อมูลใหม่');
+      $('dlMsg').innerHTML = '<div class="msg err" style="display:block">' + esc(e.message) + '</div>';
+    })
+    .psBeautify(AUTH);
+}
+</script>

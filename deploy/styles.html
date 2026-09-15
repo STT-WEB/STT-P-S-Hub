@@ -78,6 +78,10 @@ body{
 
 /* ================= LAYOUT ================= */
 .wrap{max-width:1180px;margin:0 auto;padding:26px 18px 72px}
+body.wide .wrap,body.wide .topbar .inner{max-width:1580px}
+/* ตารางฐานข้อมูลมีคอลัมน์เยอะ — บีบระยะขอบให้พอดีจอ ไม่ต้องเลื่อนแนวนอน */
+body.wide table{font-size:13.5px}
+body.wide th,body.wide td{padding:9px 10px}
 .page-head{margin:0 0 20px}
 .page-head h1{margin:0 0 4px;font-size:23px;font-weight:700;letter-spacing:-.2px}
 .page-head p{margin:0;color:var(--text-2);font-size:14.5px}
@@ -179,12 +183,15 @@ td.nw{white-space:nowrap}
 .bad-t{color:var(--bad);font-weight:600}
 .muted{color:var(--text-3)}
 
-.statrow{display:grid;gap:12px;grid-template-columns:repeat(2,1fr);margin-bottom:4px}
-@media(min-width:620px){.statrow{grid-template-columns:repeat(4,1fr)}}
+/* minmax(0,1fr) จำเป็น — ไม่งั้นตัวเลขยาว ๆ ดันช่องจนจอมือถือล้น */
+.statrow{display:grid;gap:12px;grid-template-columns:repeat(2,minmax(0,1fr));margin-bottom:4px}
+@media(min-width:620px){.statrow{grid-template-columns:repeat(4,minmax(0,1fr))}}
 .stat{background:var(--surface-2);border:1px solid var(--line-2);border-radius:var(--r);
-  padding:13px 15px}
-.stat .v{font-family:"Inter",monospace;font-size:22px;font-weight:700;line-height:1.2}
+  padding:13px 15px;min-width:0}
+.stat .v{font-family:"Inter",monospace;font-size:22px;font-weight:700;line-height:1.2;
+  overflow-wrap:anywhere}
 .stat .l{font-size:12px;color:var(--text-3);margin-top:2px}
+@media(max-width:619px){.stat{padding:11px 12px}.stat .v{font-size:18px}}
 
 
 /* ===== หน้าจอใหม่ (PO ค้างรับ / นำเข้าข้อมูล) ===== */
@@ -209,6 +216,67 @@ td.num{text-align:end}
 .row2{display:flex;gap:14px;flex-wrap:wrap}
 .row2 > .field{flex:1 1 200px;min-width:0}
 .b-warn2{background:var(--warn-t);color:var(--warn)}
+
+
+/* ===== กล่องแก้ไขของจัดซื้อ ===== */
+.modal{position:fixed;inset:0;z-index:100;background:rgba(10,14,20,.55);
+  display:flex;align-items:flex-start;justify-content:center;padding:24px 14px;overflow-y:auto;
+  backdrop-filter:blur(2px)}
+.modal .box{background:#fff;border-radius:var(--r-xl);box-shadow:var(--sh-3);width:100%;max-width:620px;
+  overflow:hidden;animation:pop .16s ease-out}
+@keyframes pop{from{transform:translateY(-8px);opacity:0}to{transform:none;opacity:1}}
+.modal .mh{padding:18px 22px;border-bottom:1px solid var(--line);background:var(--surface-2)}
+.modal .mh b{font-size:17px;display:block}
+.modal .mh .sub{font-size:13px;color:var(--text-3);margin-top:2px}
+.modal .mb{padding:18px 22px;max-height:calc(100vh - 260px);overflow-y:auto}
+.modal .mf{padding:14px 22px;border-top:1px solid var(--line);background:var(--surface-2);
+  display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+.modal .mf .btn{width:auto;padding-inline:24px;margin-top:0}
+.fgrid{display:grid;gap:14px;grid-template-columns:1fr}
+@media(min-width:520px){.fgrid{grid-template-columns:1fr 1fr}}
+.fgrid .full{grid-column:1/-1}
+.fgrid .field{margin-top:0}
+select{width:100%;font:inherit;font-size:16px;padding:11px 13px;border:1.5px solid var(--line);
+  border-radius:var(--r);background:#fff;color:var(--text)}
+select:focus{outline:0;border-color:var(--brand);box-shadow:0 0 0 3.5px var(--brand-tint)}
+textarea{width:100%;font:inherit;font-size:15px;padding:11px 13px;border:1.5px solid var(--line);
+  border-radius:var(--r);background:#fff;color:var(--text);resize:vertical;min-height:64px}
+textarea:focus{outline:0;border-color:var(--brand);box-shadow:0 0 0 3.5px var(--brand-tint)}
+.chk{display:flex;align-items:center;gap:9px;padding:11px 13px;border:1.5px solid var(--line);
+  border-radius:var(--r);cursor:pointer;font-size:15px}
+.chk input{width:18px;height:18px;accent-color:var(--brand);cursor:pointer}
+.chk.on{border-color:var(--bad);background:var(--bad-t);color:var(--bad);font-weight:600}
+.hint{font-size:12.5px;color:var(--text-3);margin-top:5px;line-height:1.5}
+.editbtn{background:transparent;border:1.5px solid var(--line);color:var(--text-2);font:inherit;
+  font-size:13px;padding:5px 12px;border-radius:8px;cursor:pointer;white-space:nowrap;transition:var(--fast)}
+.editbtn:hover{border-color:var(--brand);color:var(--brand);background:var(--brand-tint)}
+.tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}
+.tag2{font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:6px;white-space:nowrap}
+.t-manual{background:var(--c-buy-t);color:var(--c-buy)}
+.t-billed{background:var(--c-cost-t);color:var(--c-cost)}
+.t-intl{background:var(--c-store-t);color:var(--c-store)}
+.t-note{background:var(--warn-t);color:var(--warn)}
+
+
+/* ===== หน้าฐานข้อมูล PO ===== */
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+.chip2{display:inline-flex;align-items:center;gap:7px;background:#fff;border:1.5px solid var(--line);
+  border-radius:99px;padding:7px 15px;font:inherit;font-size:14px;cursor:pointer;transition:var(--fast)}
+.chip2:hover{border-color:#C6CDD6}
+.chip2.on{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:600}
+.chip2 .cn{font-family:"Inter",ui-monospace,monospace;font-size:12px;font-weight:700;
+  background:rgba(0,0,0,.07);padding:1px 7px;border-radius:99px}
+.chip2.on .cn{background:rgba(255,255,255,.2)}
+.filterbar{display:grid;gap:12px;grid-template-columns:1fr;background:#fff;border:1px solid var(--line);
+  border-radius:var(--r-lg);padding:16px 18px;margin:14px 0;box-shadow:var(--sh-1)}
+@media(min-width:680px){.filterbar{grid-template-columns:1fr 1fr 1fr}}
+.fb{display:flex;flex-direction:column;gap:5px;min-width:0}
+.fb label{margin:0;font-size:12px}
+/* ตัดข้อความยาวให้เหลือ 2 บรรทัด — ชื่อเต็มอยู่ใน title (เอาเมาส์ชี้เห็น) */
+.clamp2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.b-open{background:#FFF1F2;color:var(--bad)}
+.b-cancel{background:#EEF0F3;color:var(--text-3);text-decoration:line-through}
+tr.rcancel td{opacity:.55}
 
 .hide{display:none!important}
 .small{font-size:13px;color:var(--text-3)}

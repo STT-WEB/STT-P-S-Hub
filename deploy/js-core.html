@@ -72,10 +72,13 @@ function esc(s){
 }
 
 /* ================= เข้าหน้าหลัก ================= */
-var VIEWS = ['viewLogin','viewReg','viewMenu','viewDiag','viewOpenPO','viewImport'];
+var VIEWS = ['viewLogin','viewReg','viewMenu','viewDiag','viewOpenPO','viewImport','viewPoDb',
+             'viewRrDb','viewDbLinks'];
 function setView(id){
   VIEWS.forEach(function(v){ var el=$(v); if(el) el.classList.add('hide'); });
   var t=$(id); if(t) t.classList.remove('hide');
+  // หน้าฐานข้อมูล PO ตารางกว้าง — ขยายกรอบให้กว้างขึ้น ลดการตัดคำในช่องชื่อสินค้า
+  document.body.classList.toggle('wide', id === 'viewPoDb' || id === 'viewRrDb');
   window.scrollTo({top:0,behavior:'smooth'});
 }
 function backToMenu(){ setView('viewMenu'); }
@@ -108,6 +111,8 @@ var GROUPS = [
 ];
 
 var MODULES = [
+  { id:'db', g:'buy',   i:'🗃️', t:'ฐานข้อมูล PO',        d:'ทุกบรรทัดจาก My Account · ค้นหา กรอง ส่งออก',  roles:['PURCHASE','ADMIN','EXEC','STORE'],   phase:1, go:'openPoDb' },
+  { id:'rr', g:'buy',   i:'📗', t:'ฐานข้อมูลการรับเข้า',  d:'ใบรับทุกใบทุกปี · ดูว่า PO ใบไหนของมาแล้ว',  roles:['PURCHASE','ADMIN','EXEC','STORE'],   phase:1, go:'openRrDb' },
   { id:'p2', g:'buy',   i:'📥', t:'PO ค้างรับ',          d:'ติดตามของที่ยังไม่เข้า รับข้ามปีได้',        roles:['PURCHASE','ADMIN','EXEC','STORE'],   phase:1, go:'openOpenPO' },
   { id:'p1', g:'buy',   i:'⬆️', t:'นำเข้าข้อมูล',        d:'ดึง PO/RR จาก My Account แล้วจับคู่',        roles:['PURCHASE','ADMIN'],                  phase:1, go:'openImport' },
   { id:'p3', g:'buy',   i:'💳', t:'แผนการจ่ายเงิน',       d:'วางบิล · ตั้งเบิก · ตัดยอดมัดจำ',           roles:['PURCHASE','ADMIN','EXEC'],           phase:4 },
@@ -119,7 +124,8 @@ var MODULES = [
   { id:'s1', g:'store', i:'📦', t:'รับสินค้าประจำวัน',     d:'กดรับตาม PO · ใช้มือถือได้',               roles:['STORE','PURCHASE','ADMIN'],          phase:2 },
   { id:'s2', g:'store', i:'🗂️', t:'Stock Card',           d:'ยอดคงเหลือ 3 คลัง แบบทันที',               roles:['STORE','PURCHASE','ADMIN','EXEC'],   phase:3 },
   { id:'s3', g:'store', i:'🧮', t:'นับสต๊อกประจำเดือน',   d:'ปิดงวด · ออกใบขอซื้อให้จัดซื้อ',           roles:['STORE','ADMIN'],                     phase:4 },
-  { id:'s4', g:'store', i:'🧾', t:'มูลค่าสต๊อก + ABC',     d:'ส่งบัญชีเป็น Google Sheet',                roles:['STORE','ADMIN','EXEC'],              phase:5 }
+  { id:'s4', g:'store', i:'🧾', t:'มูลค่าสต๊อก + ABC',     d:'ส่งบัญชีเป็น Google Sheet',                roles:['STORE','ADMIN','EXEC'],              phase:5 },
+  { id:'x1', g:'sys',   i:'🔗', t:'เปิดฐานข้อมูลตรง',      d:'ลิงก์ไฟล์ดิบ — ใช้ตอนหน้าเว็บมีปัญหา',      roles:['PURCHASE','ADMIN','EXEC','STORE'],   phase:1, go:'openDbLinks' }
 ];
 
 function renderMenu(){
