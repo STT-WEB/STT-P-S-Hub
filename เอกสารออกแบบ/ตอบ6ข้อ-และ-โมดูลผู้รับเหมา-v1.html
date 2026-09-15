@@ -1,0 +1,752 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ตอบ 6 ข้อ + โมดูลผู้รับเหมา</title>
+<style>
+:root{
+  --bg:#f4f6f9; --card:#fff; --ink:#16202e; --sub:#5b6a7d; --line:#dde4ec;
+  --blue:#1c5fd0; --blue-l:#eaf1fd; --green:#127a4b; --green-l:#e6f6ee;
+  --red:#c02b2b; --red-l:#fdeceb; --amber:#a86500; --amber-l:#fff5e2;
+  --purple:#6a2fb5; --purple-l:#f2ebfd; --teal:#0d7080; --teal-l:#e4f4f7;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Sarabun","Leelawadee UI","Tahoma","Segoe UI",sans-serif;font-size:15.5px;line-height:1.75}
+.wrap{max-width:1120px;margin:0 auto;padding:0 16px 80px}
+header{background:linear-gradient(135deg,#0f2b57,#1c5fd0);color:#fff;padding:30px 0 26px}
+header .wrap{padding-bottom:0}
+.badge{display:inline-block;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);
+  padding:3px 12px;border-radius:99px;font-size:12.5px;margin-bottom:10px}
+h1{margin:0 0 6px;font-size:27px;line-height:1.4}
+header p{margin:0;opacity:.92;font-size:14.5px}
+.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);
+  box-shadow:0 2px 8px rgba(20,40,70,.06)}
+.tabs .wrap{display:flex;gap:4px;overflow-x:auto;padding-top:8px;padding-bottom:0}
+.tab{flex:0 0 auto;border:0;background:transparent;font:inherit;font-size:14.5px;color:var(--sub);
+  padding:11px 14px 12px;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
+.tab:hover{color:var(--ink)}
+.tab.on{color:var(--blue);border-bottom-color:var(--blue);font-weight:600}
+.pane{display:none;padding-top:26px}
+.pane.on{display:block}
+h2{font-size:21px;margin:34px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--line)}
+h2:first-child{margin-top:0}
+h3{font-size:17px;margin:26px 0 8px}
+h4{font-size:15.5px;margin:16px 0 6px}
+p{margin:10px 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin:14px 0;
+  box-shadow:0 1px 3px rgba(20,40,70,.05)}
+.card.tight{padding:13px 16px}
+ul,ol{margin:10px 0;padding-inline-start:24px}
+li{margin:6px 0}
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14.5px;background:#fff}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+th,td{border:1px solid var(--line);padding:8px 10px;text-align:start;vertical-align:top}
+th{background:#eef2f7;font-weight:600}
+th.nw,td.nw{white-space:nowrap}
+td.num,th.num{text-align:end;font-variant-numeric:tabular-nums;white-space:nowrap}
+td.ctr,th.ctr{text-align:center}
+tr.tot td{background:#f7f9fc;font-weight:700}
+.ok{color:var(--green);font-weight:600}
+.bad{color:var(--red);font-weight:600}
+.warn{color:var(--amber);font-weight:600}
+.pill{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12.5px;font-weight:600;white-space:nowrap}
+.p-g{background:var(--green-l);color:var(--green)}
+.p-r{background:var(--red-l);color:var(--red)}
+.p-a{background:var(--amber-l);color:var(--amber)}
+.p-b{background:var(--blue-l);color:var(--blue)}
+.p-p{background:var(--purple-l);color:var(--purple)}
+.p-t{background:var(--teal-l);color:var(--teal)}
+.note{border-inline-start:4px solid var(--blue);background:var(--blue-l);padding:12px 16px;border-radius:0 10px 10px 0;margin:14px 0}
+.danger{border-inline-start:4px solid var(--red);background:var(--red-l);padding:12px 16px;border-radius:0 10px 10px 0;margin:14px 0}
+.good{border-inline-start:4px solid var(--green);background:var(--green-l);padding:12px 16px;border-radius:0 10px 10px 0;margin:14px 0}
+.amberbox{border-inline-start:4px solid var(--amber);background:var(--amber-l);padding:12px 16px;border-radius:0 10px 10px 0;margin:14px 0}
+code,.mono{font-family:ui-monospace,"Cascadia Mono","Consolas",monospace;font-size:13.3px;
+  background:#eef2f7;padding:1px 6px;border-radius:5px}
+pre{background:#101a29;color:#dbe6f5;padding:14px 16px;border-radius:10px;overflow-x:auto;font-size:13px;line-height:1.65;margin:12px 0}
+pre code{background:transparent;color:inherit;padding:0}
+.tree{background:#101a29;color:#dbe6f5;padding:16px 18px;border-radius:10px;overflow-x:auto;
+  font-family:ui-monospace,"Cascadia Mono","Consolas",monospace;font-size:12.8px;line-height:1.7;white-space:pre;margin:12px 0}
+.grid{display:grid;gap:14px}
+@media(min-width:760px){.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:12px;padding:15px 16px;text-align:center}
+.kpi .v{font-size:23px;font-weight:800;line-height:1.25}
+.kpi .l{font-size:13px;color:var(--sub);margin-top:4px}
+.qa{background:#fff;border:1px solid var(--line);border-radius:12px;margin:14px 0;overflow:hidden}
+.qa > .q{background:#f2f6fb;border-bottom:1px solid var(--line);padding:12px 18px;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.qa > .q b{font-size:16.5px}
+.qa > .a{padding:14px 18px}
+.num-badge{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;
+  background:var(--blue);color:#fff;font-size:14px;font-weight:700;flex:0 0 auto}
+.small{font-size:13.5px;color:var(--sub)}
+.flow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}
+.flow .b{background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:13.5px;font-weight:600}
+.flow .a{color:var(--sub);font-weight:700}
+.doc{border:1px solid var(--line);border-radius:10px;background:#fff;padding:14px 16px;font-size:13.5px;line-height:1.6}
+.doc .t{text-align:center;font-weight:700;font-size:15px;margin-bottom:8px}
+.doc .r{display:flex;gap:8px;border-bottom:1px dotted #c9d3e0;padding:3px 0}
+.doc .r span:first-child{color:var(--sub);flex:0 0 34%}
+footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);color:var(--sub);font-size:13.5px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="badge">NOVA – PURCHASE &amp; STORE HUB · ตอบคำถาม + โมดูลผู้รับเหมา v1</div>
+    <h1>ตอบครบ 6 ข้อ + อ่านไฟล์ผู้รับเหมาแล้ว</h1>
+    <p>วิเคราะห์ <b>ใบรับเงินผู้รับเหมา (50 ชีต)</b> และ <b>ทะเบียนสัญญาจ้าง (495 รายการ ฿11.47 ล้าน)</b></p>
+  </div>
+</header>
+
+<div class="tabs">
+  <div class="wrap">
+    <button class="tab on" data-t="1">1 · ตอบสั้น 6 ข้อ</button>
+    <button class="tab" data-t="2">2 · KPI ลดต้นทุน</button>
+    <button class="tab" data-t="3">3 · รหัสคลัง</button>
+    <button class="tab" data-t="4">4 · ท่อ NOVA (เสี่ยงไหม)</button>
+    <button class="tab" data-t="5">5 · Supplier ใหม่ + ราคาตลาด</button>
+    <button class="tab" data-t="6">6 · ผู้รับเหมา</button>
+    <button class="tab" data-t="7">7 · ลำดับงานมีหลักเกณฑ์</button>
+  </div>
+</div>
+
+<div class="wrap">
+
+<!-- ==================== TAB 1 ==================== -->
+<section class="pane on" id="p1">
+
+  <div class="qa">
+    <div class="q"><span class="num-badge">1</span><b>KPI ลดต้นทุน — เทียบปี/ปี และข้ามยี่ห้อได้</b></div>
+    <div class="a">
+      <p style="margin-top:0"><b>เข้าใจแล้ว และเบียร์คิดถูก</b> — ถ้าเทียบแค่รหัสสินค้าเดียวกัน จะ<b>มองไม่เห็นผลงานที่ดีที่สุดของจัดซื้อ</b>
+      คือการไปหาเจ้าใหม่ ยี่ห้อใหม่ สเปกเดียวกัน ราคาถูกกว่า — เพราะมันเป็นคนละรหัส ระบบจะนึกว่าเป็นสินค้าใหม่</p>
+      <p><b>วิธีแก้: ตาราง “กลุ่มสินค้าเทียบเท่า”</b> — จับรหัสที่ใช้แทนกันได้มาอยู่กลุ่มเดียว แล้วเทียบราคา<b>ที่ระดับกลุ่ม</b> ไม่ใช่ระดับรหัส
+      · ระบบเสนอกลุ่มให้ คนกดยืนยัน (ห้ามให้ระบบเดาเอง สเปกผิด = ต้นทุนผิด) · <span class="pill p-b">รายละเอียดแท็บ 2</span></p>
+    </div>
+  </div>
+
+  <div class="qa">
+    <div class="q"><span class="num-badge">2</span><b>รหัสคลัง — ยังไม่มี ต้องสร้างเอง</b></div>
+    <div class="a">
+      <p style="margin-top:0">ดีครับ สร้างใหม่ง่ายกว่าไปแกะของเดิม ผมเสนอ <b>3 คลังหลัก + ตำแหน่งเก็บแยกออกมาต่างหาก</b>
+      (<code>WH-01</code> คลังใหญ่ · <code>WH-02</code> Stock Store · <code>WH-03</code> Stock Service)
+      แยกกัน 2 ชั้นแบบนี้เพราะ <b>ย้ายชั้นวางไม่ควรกระทบตัวเลขบัญชี</b> · <span class="pill p-b">รายละเอียดแท็บ 3</span></p>
+    </div>
+  </div>
+
+  <div class="qa">
+    <div class="q"><span class="num-badge">3</span><b>ท่อ NOVA → Stock Card — ทำได้ไหม เสี่ยงไหม</b></div>
+    <div class="a">
+      <p style="margin-top:0"><b>ทำได้ และมีความเสี่ยง — แต่คุมได้ ถ้าไม่แตะตรรกะเดิมของ NOVA เลย</b></p>
+      <p>วิธีที่ปลอดภัยที่สุด: NOVA แค่<b>เขียนแถวลงกล่องขาออก</b> (ตารางใหม่ ไม่แตะของเดิม) แล้ว P&amp;S Hub <b>มาอ่านเอง</b>
+      → ถ้า P&amp;S ล่ม NOVA ไม่พังตาม · ถ้าดึงซ้ำ สต๊อกไม่เบิ้ล · ปิดสวิตช์ได้ทันทีถ้ามีปัญหา</p>
+      <p style="margin-bottom:0"><b>ความเสี่ยงที่แท้จริงคือขนาดไฟล์ NOVA</b> — <code>STT-NOVA-Hub.js</code> โต 781 KB ไฟล์เดียว
+      ผมจะ<b>ไม่แก้ไฟล์นั้น</b> จะเพิ่มไฟล์ใหม่แล้วเรียกแค่ 1 บรรทัด · <span class="pill p-b">แผนกันพลาด 6 ชั้น อยู่แท็บ 4</span></p>
+    </div>
+  </div>
+
+  <div class="qa">
+    <div class="q"><span class="num-badge">4</span><b>ส่งบัญชี = Google Sheet</b><span class="pill p-g">บันทึกแล้ว</span></div>
+    <div class="a">
+      <p style="margin:0">ระบบจะสร้าง Google Sheet ใหม่ทุกสิ้นเดือน แชร์ให้บัญชีอัตโนมัติ · มีสูตรจริงให้ตรวจ ·
+      มี <b>Source of Cost</b> ทุกแถว · ตั้งชื่อ <code>STT-Inventory-2569-08</code> · <b>ปิดงวดแล้วตั้งเป็นอ่านอย่างเดียว</b>
+      (บัญชีก๊อปไปทำต่อได้ แต่แก้ต้นฉบับไม่ได้)</p>
+    </div>
+  </div>
+
+  <div class="qa">
+    <div class="q"><span class="num-badge">5</span><b>Market Price — จัดซื้อกรอก + ผบห.อนุมัติ · หาจากอินเทอร์เน็ต</b></div>
+    <div class="a">
+      <p style="margin:0">ต้องบังคับ <b>3 ช่องที่ห้ามว่าง</b>: แหล่งที่มา (ลิงก์/ชื่อร้าน) · วันที่อ้างอิง · ภาพหน้าจอแนบ
+      และให้ราคา<b>หมดอายุใน 6 เดือน</b> พอหมดอายุขึ้นเตือนให้ทบทวน — เพราะราคาตลาดที่ไม่มีวันที่กำกับ ใช้ตีมูลค่าสต๊อกส่งบัญชีไม่ได้
+      · <span class="pill p-b">แท็บ 5</span></p>
+    </div>
+  </div>
+
+  <div class="qa">
+    <div class="q"><span class="num-badge">6</span><b>Supplier ใหม่ — จะรู้ได้ยังไง</b></div>
+    <div class="a">
+      <p style="margin-top:0"><b>คำถามเบียร์ตรงจุดมาก</b> — ถ้ารอให้คนไปกรอกทะเบียนก่อนแล้วค่อยรู้ มัน<b>ช้ากว่าความจริงเสมอ</b>
+      เพราะซื้อไปแล้วถึงจะมากรอก</p>
+      <p style="margin-bottom:0"><b>ต้องกลับด้าน</b>: ให้ระบบดูจาก<b>ธุรกรรมจริง</b> — รหัสผู้ขายนี้เคยมีใบรับของ (RR) มาก่อนไหม
+      ถ้าไม่เคย = <b>ผู้ขายใหม่ตั้งแต่วันแรกที่ซื้อ</b> ระบบขึ้นป้ายเอง แล้วส่งคิวให้จัดซื้อไปกรอกทะเบียนตามหลัง
+      · <span class="pill p-b">แท็บ 5</span></p>
+    </div>
+  </div>
+
+  <h2>เพิ่มเติม — อ่านไฟล์ผู้รับเหมา 2 ไฟล์แล้ว</h2>
+  <div class="grid g4">
+    <div class="kpi"><div class="v">495</div><div class="l">รายการในทะเบียนสัญญา<br><span class="small">(ปีที่อ่านได้ 2021 + 2026)</span></div></div>
+    <div class="kpi"><div class="v" style="color:var(--purple)">฿11.47 ล.</div><div class="l">มูลค่ารวม 2 ปีนั้น</div></div>
+    <div class="kpi"><div class="v" style="color:var(--green)">99.8%</div><div class="l">ผูกกับเลข PO ได้แล้ว</div></div>
+    <div class="kpi"><div class="v bad">50</div><div class="l">ชีตในไฟล์ใบรับเงิน<br><span class="small">= 1 คน 1 ชีต</span></div></div>
+  </div>
+  <p><b>ข่าวดี:</b> ทะเบียนสัญญาผูก <code>เลขที่ PO</code> ได้ 99.8% และผูก <code>เลขที่ Job</code> ได้ 100% —
+  แปลว่า<b>ต่อเข้าระบบจัดซื้อได้ทันที</b> ไม่ต้องมานั่งจับคู่ใหม่</p>
+  <p><b>ข่าวที่ต้องแก้:</b> เจอ<b>เลขที่สัญญาซ้ำ 2 คู่</b> (STT-64-255 และ STT-64-256) · รูปแบบเลขมี <b>5 แบบปนกัน</b> ·
+  และใบรับเงินทำโดยก๊อปชีต 1 คน 1 ชีต ซึ่งจะพังเมื่อคนเยอะขึ้น · <span class="pill p-b">แท็บ 6</span></p>
+
+  <div class="amberbox">
+    <b>⚠️ 1 เรื่องที่ผมตอบให้ไม่ได้ ต้องถามบัญชี</b> — ในใบรับรองแทนใบเสร็จรับเงินที่เบียร์ส่งมา
+    <b>ไม่มีช่องหักภาษี ณ ที่จ่าย</b> แต่หลายใบเป็นการจ่าย<b>ค่าจ้างทำของให้บุคคลธรรมดา</b> (มีใบหนึ่ง ฿925,000)
+    ผมไม่ใช่นักบัญชีและไม่ทราบว่าบริษัทหักแยกต่างหากอยู่แล้วหรือไม่ —
+    <b>รบกวนเบียร์เช็คกับบัญชีว่าต้องมีช่องหัก ณ ที่จ่ายในฟอร์มนี้ไหม</b> ถ้าต้องมี ผมจะใส่ให้ตั้งแต่แรก
+    จะได้ไม่ต้องมาแก้ตอนใช้ไปแล้ว
+  </div>
+
+</section>
+
+<!-- ==================== TAB 2 ==================== -->
+<section class="pane" id="p2">
+
+  <h2>ปัญหา: “สินค้าเดียวกัน แต่คนละรหัส”</h2>
+
+  <div class="card">
+    <p style="margin-top:0"><b>ตัวอย่างที่เบียร์เล่า</b> (ใช้เลขสมมติ)</p>
+    <div class="scroll">
+    <table>
+      <tr><th class="nw">ปี</th><th class="nw">รหัส</th><th>ชื่อสินค้า</th><th class="nw">ยี่ห้อ</th><th class="num">ราคา/หน่วย</th></tr>
+      <tr><td class="nw">2568</td><td class="nw mono">30503019</td><td>ประเก็น PTFE 3t x OD.160 x ID.120</td><td class="nw">เจ้าเดิม</td><td class="num">220.00</td></tr>
+      <tr><td class="nw">2569</td><td class="nw mono">30503077</td><td>ประเก็น PTFE 3t x OD.160 x ID.120</td><td class="nw">เจ้าใหม่</td><td class="num ok">175.00</td></tr>
+    </table>
+    </div>
+    <div class="grid g2" style="margin-top:12px">
+      <div class="card tight" style="margin:0;border-color:#f3c9c9">
+        <b class="bad">ถ้าเทียบด้วยรหัส</b><br>
+        รหัส 30503019 → ปีนี้ไม่ได้ซื้อ = ไม่มีข้อมูล<br>
+        รหัส 30503077 → ปีที่แล้วไม่มี = สินค้าใหม่<br>
+        <b class="bad">ผลงาน = 0%</b> ทั้งที่ประหยัดจริง 20.5%
+      </div>
+      <div class="card tight" style="margin:0;border-color:#b6e3cd">
+        <b class="ok">ถ้าเทียบด้วยกลุ่ม</b><br>
+        กลุ่ม <code>GSK-PTFE-3-160-120</code><br>
+        ปีที่แล้ว 220 → ปีนี้ 175<br>
+        <b class="ok">ลดได้ 20.5%</b> · ระบุว่า “ได้จากการเปลี่ยนผู้ขาย”
+      </div>
+    </div>
+  </div>
+
+  <h2>ตารางที่ต้องเพิ่ม 2 ตัว</h2>
+
+  <div class="card">
+    <h4 style="margin-top:0"><code>ITEM_GROUP</code> — ทะเบียนกลุ่มสินค้าเทียบเท่า</h4>
+    <div class="scroll">
+    <table>
+      <tr><th class="nw">คอลัมน์</th><th>คำอธิบาย</th><th class="nw">ตัวอย่าง</th></tr>
+      <tr><td class="nw mono">group_id</td><td>รหัสกลุ่ม ระบบสร้างให้</td><td class="nw">GSK-PTFE-3-160-120</td></tr>
+      <tr><td class="nw mono">group_name</td><td>ชื่อกลุ่มที่คนอ่านรู้เรื่อง</td><td class="nw">ประเก็น PTFE 3t OD160 ID120</td></tr>
+      <tr><td class="nw mono">spec</td><td>สเปกกลางที่ต้องเท่ากันถึงจะอยู่กลุ่มเดียวกัน</td><td class="nw">PTFE · หนา 3 · OD 160 · ID 120</td></tr>
+      <tr><td class="nw mono">base_unit</td><td>หน่วยกลางของกลุ่ม</td><td class="nw">ตัว</td></tr>
+      <tr><td class="nw mono">owner</td><td>ใครดูแลกลุ่มนี้</td><td class="nw">สุนิศา</td></tr>
+    </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h4 style="margin-top:0"><code>ITEM_GROUP_MAP</code> — รหัสไหนอยู่กลุ่มไหน</h4>
+    <div class="scroll">
+    <table>
+      <tr><th class="nw">คอลัมน์</th><th>คำอธิบาย</th><th class="nw">ตัวอย่าง</th></tr>
+      <tr><td class="nw mono">goodcode</td><td>รหัสสินค้าจริง</td><td class="nw">30503077</td></tr>
+      <tr><td class="nw mono">group_id</td><td>อยู่กลุ่มไหน</td><td class="nw">GSK-PTFE-3-160-120</td></tr>
+      <tr><td class="nw mono">brand</td><td>ยี่ห้อ</td><td class="nw">เจ้าใหม่</td></tr>
+      <tr><td class="nw mono">unit_factor</td><td><b>ตัวคูณแปลงหน่วย</b> → หน่วยกลาง</td><td class="nw">1 (หรือ 12 ถ้าซื้อเป็นโหล)</td></tr>
+      <tr><td class="nw mono">confirmed_by</td><td>ใครยืนยันว่าใช้แทนกันได้จริง</td><td class="nw">สุนิศา · 09/09/2569</td></tr>
+      <tr><td class="nw mono">status</td><td>เสนอ / ยืนยันแล้ว / ปฏิเสธ</td><td class="nw">ยืนยันแล้ว</td></tr>
+    </table>
+    </div>
+    <div class="danger" style="margin-bottom:0">
+      <b>unit_factor คือช่องที่พลาดแล้วเจ็บที่สุด</b> — ถ้าเจ้าเดิมขายเป็น “ตัว” เจ้าใหม่ขายเป็น “โหล” แล้วไม่แปลงหน่วย
+      ระบบจะรายงานว่าประหยัดได้ 92% ทั้งที่ราคาเท่าเดิม · ระบบจะ<b>เตือนทันทีเมื่อรหัสในกลุ่มเดียวกันมีหน่วยไม่ตรงกัน</b>
+    </div>
+  </div>
+
+  <h2>ระบบช่วยจัดกลุ่มยังไง (คนยังเป็นคนตัดสิน)</h2>
+  <div class="scroll">
+  <table>
+    <tr><th class="nw">ขั้น</th><th>ใครทำ</th><th>ทำอะไร</th></tr>
+    <tr><td class="nw ctr">1</td><td class="nw">ระบบ</td><td>แกะชื่อสินค้าออกเป็นชิ้น: <b>ชนิด · วัสดุ · ขนาด · มาตรฐาน</b> เช่น “ประเก็น | PTFE | 3t | OD.160 | ID.120”</td></tr>
+    <tr><td class="nw ctr">2</td><td class="nw">ระบบ</td><td>รหัสไหนแกะได้ชิ้นส่วนตรงกัน → <b>เสนอ</b>ให้อยู่กลุ่มเดียวกัน พร้อมบอกว่าเหมือนกันกี่ %</td></tr>
+    <tr><td class="nw ctr">3</td><td class="nw warn">จัดซื้อ</td><td><b>กดยืนยันหรือปฏิเสธ</b> — ระบบไม่จับกลุ่มเองเด็ดขาด</td></tr>
+    <tr><td class="nw ctr">4</td><td class="nw">ระบบ</td><td>ยืนยันแล้ว → เข้า <code>ITEM_GROUP_MAP</code> ถาวร · ครั้งต่อไปไม่ต้องถามอีก</td></tr>
+    <tr><td class="nw ctr">5</td><td class="nw warn">จัดซื้อ</td><td>ตอนซื้อของยี่ห้อใหม่ครั้งแรก ระบบถามว่า <b>“ใช้แทนตัวไหน”</b> เลือกจากรายการที่คล้ายที่สุด 5 อันดับ</td></tr>
+  </table>
+  </div>
+  <div class="note">
+    <b>ทำไมต้องให้คนยืนยัน</b> — “ประเก็น PTFE 3t OD160 ID120” กับ “ประเก็น PTFE 3t OD160 ID120 <b>ทนกรด</b>”
+    ชื่อคล้ายกัน 95% แต่<b>ใช้แทนกันไม่ได้</b> · ถ้าระบบจับกลุ่มเอง ตัวเลข KPI จะสวยแต่ผิด และไม่มีใครจับได้
+  </div>
+
+  <h2>สูตร KPI</h2>
+  <div class="card">
+    <pre><code>ราคาอ้างอิงปีที่แล้ว (กลุ่ม g)
+    = Σ Amt_num (ทุกรหัสในกลุ่ม g, ปีที่แล้ว)  ÷  Σ Qty_ฐาน (ทุกรหัสในกลุ่ม g, ปีที่แล้ว)
+      โดย  Qty_ฐาน = Qty_num × unit_factor
+
+ประหยัดได้ (กลุ่ม g, ปีนี้)
+    = ( ราคาอ้างอิงปีที่แล้ว − ราคาเฉลี่ยปีนี้ ) × Qty_ฐานที่ซื้อปีนี้
+
+% ลดต้นทุนรวม
+        Σ ประหยัดได้ (ทุกกลุ่ม)
+    = ─────────────────────────────────────────────
+        Σ ( ราคาอ้างอิงปีที่แล้ว × Qty_ฐานที่ซื้อปีนี้ )</code></pre>
+    <p class="small" style="margin-bottom:0"><b>ต้องถ่วงน้ำหนักด้วยจำนวนเสมอ</b> — ไม่ใช่เฉลี่ย % ดื้อ ๆ
+    ไม่งั้นน็อตตัวละ 2 บาทที่ลดได้ 50% จะกลบเหล็กแผ่นที่ลดได้ 2% ทั้งที่เป็นเงินคนละเรื่อง</p>
+  </div>
+
+  <h2>รายงานต้องแยก 4 กอง ไม่รวมกันมั่ว</h2>
+  <div class="scroll">
+  <table>
+    <tr><th class="nw">กอง</th><th>คือ</th><th>บอกอะไร</th></tr>
+    <tr><td class="nw"><span class="pill p-g">ก. ต่อราคาเจ้าเดิมได้</span></td><td>รหัสเดิม ผู้ขายเดิม ราคาลด</td><td>ฝีมือต่อรอง</td></tr>
+    <tr><td class="nw"><span class="pill p-b">ข. เปลี่ยนเจ้า/ยี่ห้อ</span></td><td>คนละรหัส กลุ่มเดียวกัน ราคาลด <b>⭐ ที่เบียร์ต้องการ</b></td><td>ฝีมือหาแหล่งใหม่</td></tr>
+    <tr><td class="nw"><span class="pill p-a">ค. ราคาขึ้น</span></td><td>ราคาสูงกว่าปีที่แล้ว</td><td>ต้องอธิบายว่าทำไม (ตลาดขึ้น / ของขาด / ซื้อน้อย)</td></tr>
+    <tr><td class="nw"><span class="pill p-p">ง. เทียบไม่ได้</span></td><td>ปีที่แล้วไม่มีข้อมูลเลย = ของใหม่จริง</td><td><b>ไม่เอามาคิด %</b> แต่โชว์แยกให้เห็นว่ามีกี่รายการ กี่บาท</td></tr>
+  </table>
+  </div>
+
+  <div class="amberbox">
+    <b>กันการตกแต่งตัวเลข 2 อย่าง</b><br>
+    ① <b>ถูกลงเพราะของแย่ลง</b> — เวลาเปลี่ยนยี่ห้อ ระบบบังคับให้ระบุเหตุผล + ใครอนุมัติ + แนบผลทดสอบ (ถ้ามี)<br>
+    ② <b>ถูกลงเพราะสั่งล็อตใหญ่</b> — รายงานโชว์จำนวนที่ซื้อคู่กับราคาเสมอ จะได้เห็นว่าลดเพราะฝีมือ หรือลดเพราะซื้อเยอะ
+  </div>
+
+  <div class="good">
+    <b>ทำได้ย้อนหลังทันที</b> — พอมี RR ตั้งแต่ปี 2562 ครบ ระบบจะจัดกลุ่มแล้วคำนวณ KPI ย้อนหลังได้<b>ทุกปี</b>
+    เบียร์จะเห็นกราฟว่าจัดซื้อลดต้นทุนได้กี่ % ในแต่ละปีที่ผ่านมา โดยไม่ต้องรอเก็บข้อมูลใหม่
+  </div>
+
+</section>
+
+<!-- ==================== TAB 3 ==================== -->
+<section class="pane" id="p3">
+
+  <h2>โครงรหัสคลัง — สร้างใหม่ 2 ชั้น</h2>
+  <p>แยก <b>“คลัง” (บัญชี)</b> ออกจาก <b>“ตำแหน่งเก็บ” (กายภาพ)</b> เพราะย้ายชั้นวางไม่ควรกระทบตัวเลขบัญชี</p>
+
+  <h3>ชั้นที่ 1 — คลัง (มีผลกับบัญชี)</h3>
+  <div class="scroll">
+  <table>
+    <tr><th class="nw">รหัส</th><th class="nw">ชื่อ</th><th>ใช้กับอะไร</th><th>ตัดสต๊อกเมื่อ</th><th class="nw">นับสต๊อก</th></tr>
+    <tr><td class="nw mono">WH-01</td><td class="nw"><b>คลังใหญ่</b></td><td>วัตถุดิบหลัก เหล็ก อุปกรณ์เข้างานผลิต</td><td>เบิกตามจ๊อบ (จาก NOVA)</td><td class="nw ok">ทุกเดือน</td></tr>
+    <tr><td class="nw mono">WH-02</td><td class="nw"><b>Stock Store</b></td><td>ของที่กำหนดว่าซื้อทุกเดือน มี min/max</td><td>เบิกใช้ทั่วไป</td><td class="nw ok">ทุกเดือน</td></tr>
+    <tr><td class="nw mono">WH-03</td><td class="nw"><b>Stock Service</b></td><td>งานขาย After Sales Service</td><td>เบิกตามงานบริการ</td><td class="nw ok">ทุกเดือน</td></tr>
+    <tr><td class="nw mono">WH-09</td><td class="nw"><b>พักตรวจ</b></td><td>ของที่รับมาแล้วแต่ยังรอตรวจ/รอเอกสาร</td><td>ย้ายเข้าคลังจริงเมื่อผ่าน</td><td class="nw warn">ดูทุกวัน</td></tr>
+    <tr><td class="nw mono">WH-99</td><td class="nw"><b>รอส่งคืน</b></td><td>ของชำรุด/ผิดสเปก รอคืนผู้ขาย</td><td>ตัดออกเมื่อคืนแล้ว</td><td class="nw warn">ดูทุกสัปดาห์</td></tr>
+  </table>
+  </div>
+  <p class="small"><b>WH-09 และ WH-99 คือของแถมที่ผมเสนอเพิ่ม</b> — จากที่เบียร์บอกว่ามีเคส “รับของก่อน เอกสารตามมาทีหลัง”
+  และ “ของชำรุดส่งคืน” ถ้าไม่มี 2 คลังนี้ ของพวกนี้จะไปปนอยู่ในคลังจริง แล้วยอดนับไม่ตรงทุกเดือน · <b>ถ้าเบียร์ว่าไม่ต้องมี ตัดออกได้</b></p>
+
+  <h3>ชั้นที่ 2 — ตำแหน่งเก็บ (ไม่มีผลกับบัญชี)</h3>
+  <div class="card">
+    <pre><code>รูปแบบ:  &lt;คลัง&gt; - &lt;โซน&gt; - &lt;ชั้น&gt; - &lt;ช่อง&gt;
+ตัวอย่าง: WH-01-A-03-12   =  คลังใหญ่ · โซน A · ชั้น 3 · ช่อง 12</code></pre>
+    <p style="margin-bottom:0">ใช้ตอนสโตร์เดินหาของ / นับสต๊อก · <b>ย้ายที่เก็บได้ตลอด ไม่กระทบยอด</b> · เริ่มจากมีแค่โซนก่อนก็ได้ ค่อยละเอียดทีหลัง</p>
+  </div>
+
+  <h3>ของเดิมจะย้ายเข้าคลังใหม่ยังไง</h3>
+  <div class="scroll">
+  <table>
+    <tr><th class="nw">ขั้น</th><th>ทำอะไร</th><th class="nw">ใคร</th></tr>
+    <tr><td class="nw ctr">1</td><td>ระบบดึง <code>LocaCode</code> / <code>InveCode</code> ที่เคยใช้ในข้อมูลจริงออกมาทั้งหมด (เห็นแล้ว: 01–10, 22, 88) พร้อมนับว่าแต่ละรหัสมีกี่บรรทัด กี่บาท</td><td class="nw">Candy</td></tr>
+    <tr><td class="nw ctr">2</td><td>เบียร์/สโตร์ดูรายการนั้นแล้ว <b>ชี้ว่ารหัสเก่าตัวไหน → คลังใหม่ตัวไหน</b> (ตารางเดียว ไม่กี่บรรทัด)</td><td class="nw warn">เบียร์ + สโตร์</td></tr>
+    <tr><td class="nw ctr">3</td><td>ที่ชี้ไม่ได้ → เข้า <code>WH-01</code> ไว้ก่อน + ติดธง <span class="pill p-a">รอยืนยันคลัง</span> ไม่ปล่อยให้หาย</td><td class="nw">ระบบ</td></tr>
+    <tr><td class="nw ctr">4</td><td>ตอนนับสต๊อกรอบแรก สโตร์ยืนยัน/แก้คลังให้ถูกไปในตัว</td><td class="nw">สโตร์</td></tr>
+  </table>
+  </div>
+
+  <div class="note">
+    <b>กฎ 3 ข้อของคลัง</b><br>
+    ① ทุกแถวใน <code>STOCK_MOVE</code> ต้องมีคลังเสมอ — ห้ามว่าง<br>
+    ② โอนระหว่างคลังต้องออก <b>2 แถวคู่กัน</b> (ออกคลังหนึ่ง เข้าอีกคลัง) ไม่ใช่แก้ตัวเลขคลังในแถวเดิม<br>
+    ③ ยอดคงเหลือคิด<b>แยกคลัง</b> — สินค้าตัวเดียวกันมี 3 ยอด ไม่รวมกัน (จะรวมก็ได้ แต่ต้องเป็นการเลือกในหน้าจอ ไม่ใช่ค่าตั้งต้น)
+  </div>
+
+</section>
+
+<!-- ==================== TAB 4 ==================== -->
+<section class="pane" id="p4">
+
+  <h2>ท่อจาก NOVA ใหญ่ → Stock Card</h2>
+  <p><b>คำตอบตรง ๆ: ทำได้ครับ และมีความเสี่ยงจริง</b> ผมจะบอกความเสี่ยงทั้งหมด แล้วบอกว่าคุมยังไง — เบียร์ตัดสินใจเอง</p>
+
+  <h3>ออกแบบให้ NOVA “ไม่รู้จัก” P&amp;S Hub เลย</h3>
+  <div class="tree">แบบที่เสี่ยง ❌                          แบบที่ผมจะทำ ✅
+
+NOVA ─── เรียกตรง ───▶ P&S Hub          NOVA ──เขียน──▶ [ กล่องขาออก ]
+                                                              │
+ถ้า P&S ล่ม / ช้า                                     (ตารางใหม่ ใน Sheet
+   → หน้าจอเบิกของ NOVA ค้าง                          ที่ NOVA เขียนอยู่แล้ว)
+   → คนเบิกของไม่ได้                                          │
+   → ทั้งโรงงานหยุด                                           ▼
+                                                    P&S Hub ──อ่านเอง──▶ STOCK_MOVE
+                                                    (ทุก 5 นาที + ตอนเปิดหน้าจอ)
+
+                                        ถ้า P&S ล่ม → NOVA ยังทำงานปกติ
+                                        ของค้างในกล่อง พอ P&S กลับมาก็ดึงต่อ</div>
+
+  <h3>ความเสี่ยง 5 ข้อ และวิธีคุม</h3>
+  <div class="scroll">
+  <table>
+    <tr><th class="nw">ความเสี่ยง</th><th>เกิดอะไรขึ้น</th><th>วิธีคุม</th><th class="nw">เหลือความเสี่ยง</th></tr>
+    <tr>
+      <td class="nw"><b>1. แก้โค้ด NOVA แล้วพัง</b></td>
+      <td><code>STT-NOVA-Hub.js</code> โต 781 KB ไฟล์เดียว แก้ผิดจุดกระทบทั้งระบบ</td>
+      <td><b>ไม่แก้ไฟล์นั้น</b> — เพิ่มไฟล์ใหม่ <code>STT-NOVA-outbox.js</code> แล้วในฟังก์ชันเบิกของเรียกแค่ <b>1 บรรทัด</b></td>
+      <td class="nw ok">ต่ำ</td>
+    </tr>
+    <tr>
+      <td class="nw"><b>2. ทำหน้าจอเบิกของช้าลง</b></td>
+      <td>คนเบิกของรอนานขึ้น เลิกใช้</td>
+      <td>เขียนแบบ <b>ไม่รอผล</b> — เขียนไม่สำเร็จก็ไม่ขัดจังหวะการเบิก แค่ลง LOG ไว้แล้วซ่อมทีหลัง</td>
+      <td class="nw ok">ต่ำ</td>
+    </tr>
+    <tr>
+      <td class="nw"><b>3. สต๊อกถูกตัดซ้ำ</b></td>
+      <td>ดึงข้อมูลรอบเดิมซ้ำ → ของหายจากระบบทั้งที่ยังอยู่</td>
+      <td>ทุกแถวมี <b>คีย์ไม่ซ้ำ</b> <code>move_id</code> · ก่อนเขียนเช็คก่อนว่าเคยเข้าแล้วยัง — ดึงกี่รอบก็ได้ผลเท่าเดิม</td>
+      <td class="nw ok">ต่ำมาก</td>
+    </tr>
+    <tr>
+      <td class="nw"><b>4. ข้อมูลตกหล่นเงียบ ๆ</b></td>
+      <td>เบิกไป 100 แถว เข้าระบบ 97 แถว ไม่มีใครรู้</td>
+      <td><b>กระทบยอดทุกคืน</b> — นับแถวในกล่องขาออก เทียบกับแถวที่เข้า <code>STOCK_MOVE</code> ไม่ตรง = แจ้งเบียร์ทันที</td>
+      <td class="nw warn">ปานกลาง → ต่ำ</td>
+    </tr>
+    <tr>
+      <td class="nw"><b>5. ข้อมูลเบิกเก่าไม่มี</b></td>
+      <td>Stock Card เริ่มจาก 0 ทั้งที่ของมีอยู่</td>
+      <td>นำเข้ายอดยกมาครั้งเดียวจาก<b>การนับสต๊อกรอบแรก</b> = จุดตั้งต้นที่ถูกต้อง (ดีกว่าไปไล่ประวัติเบิกเก่าซึ่งไม่ครบอยู่แล้ว)</td>
+      <td class="nw ok">ต่ำ</td>
+    </tr>
+  </table>
+  </div>
+
+  <h3>แผนกันพลาด 6 ชั้น</h3>
+  <div class="grid g2">
+    <div class="card tight" style="margin:0"><b>① ทดลองบนสำเนาก่อน</b><br><span class="small">ก๊อป NOVA ทั้งชุดเป็นตัวทดสอบ ทดลองจนมั่นใจ ค่อยแตะตัวจริง</span></div>
+    <div class="card tight" style="margin:0"><b>② สวิตช์ปิดฉุกเฉิน</b><br><span class="small">ปิดได้ทันทีจาก Script Properties ไม่ต้อง deploy ใหม่ ไม่ต้องแก้โค้ด</span></div>
+    <div class="card tight" style="margin:0"><b>③ เดินคู่ขนาน 1 เดือน</b><br><span class="small">เดือนแรกยังทำแบบเดิมด้วย แล้วเทียบว่าตรงกันไหม ก่อนเลิกทำมือ</span></div>
+    <div class="card tight" style="margin:0"><b>④ Backup ก่อนแตะ</b><br><span class="small">สำรอง NOVA ทั้งชุด + commit git ก่อนแก้ ย้อนกลับได้ในนาทีเดียว</span></div>
+    <div class="card tight" style="margin:0"><b>⑤ ตรวจไวยากรณ์ก่อน push</b><br><span class="small">ตามขั้นตอนขึ้นระบบ NOVA ที่ใช้อยู่แล้ว ไม่ข้ามขั้น</span></div>
+    <div class="card tight" style="margin:0"><b>⑥ แก้นอกเวลางาน</b><br><span class="small">ขึ้นระบบตอนไม่มีคนเบิกของ ถ้าพังก็ไม่มีใครติด</span></div>
+  </div>
+
+  <h3>ถ้าเบียร์ยังไม่อยากให้แตะ NOVA — มีทางสำรอง</h3>
+  <div class="scroll">
+  <table>
+    <tr><th class="nw">ทางเลือก</th><th>ข้อดี</th><th>ข้อเสีย</th></tr>
+    <tr><td class="nw"><b>ก. ต่อท่ออัตโนมัติ</b> <span class="pill p-g">แนะนำ</span></td><td>Stock Card real-time จริง · ไม่มีคนลืม</td><td>ต้องแตะ NOVA (1 บรรทัด)</td></tr>
+    <tr><td class="nw"><b>ข. P&amp;S ไปอ่านเอง</b></td><td><b>ไม่แตะ NOVA เลยแม้แต่บรรทัดเดียว</b> · P&amp;S อ่านตารางเบิกของ NOVA ตรง ๆ ทุก 5 นาที</td><td>ต้องรู้ว่าตารางเบิกของ NOVA อยู่ตรงไหน โครงสร้างอะไร · ถ้า NOVA เปลี่ยนโครงเมื่อไหร่ ท่อขาด</td></tr>
+    <tr><td class="nw"><b>ค. นำเข้าเองเหมือนเดิม</b></td><td>ไม่มีความเสี่ยงเลย</td><td class="bad">ไม่ real-time · ลืมเมื่อไหร่ Stock Card ผิดทันที · ไม่ต่างจากที่ทำอยู่</td></tr>
+  </table>
+  </div>
+  <div class="good">
+    <b>ผมแนะนำ ก.</b> เพราะแก้แค่ 1 บรรทัดในไฟล์ใหม่ ไม่ได้แก้ตรรกะเดิม + มีสวิตช์ปิดได้ทันที
+    <b>แต่ถ้าเบียร์อยากลองแบบ ข. ก่อนก็ทำได้</b> — ผมขอเข้าไปดูโครงตารางเบิกของ NOVA ก่อน แล้วบอกได้ว่าทำได้จริงไหม
+    <br><b>เรื่องนี้ผมจะไม่แตะ NOVA จนกว่าเบียร์จะสั่ง</b>
+  </div>
+
+</section>
+
+<!-- ==================== TAB 5 ==================== -->
+<section class="pane" id="p5">
+
+  <h2>Supplier ใหม่ — จะรู้ได้ยังไง</h2>
+
+  <div class="card">
+    <p style="margin-top:0"><b>สิ่งที่เบียร์คิดไว้</b> — มีทะเบียนผู้ขายอยู่ พอมีเจ้าใหม่ก็ไปเพิ่มข้อมูล แล้วถือว่าเจ้านั้นใหม่</p>
+    <p><b>ปัญหาของวิธีนี้</b> — ทะเบียนคือ<b>สิ่งที่คนกรอก</b> ส่วนการซื้อคือ<b>สิ่งที่เกิดขึ้นจริง</b> สองอย่างนี้ไม่มีวันตรงกัน:</p>
+    <ul style="margin-bottom:0">
+      <li>ซื้อไปแล้ว 3 วัน ยังไม่มีใครกรอกทะเบียน → ระบบยังไม่รู้ว่ามีเจ้าใหม่</li>
+      <li>กรอกทะเบียนไว้แต่ยังไม่เคยซื้อ → ระบบนับว่าเป็นเจ้าใหม่ ทั้งที่ยังไม่เกิดอะไรขึ้น</li>
+      <li>ลืมกรอก → เจ้านั้นไม่เคยถูกนับเป็นผู้ขายใหม่เลย ผลงานจัดซื้อหายไปฟรี ๆ</li>
+    </ul>
+  </div>
+
+  <div class="good">
+    <b>ต้องกลับด้าน — ให้ธุรกรรมเป็นตัวบอก ไม่ใช่ทะเบียน</b><br>
+    ระบบดู <code>VendorCode</code> ในใบรับของ (RR) ทุกใบ → <b>ถ้ารหัสนี้ไม่เคยมี RR มาก่อนเลย = ผู้ขายใหม่ ตั้งแต่วินาทีแรกที่นำเข้าข้อมูล</b>
+    แล้วระบบส่งคิว <span class="pill p-a">ผู้ขายใหม่ รอกรอกทะเบียน</span> ให้จัดซื้อไปเติมข้อมูลตามหลัง
+    <br><b>ระบบรู้ก่อน แล้วเตือนให้กรอก — ไม่ใช่รอคนกรอกแล้วค่อยรู้</b>
+  </div>
+
+  <h3>3 สถานะที่ระบบแยกให้</h3>
+  <div class="scroll">
+  <table>
+    <tr><th class="nw">ป้าย</th><th>เงื่อนไข</th><th>ระบบทำอะไร</th></tr>
+    <tr><td class="nw"><span class="pill p-g">ผู้ขายใหม่</span></td><td>รหัสนี้<b>ไม่เคยมี RR เลย</b>ตั้งแต่ปี 2562</td><td>นับเข้า KPI “หาผู้ขายใหม่ได้กี่ราย” + ส่งคิวกรอกทะเบียน</td></tr>
+    <tr><td class="nw"><span class="pill p-a">กลับมาซื้ออีก</span></td><td>เคยมี RR แต่<b>เว้นไปเกิน 3 ปี</b></td><td>ไม่นับว่าใหม่ แต่โชว์แยก (น่าสนใจว่าทำไมกลับมา)</td></tr>
+    <tr><td class="nw"><span class="pill p-b">ผู้ขายเดิม</span></td><td>มี RR ใน 3 ปีล่าสุด</td><td>ปกติ</td></tr>
+  </table>
+  </div>
+
+  <h3>2 กับดักที่ต้องดักไว้ด้วย</h3>
+  <div class="grid g2">
+    <div class="card tight" style="margin:0">
+      <b class="warn">① รหัสเดียว แต่ชื่อเปลี่ยน</b><br>
+      <span class="small">เช่น หจก. จดทะเบียนใหม่เป็น บริษัท — ในทะเบียนสัญญาผู้รับเหมาก็เจอแล้ว:
+      <b>“หจก. เพชรรัตน์นำกิจเจริญ”</b> (181 ใบ) และ <b>“บริษัท เพชรรัตน์นำกิจเจริญ จำกัด”</b> (51 ใบ) — คนเดียวกันหรือคนละนิติบุคคล?
+      ระบบจะเตือนเมื่อชื่อคล้ายกันมากแต่คนละรหัส ให้คนตัดสิน</span>
+    </div>
+    <div class="card tight" style="margin:0">
+      <b class="warn">② คนละรหัส แต่เจ้าเดียวกัน</b><br>
+      <span class="small">My Account ออกรหัสใหม่ให้เจ้าเดิม → ระบบจะนับผิดว่าเป็นผู้ขายใหม่
+      ป้องกันด้วยการเทียบ<b>เลขผู้เสียภาษี</b> ถ้าซ้ำ = เจ้าเดียวกัน (จึงควรกรอกเลขนี้ในทะเบียนให้ครบ)</span>
+    </div>
+  </div>
+
+  <h2>Market Price — จัดซื้อกรอก + ผบห.อนุมัติ</h2>
+
+  <div class="card">
+    <h4 style="margin-top:0">ช่องที่ต้องมี (ห้ามว่าง 3 ช่องแรก)</h4>
+    <div class="scroll">
+    <table>
+      <tr><th class="nw">ช่อง</th><th>ทำไมต้องมี</th><th class="nw">บังคับ</th></tr>
+      <tr><td class="nw"><b>แหล่งที่มา</b></td><td>ลิงก์เว็บ / ชื่อร้าน / ใบเสนอราคา — บัญชีและ Audit ต้องตามได้</td><td class="nw bad">บังคับ</td></tr>
+      <tr><td class="nw"><b>วันที่อ้างอิง</b></td><td>ราคาตลาดไม่มีวันที่ = ใช้ตีมูลค่าสต๊อกไม่ได้</td><td class="nw bad">บังคับ</td></tr>
+      <tr><td class="nw"><b>ภาพหน้าจอ</b></td><td>เว็บเปลี่ยนราคา/ลบหน้าได้ — ภาพคือหลักฐาน</td><td class="nw bad">บังคับ</td></tr>
+      <tr><td class="nw">ราคา + หน่วย</td><td>ต้องเป็นหน่วยเดียวกับที่เราซื้อ ระบบเตือนถ้าไม่ตรง</td><td class="nw bad">บังคับ</td></tr>
+      <tr><td class="nw">รวม VAT หรือยัง</td><td>เว็บส่วนใหญ่โชว์ราคารวม VAT แต่ต้นทุนเราคิดก่อน VAT</td><td class="nw bad">บังคับ</td></tr>
+      <tr><td class="nw">ผู้กรอก / ผู้อนุมัติ</td><td>ระบบใส่ให้เอง จาก empId ที่ล็อกอิน</td><td class="nw">อัตโนมัติ</td></tr>
+      <tr><td class="nw">หมดอายุ</td><td><b>ตั้งต้น 6 เดือน</b> · หมดแล้วขึ้นเตือนให้ทบทวน</td><td class="nw">อัตโนมัติ</td></tr>
+    </table>
+    </div>
+    <div class="flow" style="margin-top:12px">
+      <span class="b">จัดซื้อกรอก + แนบภาพ</span><span class="a">→</span>
+      <span class="b">รอ ผบห.อนุมัติ</span><span class="a">→</span>
+      <span class="b">ใช้งานได้</span><span class="a">→ 6 เดือน →</span>
+      <span class="b">หมดอายุ · เตือนทบทวน</span>
+    </div>
+    <p class="small" style="margin-bottom:0"><b>ยังไม่อนุมัติ = ยังใช้ไม่ได้</b> — ระบบจะข้ามไปใช้ Fallback ตัวถัดไปตาม Policy
+    และในรายงานจะเขียน <code>Market Manual</code> กำกับเสมอ ว่าตัวเลขนี้ไม่ได้มาจากการซื้อจริง</p>
+  </div>
+
+</section>
+
+<!-- ==================== TAB 6 ==================== -->
+<section class="pane" id="p6">
+
+  <h2>อ่านไฟล์ผู้รับเหมา 2 ไฟล์แล้ว</h2>
+
+  <h3>ไฟล์ 1 — ทะเบียนสัญญาจ้างผู้รับเหมา (Google Sheet)</h3>
+  <div class="scroll">
+  <table>
+    <tr><th class="nw">ปี</th><th class="num">จำนวนใบ</th><th class="num">มูลค่า</th></tr>
+    <tr><td class="nw">2021</td><td class="num">275</td><td class="num">3,871,656.83</td></tr>
+    <tr><td class="nw">2026</td><td class="num">220</td><td class="num">7,596,856.97</td></tr>
+    <tr class="tot"><td class="nw">รวม 2 ปีที่อ่านได้</td><td class="num">495</td><td class="num">11,468,513.80</td></tr>
+  </table>
+  </div>
+  <p class="small">ไฟล์มีแท็บรายปีมากกว่านี้ ผมอ่านได้ครบ 2 ปี ที่เหลือถูกตัดตอนโหลด — โครงสร้างเหมือนกันทุกปี</p>
+
+  <div class="grid g4">
+    <div class="kpi"><div class="v ok">99.8%</div><div class="l">ผูกเลข PO ได้</div></div>
+    <div class="kpi"><div class="v ok">100%</div><div class="l">ผูกเลข Job ได้</div></div>
+    <div class="kpi"><div class="v">32</div><div class="l">ผู้รับเหมา (ที่อ่านได้)</div></div>
+    <div class="kpi"><div class="v" style="color:var(--purple)">2</div><div class="l">ประเภทเอกสาร</div></div>
+  </div>
+
+  <div class="good">
+    <b>ข่าวดีที่สุด</b> — ทะเบียนนี้ผูกกับ <code>เลขที่ PO</code> ได้ <b>494 จาก 495 ใบ</b> และผูก <code>Job</code> ได้ครบ 100%
+    แปลว่าเอาเข้าระบบแล้ว<b>ต่อกับฝั่งจัดซื้อได้ทันที</b> — เห็นได้เลยว่า PO ใบนี้มีสัญญาผู้รับเหมาใบไหน จ่ายไปเท่าไหร่ งานเสร็จยัง
+  </div>
+
+  <h3>ไฟล์ 2 — ใบรับรองแทนใบเสร็จรับเงิน (Excel)</h3>
+  <div class="grid g2">
+    <div>
+      <div class="doc">
+        <div class="t">ใบรับรองแทนใบเสร็จรับเงิน</div>
+        <div class="r"><span>วันที่</span><span>1/7/2025</span></div>
+        <div class="r"><span>เลขที่</span><span><b>STT-69-097-1</b></span></div>
+        <div class="r"><span>ข้าพเจ้า นาย/นาง/น.ส.</span><span>กรรณิกา คำฟั่น</span></div>
+        <div class="r"><span>ที่อยู่ตามบัตรประชาชน</span><span>12 หมู่ 9 ต.หนองบัว …</span></div>
+        <div class="r"><span>ได้รับเงินจาก</span><span>บ. สุธี แท็งเกอร์ฯ · เป็นค่าจ้างทำของ</span></div>
+        <div class="r"><span>รายการ</span><span>ค่าแรงงานประกอบ+เชื่อมถัง</span></div>
+        <div class="r"><span>อ้างอิงใบสั่งซื้อ</span><span><b>POR-69/1433</b> ⭐</span></div>
+        <div class="r"><span>ใช้งาน</span><span><b>JMI-69/0021</b> ⭐</span></div>
+        <div class="r"><span>เงินสด / เช็ค</span><span>0 / 20,000 บาท</span></div>
+        <div class="r"><span>ตัวหนังสือ</span><span>=BAHTTEXT(…)</span></div>
+        <div class="r"><span>เลขที่เช็ค · สาขา · ลงวันที่</span><span>—</span></div>
+        <div class="r"><span>ลายเซ็น 4 ช่อง</span><span>ผู้รับเงิน · ผู้จ่ายเงิน · พยาน · ผู้อนุมัติ</span></div>
+        <div class="r" style="border:0"><span>แนบ</span><span>สำเนาบัตรประชาชน</span></div>
+      </div>
+    </div>
+    <div>
+      <div class="card" style="margin:0">
+        <h4 style="margin-top:0">2 ช่องนี้คือกุญแจ ⭐</h4>
+        <p><code>อ้างอิงใบสั่งซื้อเลขที่</code> และ <code>ใช้งาน (Job)</code> — <b>มีอยู่ในฟอร์มอยู่แล้ว</b>
+        แปลว่าเบียร์ออกแบบให้ผูกกับ PO ตั้งแต่แรก ระบบใหม่แค่ทำให้มัน<b>ผูกจริงในฐานข้อมูล</b> ไม่ใช่แค่พิมพ์ลงกระดาษ</p>
+        <h4>ประเภทผู้รับเหมาเป็นตัวเลือกเอกสาร</h4>
+        <table style="margin-bottom:0">
+          <tr><th class="nw">ผู้รับเหมา</th><th>เอกสาร</th><th class="num">จำนวน</th></tr>
+          <tr><td class="nw">นิติบุคคล<br><span class="small">หจก. / บริษัท</span></td><td>สัญญาผู้รับเหมา<br><span class="small">(เขาออกใบเสร็จเองได้)</span></td><td class="num">318</td></tr>
+          <tr><td class="nw">บุคคลธรรมดา</td><td>ใบรับรองแทนใบเสร็จ<br><span class="small">+ แนบสำเนาบัตร</span></td><td class="num">177</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <h3>ปัญหาที่เจอในไฟล์ปัจจุบัน</h3>
+  <div class="scroll">
+  <table>
+    <tr><th class="nw">ปัญหา</th><th>หลักฐาน</th><th>ระบบใหม่แก้ยังไง</th></tr>
+    <tr><td class="nw"><b>เลขที่สัญญาซ้ำ</b></td><td class="bad">STT-64-255 และ STT-64-256 ใช้ซ้ำอย่างละ 2 ใบ</td><td class="ok">ระบบออกเลขให้ ซ้ำไม่ได้เด็ดขาด</td></tr>
+    <tr><td class="nw"><b>รูปแบบเลขไม่นิ่ง</b></td><td class="bad">เจอ 5 แบบ: <code>STT-64-001</code> · <code>STT-64-001-1</code> · <code>STT-63/11/0012</code> · <code>STT-64/255-1</code> · <code>STT-64-255-1 ยกเลิก</code></td><td class="ok">รูปแบบเดียว + ปุ่มยกเลิกแยก ไม่ต้องพิมพ์ต่อท้าย</td></tr>
+    <tr><td class="nw"><b>1 คน 1 ชีต</b></td><td class="bad">50 ชีตในไฟล์เดียว ก๊อปกันมา — เพิ่มคนใหม่ = ก๊อปชีตใหม่</td><td class="ok">ฟอร์มเดียว เลือกชื่อจากทะเบียน ข้อมูลเด้งมาเอง</td></tr>
+    <tr><td class="nw"><b>เลขล่าสุดเก็บในชีตแยก</b></td><td class="bad">ชีต “เลขสุดท้าย” ต้องมาดูเองก่อนออกเลขใหม่ → 2 คนทำพร้อมกันได้เลขชนกัน</td><td class="ok">ระบบจองเลขตอนกดสร้าง ชนกันไม่ได้</td></tr>
+    <tr><td class="nw"><b>ชื่อผู้รับเหมาพิมพ์อิสระ</b></td><td class="bad">“คุณ ธีรวัช คำฟั่น” / “นาย ธีรวัช คำฟั่น” = คนเดียวกัน แต่ระบบนับเป็น 2 ราย</td><td class="ok">เลือกจากทะเบียน ไม่พิมพ์เอง</td></tr>
+  </table>
+  </div>
+
+  <h2>โครงโมดูลผู้รับเหมา — 3 ตาราง ผูกกันเป็นสายเดียว</h2>
+  <div class="tree">[ CONTRACTOR ]  ทะเบียนผู้รับเหมา
+   contractor_id · ชื่อ · ประเภท(บุคคล/นิติบุคคล) · เลขบัตร/เลขผู้เสียภาษี
+   ที่อยู่ตามบัตร · ประเภทงาน · บัญชีธนาคาร · เอกสารแนบ · สถานะ
+        │  1 ราย มีได้หลายสัญญา
+        ▼
+[ CONTRACT_DOC ]  สัญญา / ใบสั่งจ้าง
+   contract_no ⭐ (ระบบออกให้) · วันที่ · contractor_id
+   po_no ──────────▶ ผูกกับ PO_LINE ของจัดซื้อ
+   job_no ─────────▶ ผูกกับ Job
+   รายการ · จำนวนเงิน · ประเภทเอกสาร · งวดงาน · สถานะ
+        │  1 สัญญา จ่ายได้หลายงวด
+        ▼
+[ CONTRACT_PAY ]  ใบรับเงิน / การจ่าย
+   receipt_no ⭐ (ระบบออกให้) · contract_no · งวดที่
+   เงินสด/เช็ค · เลขที่เช็ค · ธนาคาร/สาขา · ลงวันที่
+   จำนวนเงิน · ตัวหนังสือ(อัตโนมัติ) · หัก ณ ที่จ่าย(?)
+   ลายเซ็น 4 ช่อง · ไฟล์แนบ(สำเนาบัตร/รูปหน้างาน) · สถานะอนุมัติ</div>
+
+  <h3>รูปแบบเลขเอกสารที่ผมเสนอ</h3>
+  <div class="card">
+    <pre><code>สัญญา / ใบสั่งจ้าง   STT-&lt;ปี พ.ศ. 2 หลัก&gt;-&lt;ลำดับ 3 หลัก&gt;        →  STT-69-097
+งวดจ่าย              &lt;เลขสัญญา&gt;-&lt;งวดที่&gt;                       →  STT-69-097-1
+ยกเลิก               ไม่พิมพ์คำว่า "ยกเลิก" ต่อท้าย
+                     ใช้ปุ่มยกเลิก → เลขเดิมคงอยู่ สถานะเปลี่ยน + ต้องใส่เหตุผล</code></pre>
+    <p style="margin-bottom:0">ตรงกับที่ใช้อยู่แล้วมากที่สุด (368 ใบเป็นแบบ <code>STT-99-999</code> · 131 ใบเป็นแบบ <code>-N</code> ต่อท้าย)
+    <b>ข้อมูลเก่าย้ายเข้าได้เลยโดยไม่ต้องแปลงเลข</b> ยกเว้น 2 คู่ที่ซ้ำ ซึ่งต้องให้เบียร์ตัดสินว่าใบไหนคือใบจริง</p>
+  </div>
+
+  <h3>สิ่งที่ระบบจะทำให้</h3>
+  <div class="grid g2">
+    <div class="card tight" style="margin:0"><b>ออกเอกสารได้ทั้ง 2 แบบจากข้อมูลชุดเดียว</b><br><span class="small">เลือกผู้รับเหมา → ระบบรู้เองว่าบุคคลหรือนิติบุคคล → ขึ้นฟอร์มที่ถูกต้อง · พิมพ์ / PDF / Excel</span></div>
+    <div class="card tight" style="margin:0"><b>ตัวเลขเป็นตัวหนังสือ</b><br><span class="small">แทน <code>BAHTTEXT</code> ที่ Google Sheets ไม่มี — ระบบแปลงเอง ไม่พึ่ง Excel</span></div>
+    <div class="card tight" style="margin:0"><b>เห็นจาก PO ก็ได้ จากผู้รับเหมาก็ได้</b><br><span class="small">เปิด PO เห็นสัญญาที่ผูกอยู่ · เปิดผู้รับเหมาเห็นงานทั้งหมดที่เคยทำ + ยอดสะสมทั้งปี</span></div>
+    <div class="card tight" style="margin:0"><b>จ่ายเกินสัญญาไม่ได้</b><br><span class="small">รวมทุกงวดต้องไม่เกินยอดสัญญา · เกินเมื่อไหร่ระบบหยุดและขออนุมัติ</span></div>
+  </div>
+
+  <div class="amberbox">
+    <b>ยังต้องขอจากเบียร์ 3 อย่าง</b><br>
+    ① <b>ฟอร์มสัญญาผู้รับเหมาตัวเต็ม</b> — ในไฟล์เห็นเป็นแท็บที่มีข้อความสัญญา แต่ผมอ่านได้ไม่ครบเพราะเป็นเซลล์รวม ขอเป็น PDF หรือ Word ของแบบฟอร์มจริง<br>
+    ② <b>คำตอบเรื่องหัก ณ ที่จ่าย</b> จากบัญชี (ดูแท็บ 1)<br>
+    ③ <b>ประกันผลงาน (retention) มีไหม กี่ %</b> — ในฟอร์มที่เห็นยังไม่มีช่องนี้
+  </div>
+
+</section>
+
+<!-- ==================== TAB 7 ==================== -->
+<section class="pane" id="p7">
+
+  <h2>หลักเกณฑ์การเรียงลำดับงาน</h2>
+  <p>เบียร์บอกว่า “ยังไงก็ได้ แต่ต้องมีหลักเกณฑ์” — ผมใช้ <b>4 เกณฑ์</b> นี้ ไม่ใช่ความรู้สึก</p>
+
+  <div class="grid g2">
+    <div class="card tight" style="margin:0"><b>① ลำดับบังคับ (Dependency)</b><br><span class="small">ของที่เป็นวัตถุดิบของอย่างอื่น ต้องมาก่อน — ข้อนี้<b>บังคับ</b> เถียงไม่ได้ ไม่ใช่คะแนน</span></div>
+    <div class="card tight" style="margin:0"><b>② เงินที่เสียอยู่ตอนนี้</b><br><span class="small">โมดูลไหนแก้เงินที่บอกผิดอยู่ได้มากกว่า ได้คะแนนมากกว่า (1–5)</span></div>
+    <div class="card tight" style="margin:0"><b>③ ความถี่ที่คนใช้</b><br><span class="small">ของที่ใช้ทุกวัน มาก่อนของที่ใช้เดือนละครั้ง (1–5)</span></div>
+    <div class="card tight" style="margin:0"><b>④ แก้ทีหลังยากแค่ไหน</b><br><span class="small">โครงข้อมูลแก้ทีหลังแพงมาก · หน้าจอแก้ทีหลังถูก (1–5)</span></div>
+  </div>
+
+  <h2>ให้คะแนนทุกโมดูล</h2>
+  <div class="scroll">
+  <table>
+    <tr><th class="nw">โมดูล</th><th class="nw">ต้องมีก่อน</th><th class="num">② เงิน</th><th class="num">③ ความถี่</th><th class="num">④ แก้ยาก</th><th class="num">รวม</th><th class="nw">เฟส</th></tr>
+    <tr><td class="nw"><b>P1</b> นำเข้า + จับคู่ PO↔RR</td><td class="nw">—</td><td class="num">5</td><td class="num">5</td><td class="num">5</td><td class="num"><b>15</b></td><td class="nw"><span class="pill p-g">1</span></td></tr>
+    <tr><td class="nw"><b>P2</b> PO ค้างรับ</td><td class="nw">P1</td><td class="num">5</td><td class="num">5</td><td class="num">4</td><td class="num"><b>14</b></td><td class="nw"><span class="pill p-g">1</span></td></tr>
+    <tr><td class="nw"><b>S1</b> สโตร์รับของ (GRN)</td><td class="nw">P2</td><td class="num">4</td><td class="num">5</td><td class="num">5</td><td class="num"><b>14</b></td><td class="nw"><span class="pill p-g">2</span></td></tr>
+    <tr><td class="nw"><b>C1</b> Costing Engine</td><td class="nw">P1</td><td class="num">5</td><td class="num">3</td><td class="num">5</td><td class="num"><b>13</b></td><td class="nw"><span class="pill p-b">3</span></td></tr>
+    <tr><td class="nw"><b>S2</b> Stock Card 3 คลัง</td><td class="nw">S1</td><td class="num">3</td><td class="num">5</td><td class="num">5</td><td class="num"><b>13</b></td><td class="nw"><span class="pill p-b">3</span></td></tr>
+    <tr><td class="nw"><b>P3</b> แผนจ่ายเงิน + ตั้งเบิก</td><td class="nw">P2, S1</td><td class="num">5</td><td class="num">4</td><td class="num">3</td><td class="num"><b>12</b></td><td class="nw"><span class="pill p-b">4</span></td></tr>
+    <tr><td class="nw"><b>S3</b> นับสต๊อกเดือน + ใบขอซื้อ</td><td class="nw">S2, C1</td><td class="num">3</td><td class="num">3</td><td class="num">5</td><td class="num"><b>11</b></td><td class="nw"><span class="pill p-b">4</span></td></tr>
+    <tr><td class="nw"><b>S4</b> มูลค่าสต๊อก + ABC ส่งบัญชี</td><td class="nw">S3, C1</td><td class="num">4</td><td class="num">2</td><td class="num">5</td><td class="num"><b>11</b></td><td class="nw"><span class="pill p-a">5</span></td></tr>
+    <tr><td class="nw"><b>P7</b> Dashboard KPI + กลุ่มสินค้า</td><td class="nw">C1</td><td class="num">3</td><td class="num">4</td><td class="num">3</td><td class="num"><b>10</b></td><td class="nw"><span class="pill p-a">5</span></td></tr>
+    <tr><td class="nw"><b>P4</b> สรุปการสั่งซื้อ</td><td class="nw">P1</td><td class="num">2</td><td class="num">4</td><td class="num">3</td><td class="num"><b>9</b></td><td class="nw"><span class="pill p-a">6</span></td></tr>
+    <tr><td class="nw"><b>P5</b> ผู้รับเหมา</td><td class="nw">P1</td><td class="num">3</td><td class="num">3</td><td class="num">3</td><td class="num"><b>9</b></td><td class="nw"><span class="pill p-a">6</span> <span class="small">ยืดหยุ่น</span></td></tr>
+    <tr><td class="nw"><b>S5</b> แนะนำสินค้าเข้า Stock</td><td class="nw">S2, S3</td><td class="num">2</td><td class="num">2</td><td class="num">2</td><td class="num"><b>6</b></td><td class="nw"><span class="pill p-p">7</span></td></tr>
+    <tr><td class="nw"><b>P6</b> ลิงก์ไปดู PR</td><td class="nw">—</td><td class="num">1</td><td class="num">2</td><td class="num">1</td><td class="num"><b>4</b></td><td class="nw"><span class="pill p-p">7</span></td></tr>
+  </table>
+  </div>
+
+  <div class="note">
+    <b>P5 ผู้รับเหมาเป็นตัวเดียวที่ “ยืดหยุ่น”</b> — มันพึ่งแค่ P1 และ<b>ไม่มีใครพึ่งมัน</b>
+    ดังนั้นดันขึ้นมาทำเมื่อไหร่ก็ได้โดยไม่กระทบลำดับตัวอื่นเลย ·
+    <b>ถ้าเบียร์อยากได้เร็ว (เพราะเพิ่งส่งไฟล์มา) บอกได้เลย ผมย้ายขึ้นเฟส 3 ได้ทันที</b>
+  </div>
+
+  <h2>ลำดับสุดท้าย 7 เฟส</h2>
+  <div class="scroll">
+  <table>
+    <tr><th class="nw">เฟส</th><th>โมดูล</th><th>ได้อะไรจับต้องได้</th><th class="nw">ต้องรอเบียร์</th></tr>
+    <tr><td class="nw"><span class="pill p-g">0</span></td><td>เปิดบ้าน + ล็อกอิน empId/PIN</td><td>ล็อกอินเข้าได้จริง</td><td class="nw bad">Script ID + โฟลเดอร์</td></tr>
+    <tr><td class="nw"><span class="pill p-g">1</span></td><td>P1 · P2</td><td>หน้า PO ค้างรับที่ถูก 100%</td><td class="nw bad">ชุดข้อมูล PO + RR</td></tr>
+    <tr><td class="nw"><span class="pill p-g">2</span></td><td>S1 + สร้างรหัสคลัง WH-01/02/03</td><td>สโตร์รับของด้วยมือถือ เลิกจดกระดาษ</td><td class="nw warn">ชี้ว่ารหัสเก่า → คลังใหม่</td></tr>
+    <tr><td class="nw"><span class="pill p-b">3</span></td><td>C1 · S2 (+ ท่อ NOVA ถ้าอนุมัติ)</td><td>ราคากลาง + ราคาล่าสุดส่ง NOVA · Stock Card เดิน</td><td class="nw bad">RR ย้อนหลัง 2562→</td></tr>
+    <tr><td class="nw"><span class="pill p-b">4</span></td><td>P3 · S3</td><td>เลิกทำแผนจ่ายเงินมือ · ปิดเดือนอัตโนมัติ</td><td class="nw warn">เลข PO ในรายงานมัดจำ</td></tr>
+    <tr><td class="nw"><span class="pill p-a">5</span></td><td>S4 · P7</td><td>ส่งบัญชีเป็น Google Sheet · Dashboard KPI</td><td class="nw warn">ยืนยันกลุ่มสินค้าเทียบเท่า</td></tr>
+    <tr><td class="nw"><span class="pill p-a">6</span></td><td>P4 · P5</td><td>สรุปสั่งซื้อ · เอกสารผู้รับเหมาครบวงจร</td><td class="nw bad">ฟอร์มสัญญา + คำตอบภาษี</td></tr>
+    <tr><td class="nw"><span class="pill p-p">7</span></td><td>S5 · P6</td><td>ระบบแนะนำ Stock · ลิงก์ PR</td><td class="nw">—</td></tr>
+  </table>
+  </div>
+
+  <h2>สรุปสิ่งที่รอจากเบียร์</h2>
+  <div class="scroll">
+  <table>
+    <tr><th class="nw">ลำดับ</th><th>เรื่อง</th><th class="nw">บล็อกเฟสไหน</th></tr>
+    <tr><td class="nw ctr">1</td><td><b>Script ID</b> ของ Apps Script project ใหม่</td><td class="nw bad">เฟส 0 — เริ่มไม่ได้เลย</td></tr>
+    <tr><td class="nw ctr">2</td><td><b>โฟลเดอร์ P&amp;S HUB</b> ใน Drive (หรืออนุญาตให้ผมสร้าง)</td><td class="nw bad">เฟส 0</td></tr>
+    <tr><td class="nw ctr">3</td><td><b>ชุดข้อมูล PO + RR</b> 1 รอบ</td><td class="nw bad">เฟส 1</td></tr>
+    <tr><td class="nw ctr">4</td><td><b>อนุมัติ/ไม่อนุมัติ</b> ให้ผมแตะ NOVA (แท็บ 4)</td><td class="nw warn">เฟส 3</td></tr>
+    <tr><td class="nw ctr">5</td><td><b>RR ย้อนหลัง</b> ตั้งแต่ 2562</td><td class="nw warn">เฟส 3</td></tr>
+    <tr><td class="nw ctr">6</td><td><b>ฟอร์มสัญญาผู้รับเหมา</b> ตัวเต็ม (PDF/Word) + คำตอบเรื่องหัก ณ ที่จ่าย + ประกันผลงาน</td><td class="nw">เฟส 6</td></tr>
+  </table>
+  </div>
+
+  <div class="good">
+    <b>ระหว่างรอ ผมทำ 2 อย่างนี้ได้เลย ไม่ต้องใช้อะไรจากเบียร์:</b><br>
+    ① <code>05-costing.js</code> — สูตรต้นทุนทั้ง 10 ข้อ พร้อมชุดทดสอบเทียบกับไฟล์ <b>Update inventory price</b><br>
+    ② <code>08-contractor.js</code> — โครงตารางผู้รับเหมา 3 ตาราง + ตัวออกเลขเอกสาร + ตัวแปลงตัวเลขเป็นตัวหนังสือ (แทน BAHTTEXT)<br>
+    <b>บอกมาได้เลยว่าให้เริ่มอันไหนก่อน</b>
+  </div>
+
+</section>
+
+<footer>
+  NOVA – PURCHASE &amp; STORE HUB · ตอบคำถาม + โมดูลผู้รับเหมา v1 · จัดทำโดย Candy สำหรับเบียร์<br>
+  วิเคราะห์จากไฟล์จริง: <b>ใบรับเงินผู้รับเหมา1.xls</b> (50 ชีต) และ <b>สัญญาจ้างผู้รับเหมา 2026</b> (495 รายการที่อ่านได้) ·
+  ตัวเลขราคาสินค้าในตัวอย่างเป็นค่าสมมติทั้งหมด
+</footer>
+
+</div>
+
+<script>
+(function(){
+  var tabs = document.querySelectorAll('.tab');
+  var panes = document.querySelectorAll('.pane');
+  tabs.forEach(function(b){
+    b.addEventListener('click', function(){
+      tabs.forEach(function(x){ x.classList.remove('on'); });
+      panes.forEach(function(x){ x.classList.remove('on'); });
+      b.classList.add('on');
+      var el = document.getElementById('p' + b.dataset.t);
+      if (el) el.classList.add('on');
+      window.scrollTo({top:0, behavior:'smooth'});
+    });
+  });
+})();
+</script>
+</body>
+</html>

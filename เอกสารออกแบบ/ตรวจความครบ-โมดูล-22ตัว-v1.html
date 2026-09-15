@@ -1,0 +1,529 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ตรวจความครบของโมดูล</title>
+<style>
+:root{
+  --bg:#f4f6f9; --card:#fff; --ink:#16202e; --sub:#5b6a7d; --line:#dde4ec;
+  --blue:#1c5fd0; --blue-l:#eaf1fd; --green:#127a4b; --green-l:#e6f6ee;
+  --red:#c02b2b; --red-l:#fdeceb; --amber:#a86500; --amber-l:#fff5e2;
+  --purple:#6a2fb5; --purple-l:#f2ebfd; --teal:#0d7080; --teal-l:#e4f4f7;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Sarabun","Leelawadee UI","Tahoma","Segoe UI",sans-serif;font-size:15.5px;line-height:1.75}
+.wrap{max-width:1120px;margin:0 auto;padding:0 16px 80px}
+header{background:linear-gradient(135deg,#5c1f1f,#c02b2b);color:#fff;padding:30px 0 26px}
+header .wrap{padding-bottom:0}
+.badge{display:inline-block;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);
+  padding:3px 12px;border-radius:99px;font-size:12.5px;margin-bottom:10px}
+h1{margin:0 0 6px;font-size:27px;line-height:1.4}
+header p{margin:0;opacity:.92;font-size:14.5px}
+.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);
+  box-shadow:0 2px 8px rgba(20,40,70,.06)}
+.tabs .wrap{display:flex;gap:4px;overflow-x:auto;padding-top:8px;padding-bottom:0}
+.tab{flex:0 0 auto;border:0;background:transparent;font:inherit;font-size:14.5px;color:var(--sub);
+  padding:11px 14px 12px;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
+.tab:hover{color:var(--ink)}
+.tab.on{color:var(--blue);border-bottom-color:var(--blue);font-weight:600}
+.pane{display:none;padding-top:26px}
+.pane.on{display:block}
+h2{font-size:21px;margin:34px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--line)}
+h2:first-child{margin-top:0}
+h3{font-size:17px;margin:26px 0 8px}
+h4{font-size:15.5px;margin:16px 0 6px}
+p{margin:10px 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin:14px 0;
+  box-shadow:0 1px 3px rgba(20,40,70,.05)}
+.card.tight{padding:13px 16px}
+ul,ol{margin:10px 0;padding-inline-start:24px}
+li{margin:6px 0}
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14.5px;background:#fff}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+th,td{border:1px solid var(--line);padding:8px 10px;text-align:start;vertical-align:top}
+th{background:#eef2f7;font-weight:600}
+th.nw,td.nw{white-space:nowrap}
+td.num,th.num{text-align:end;font-variant-numeric:tabular-nums;white-space:nowrap}
+td.ctr,th.ctr{text-align:center}
+tr.grp td{background:#e9eff7;font-weight:700}
+tr.miss td{background:#fef6f5}
+.ok{color:var(--green);font-weight:600}
+.bad{color:var(--red);font-weight:600}
+.warn{color:var(--amber);font-weight:600}
+.pill{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12.5px;font-weight:600;white-space:nowrap}
+.p-g{background:var(--green-l);color:var(--green)}
+.p-r{background:var(--red-l);color:var(--red)}
+.p-a{background:var(--amber-l);color:var(--amber)}
+.p-b{background:var(--blue-l);color:var(--blue)}
+.p-p{background:var(--purple-l);color:var(--purple)}
+.p-t{background:var(--teal-l);color:var(--teal)}
+.note{border-inline-start:4px solid var(--blue);background:var(--blue-l);padding:12px 16px;border-radius:0 10px 10px 0;margin:14px 0}
+.danger{border-inline-start:4px solid var(--red);background:var(--red-l);padding:12px 16px;border-radius:0 10px 10px 0;margin:14px 0}
+.good{border-inline-start:4px solid var(--green);background:var(--green-l);padding:12px 16px;border-radius:0 10px 10px 0;margin:14px 0}
+.amberbox{border-inline-start:4px solid var(--amber);background:var(--amber-l);padding:12px 16px;border-radius:0 10px 10px 0;margin:14px 0}
+code,.mono{font-family:ui-monospace,"Cascadia Mono","Consolas",monospace;font-size:13.3px;
+  background:#eef2f7;padding:1px 6px;border-radius:5px}
+pre{background:#101a29;color:#dbe6f5;padding:14px 16px;border-radius:10px;overflow-x:auto;font-size:13px;line-height:1.65;margin:12px 0}
+pre code{background:transparent;color:inherit;padding:0}
+.tree{background:#101a29;color:#dbe6f5;padding:16px 18px;border-radius:10px;overflow-x:auto;
+  font-family:ui-monospace,"Cascadia Mono","Consolas",monospace;font-size:12.8px;line-height:1.7;white-space:pre;margin:12px 0}
+.grid{display:grid;gap:14px}
+@media(min-width:760px){.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:12px;padding:15px 16px;text-align:center}
+.kpi .v{font-size:26px;font-weight:800;line-height:1.25}
+.kpi .l{font-size:13px;color:var(--sub);margin-top:4px}
+.mod{background:#fff;border:1px solid var(--line);border-radius:12px;margin:14px 0;overflow:hidden}
+.mod > .hd{background:#f2f6fb;border-bottom:1px solid var(--line);padding:12px 18px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.mod.new > .hd{background:#fef6f5;border-bottom-color:#f3c9c9}
+.mod > .hd b{font-size:16.5px}
+.mod > .bd{padding:14px 18px}
+.tag{display:inline-block;background:var(--blue);color:#fff;font-size:12.5px;font-weight:700;
+  padding:2px 9px;border-radius:6px;white-space:nowrap}
+.tag.s{background:var(--teal)} .tag.c{background:var(--purple)} .tag.x{background:#5b6a7d}
+.tag.n{background:var(--red)}
+.small{font-size:13.5px;color:var(--sub)}
+.quote{border-inline-start:3px solid var(--sub);padding-inline-start:12px;color:var(--sub);font-style:italic;margin:8px 0}
+footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);color:var(--sub);font-size:13.5px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="badge">NOVA – PURCHASE &amp; STORE HUB · ตรวจความครบ v1</div>
+    <h1>ยังไม่ครบครับ — ขาดอีก 9 โมดูล</h1>
+    <p>ครบตามข้อที่เบียร์เขียนเป็นหัวข้อ แต่<b>ตกสิ่งที่เบียร์เคยพูดในบทสนทนา 4 อย่าง</b> และ<b>ขาดงานระบบพื้นฐาน 5 อย่าง</b></p>
+  </div>
+</header>
+
+<div class="tabs">
+  <div class="wrap">
+    <button class="tab on" data-t="1">1 · ตรวจทีละบรรทัด</button>
+    <button class="tab" data-t="2">2 · 9 อย่างที่ขาด</button>
+    <button class="tab" data-t="3">3 · โมดูลชุดใหม่ 22 ตัว</button>
+    <button class="tab" data-t="4">4 · คำถาม + ลำดับใหม่</button>
+  </div>
+</div>
+
+<div class="wrap">
+
+<!-- ==================== TAB 1 ==================== -->
+<section class="pane on" id="p1">
+
+  <div class="grid g4">
+    <div class="kpi"><div class="v ok">19</div><div class="l">บรรทัดที่เบียร์เขียน<br>มีโมดูลรองรับแล้ว</div></div>
+    <div class="kpi"><div class="v bad">4</div><div class="l">เบียร์เคยพูด<br><b>แต่ผมตกไป</b></div></div>
+    <div class="kpi"><div class="v warn">5</div><div class="l">ไม่มีใครพูดถึง<br>แต่ขาดไม่ได้</div></div>
+    <div class="kpi"><div class="v" style="color:var(--purple)">1</div><div class="l">ข้อที่หายไป<br>ต้องถามเบียร์</div></div>
+  </div>
+
+  <h2>ฝั่งจัดซื้อ — ตรวจทีละบรรทัด</h2>
+  <div class="scroll">
+  <table>
+    <tr><th class="nw">ข้อ</th><th>สิ่งที่เบียร์เขียน</th><th class="nw">โมดูล</th><th class="nw">สถานะ</th></tr>
+
+    <tr class="grp"><td class="nw">1.1</td><td colspan="3">ข้อมูล PO &amp; RR ดึงทีละปี แยกไฟล์ไปเรื่อยๆ</td></tr>
+    <tr><td></td><td>เอามาทำ ค้างรับ</td><td class="nw">P2</td><td class="nw ok">✓ ครบ</td></tr>
+    <tr><td></td><td>สรุปการสั่งซื้อ</td><td class="nw">P4</td><td class="nw ok">✓ ครบ</td></tr>
+    <tr><td></td><td>วางแผนการจ่ายเงิน</td><td class="nw">P3</td><td class="nw ok">✓ ครบ</td></tr>
+    <tr><td></td><td>KPI ลดราคาประจำปี ลดไปได้กี่ %</td><td class="nw">P7</td><td class="nw ok">✓ ครบ</td></tr>
+    <tr><td></td><td>เชื่อมไปยังสโตร์ในการรับสินค้า</td><td class="nw">S1</td><td class="nw ok">✓ ครบ</td></tr>
+
+    <tr class="grp"><td class="nw">1.2</td><td colspan="3">รวมไฟล์ RR ทุกปีตั้งแต่ 2562 มาไว้ไฟล์เดียว</td></tr>
+    <tr><td></td><td>เอามาทำ ต้นทุนเฉลี่ย</td><td class="nw">C1</td><td class="nw ok">✓ ครบ</td></tr>
+    <tr class="miss"><td></td><td><b>เอามาทำราคาต้นทุน เอาไว้ไปทำราคาขายให้กับ Sales ขอราคาของงาน JM</b></td><td class="nw bad">C2</td><td class="nw bad">✗ ตก</td></tr>
+    <tr><td></td><td>ต้นทุนราคาล่าสุดจาก My Account</td><td class="nw">C1</td><td class="nw ok">✓ ครบ</td></tr>
+    <tr><td></td><td>มีรายการซื้อใหม่ → ลบรายการเก่าออก</td><td class="nw">C1</td><td class="nw ok">✓ (แก้เป็นเขียนทับ)</td></tr>
+
+    <tr class="grp"><td class="nw">1.3</td><td colspan="3">ข้อมูลผู้รับเหมา + แบบฟอร์ม + relate กับ PO</td></tr>
+    <tr><td></td><td>สัญญาผู้รับเหมา + ใบเสร็จรับเงิน ผูกกัน</td><td class="nw">P5</td><td class="nw ok">✓ ครบ</td></tr>
+
+    <tr class="grp"><td class="nw">1.4</td><td colspan="3">งานสรุป PR — กดแล้วลิงก์ไปโปรแกรมเดิม</td></tr>
+    <tr><td></td><td>ลิงก์ไปดู PR</td><td class="nw">P6</td><td class="nw ok">✓ ครบ</td></tr>
+
+    <tr class="grp" style="background:#f2ebfd"><td class="nw">1.5</td><td colspan="3"><b class="warn">ไม่มีในข้อความที่เบียร์ส่งมา — เขียน 1.4 แล้วข้ามไป 1.6</b> ต้องถามว่ามีข้อนี้ไหม</td></tr>
+
+    <tr class="grp"><td class="nw">1.6</td><td colspan="3">Dashboard KPI ของจัดซื้อ</td></tr>
+    <tr><td></td><td>ลดต้นทุน</td><td class="nw">P7</td><td class="nw ok">✓ ครบ</td></tr>
+    <tr><td></td><td>หา Supplier ใหม่ ระบบตรวจได้เอง</td><td class="nw">P7</td><td class="nw ok">✓ ครบ</td></tr>
+    <tr><td></td><td>ข้อมูลจัดซื้อ relate กับฝั่งสโตร์ได้</td><td class="nw">ทุกตัว</td><td class="nw ok">✓ ครบ</td></tr>
+
+    <tr class="grp"><td class="nw">1.7</td><td colspan="3">อื่นๆ ยังคิดไม่ออก → <b>ผมเติมให้ในแท็บ 2</b></td></tr>
+  </table>
+  </div>
+
+  <h2>ฝั่งสโตร์ — ตรวจทีละบรรทัด</h2>
+  <div class="scroll">
+  <table>
+    <tr><th class="nw">ข้อ</th><th>สิ่งที่เบียร์เขียน</th><th class="nw">โมดูล</th><th class="nw">สถานะ</th></tr>
+
+    <tr class="grp"><td class="nw">2.1</td><td colspan="3">การรับสินค้าประจำวัน</td></tr>
+    <tr><td></td><td>รับสินค้าที่ relate มาจาก PO · <b>มีการรับข้ามปีด้วย</b></td><td class="nw">S1</td><td class="nw ok">✓ ครบ</td></tr>
+
+    <tr class="grp"><td class="nw">2.2</td><td colspan="3">โปรแกรม Stock Card</td></tr>
+    <tr><td></td><td>รับเข้าจาก 2.1 ยิงเข้าระบบทันที เห็นของในคลังเท่าไหร่</td><td class="nw">S2</td><td class="nw ok">✓ ครบ</td></tr>
+    <tr><td></td><td>เบิกออก ยืม เคลื่อนไหว เห็นทันที Real Time</td><td class="nw">S2</td><td class="nw ok">✓ ครบ</td></tr>
+    <tr><td></td><td>เบิกตามจ๊อบจาก NOVA ใหญ่ ดันเข้าโปรแกรมนี้</td><td class="nw">S2</td><td class="nw ok">✓ ครบ</td></tr>
+    <tr><td></td><td>แบ่ง คลังใหญ่ / Stock Store / Stock Service · ตัดสต๊อกให้ตรงคลัง</td><td class="nw">S2</td><td class="nw ok">✓ ครบ</td></tr>
+
+    <tr class="grp"><td class="nw">2.3</td><td colspan="3">สรุปสินค้า Inventory ประจำเดือน</td></tr>
+    <tr><td></td><td>นับสินค้าคงคลังประจำเดือนเพื่อสั่งซื้อ</td><td class="nw">S3</td><td class="nw ok">✓ ครบ</td></tr>
+    <tr><td></td><td>เอกสารสรุปการสั่งซื้อให้จัดซื้อได้ทันที</td><td class="nw">S3</td><td class="nw ok">✓ ครบ</td></tr>
+    <tr><td></td><td>เดือนที่แล้วมีเท่าไหร่ · เอาเข้าเท่าไหร่ · หายไปเท่าไหร่</td><td class="nw">S4</td><td class="nw warn">△ มีแต่ยังไม่ระบุชัด</td></tr>
+    <tr><td></td><td>ไม่ตรง → เหตุผล → ผู้จัดการอนุมัติ → ประเมินค่าเสียหาย</td><td class="nw">S3</td><td class="nw ok">✓ ครบ</td></tr>
+    <tr><td></td><td>ส่งมูลค่าสินค้าคงคลังให้บัญชี · ราคา ณ เดือนไหน</td><td class="nw">S4</td><td class="nw ok">✓ ครบ</td></tr>
+    <tr><td></td><td>Export ได้ · มีสูตรให้บัญชี · หรือ GGS</td><td class="nw">S4</td><td class="nw ok">✓ ครบ</td></tr>
+
+    <tr class="grp"><td class="nw">2.4</td><td colspan="3">ประเมินสินค้าซื้อบ่อย หมดบ่อย ควรเข้า Stock ไหม พร้อมเหตุผล</td></tr>
+    <tr><td></td><td>เพิ่ม / ลด / ตัดออก พร้อมเหตุผล</td><td class="nw">S5</td><td class="nw ok">✓ ครบ</td></tr>
+
+    <tr class="grp"><td class="nw">2.5</td><td colspan="3">อื่นๆ ยังคิดไม่ออก → <b>ผมเติมให้ในแท็บ 2</b></td></tr>
+  </table>
+  </div>
+
+  <div class="good">
+    <b>สรุปแท็บนี้</b> — ทุกข้อที่เบียร์เขียนเป็นหัวข้อ <b>มีโมดูลรองรับหมด ยกเว้น 1 บรรทัด</b>
+    คือ “ราคาต้นทุนเอาไว้ไปทำราคาขายให้กับ Sales ขอราคาของงาน JM” ซึ่งผมทำแค่<b>ผลิตราคา</b>
+    แต่เบียร์พูดถึง<b>กระบวนการที่ Sales มาขอราคา</b> ซึ่งเป็นคนละเรื่อง
+  </div>
+
+</section>
+
+<!-- ==================== TAB 2 ==================== -->
+<section class="pane" id="p2">
+
+  <h2>กลุ่ม ก — เบียร์เคยพูดไว้ แต่ผมตกไป (4 อย่าง)</h2>
+
+  <div class="mod new">
+    <div class="hd"><span class="tag n">C2</span><b>Sales ขอราคาต้นทุน (งาน JM)</b><span class="pill p-r">ตกจากข้อ 1.2</span></div>
+    <div class="bd">
+      <div class="quote" style="margin-top:0">“เอามาทำ ราคาต้นทุนเอาไว้ไปทำราคาขายให้กับ <b>Sales ขอราคา</b>ของงาน JM”</div>
+      <p><b>ผมตีความแคบไป</b> — ผมทำแค่ให้ระบบ<b>ผลิตตัวเลข Sales Cost</b> แต่คำว่า “Sales ขอราคา” แปลว่ามี<b>กระบวนการทั้งกระบวนการ</b>:
+      Sales ถามมา → จัดซื้อ/ระบบตอบ → เก็บประวัติว่าตอบไปเท่าไหร่ ตอนไหน → ทีหลังงานนั้นซื้อจริงเท่าไหร่</p>
+      <h4>ต้องมีหน้าจอ</h4>
+      <ul>
+        <li><b>Sales เปิดคำขอ</b> — ระบุงาน (JM/JT) + รายการสินค้าที่ต้องใช้ + จำนวน</li>
+        <li><b>ระบบตอบราคาให้ทันที</b> — ดึง Sales Cost (WAC → Ever → Market) พร้อมบอก<b>ที่มาและอายุของราคา</b> เช่น “ราคานี้มาจากการซื้อครั้งล่าสุด 8 เดือนที่แล้ว — ควรขอใบเสนอราคาใหม่”</li>
+        <li><b>ตัวไหนไม่มีราคา</b> → ส่งคิวให้จัดซื้อไปหาราคา แล้วตอบกลับในระบบ</li>
+        <li><b>ล็อกราคาที่ตอบไป</b> พร้อมวันหมดอายุ (เช่น 30 วัน) — Sales เอาไปเสนอลูกค้าได้อย่างมั่นใจ</li>
+        <li><b>ปิดวงจร ⭐</b> — พองานนั้นซื้อของจริง ระบบเทียบให้ว่า <b>ราคาที่ตอบไป vs ราคาที่ซื้อจริง</b> ต่างกันกี่ % → นี่คือตัวเลขที่บอกว่าเราประเมินต้นทุนแม่นแค่ไหน</li>
+      </ul>
+      <div class="danger" style="margin-bottom:0">
+        <b>ข้อนี้สำคัญกว่าที่คิด</b> — ถ้าตอบราคาต่ำไป บริษัทรับงานแล้วขาดทุน · ถ้าตอบสูงไป เสียงานให้คู่แข่ง ·
+        และตอนนี้<b>ไม่มีใครรู้เลยว่าที่ตอบไปแม่นแค่ไหน</b> เพราะไม่มีการเก็บว่าเคยตอบเท่าไหร่
+      </div>
+    </div>
+  </div>
+
+  <div class="mod new">
+    <div class="hd"><span class="tag n">P8</span><b>Performance พนักงานจัดซื้อ + สโตร์</b><span class="pill p-r">เบียร์พูดตอนกำหนดขอบเขต</span></div>
+    <div class="bd">
+      <div class="quote" style="margin-top:0">“อันนี้เราจะมาดูว่า <b>Performance พนักงาน</b>ด้วย และมาดูการวางแผน และคิดวิเคราะห์ต้นทุนด้วยที่แท้จริง”</div>
+      <p><b>ผมมีแต่ตารางเก็บข้อมูล</b> (<code>SUM_STAFF_MONTH</code>) <b>แต่ไม่ได้ทำเป็นโมดูล</b> และไม่เคยนิยามว่าจะวัดอะไร</p>
+      <div class="scroll">
+      <table>
+        <tr><th class="nw">ฝ่าย</th><th>ตัวชี้วัดที่ระบบวัดได้เอง (ไม่ต้องกรอก)</th></tr>
+        <tr><td class="nw"><b>จัดซื้อ</b></td><td>
+          จำนวน PO ที่ออก · มูลค่าที่ดูแล · <b>% ลดต้นทุนของตัวเอง</b> ·
+          จำนวนผู้ขายใหม่ที่หาได้ · <b>PO ค้างรับเกินกำหนดที่ยังไม่ปิด</b> ·
+          เวลาเฉลี่ยจาก PR → PO · เวลาเฉลี่ยตอบคำขอราคาจาก Sales
+        </td></tr>
+        <tr><td class="nw"><b>สโตร์</b></td><td>
+          จำนวนใบรับของ · <b>เวลาเฉลี่ยจากของถึงหน้าโรงงาน → กดรับในระบบ</b> ·
+          จำนวนครั้งที่นับสต๊อกแล้วผลต่าง ≠ 0 · <b>มูลค่าผลต่างสะสม</b> ·
+          จำนวนรายการที่รับแล้วไม่มีเอกสารตามมาภายใน 7 วัน
+        </td></tr>
+      </table>
+      </div>
+      <div class="amberbox" style="margin-bottom:0">
+        <b>ผมขอเตือน 1 เรื่อง</b> — ตัวชี้วัดพวกนี้ถ้าเอาไปผูกกับการประเมินผลงานตรง ๆ คนจะเริ่ม<b>เล่นกับตัวเลข</b>
+        (เช่น ไม่กดรับของจนกว่าเอกสารจะครบ เพื่อไม่ให้ตัวเลขเสีย ทั้งที่ของอยู่ในโรงงานแล้ว)
+        <b>ผมแนะนำให้ใช้ดูภาพรวมและหาจุดที่ระบบติดขัดก่อน</b> ค่อยตัดสินใจทีหลังว่าจะเอาไปประเมินคนไหม —
+        แต่อันนี้เบียร์ตัดสินใจเอง ผมแค่บอกสิ่งที่มักเกิดขึ้น
+      </div>
+    </div>
+  </div>
+
+  <div class="mod new">
+    <div class="hd"><span class="tag n">P9</span><b>วางแผนการซื้อล่วงหน้า</b><span class="pill p-r">เบียร์พูดว่า “มาดูการวางแผน”</span></div>
+    <div class="bd">
+      <p style="margin-top:0"><b>สิ่งที่ผมทำไว้เป็นแค่ “สั่งซื้อเมื่อของใกล้หมด”</b> (S5 + ใบขอซื้อจากการนับ) ซึ่งเป็นการ<b>ตามหลัง</b>
+      ไม่ใช่การ<b>วางแผน</b></p>
+      <p>การวางแผนจริงคือ <b>มองไปข้างหน้าจากงานที่รับมาแล้ว</b>:</p>
+      <div class="tree">จ๊อบที่เปิดแล้ว (จาก NOVA ใหญ่)
+      │
+      ▼
+BOM ของแต่ละจ๊อบ  =  ต้องใช้ของอะไร เท่าไหร่ เมื่อไหร่
+      │
+      ▼
+เทียบกับ  [ ของในคลัง ]  +  [ PO ที่สั่งแล้วกำลังจะมา ]
+      │
+      ▼
+ขาดเท่าไหร่ · ต้องสั่งเมื่อไหร่ (นับถอยหลังจาก Lead Time ของผู้ขาย)
+      │
+      ▼
+[ แผนการซื้อล่วงหน้า 1–3 เดือน ]  +  [ ประมาณการเงินที่ต้องจ่าย ]</div>
+      <p><b>ได้อะไร</b> — เห็นล่วงหน้าว่าเดือนหน้าต้องใช้เงินเท่าไหร่ · ของตัวไหนจะขาดก่อนงานเสร็จ ·
+      ผู้ขายเจ้าไหนต้องสั่งล่วงหน้ากี่วัน</p>
+      <div class="note" style="margin-bottom:0">
+        <b>ต้องมี 2 อย่างก่อนถึงทำได้</b> — ① <b>BOM ของจ๊อบ</b> (อยู่ใน NOVA ใหญ่แล้ว) ②
+        <b>Lead Time ของผู้ขายแต่ละราย</b> (ยังไม่มี ต้องเก็บ — แต่ระบบคำนวณเองได้จากประวัติ: วันที่สั่ง → วันที่ของถึง เฉลี่ยย้อนหลัง)
+      </div>
+    </div>
+  </div>
+
+  <div class="mod new">
+    <div class="hd"><span class="tag n">P10</span><b>ของนำเข้า + มัดจำ</b><span class="pill p-r">เบียร์พูดหลายรอบ แต่ผมทำเป็นบรรทัดเดียว</span></div>
+    <div class="bd">
+      <div class="quote" style="margin-top:0">“PO ต่างประเทศ ก็คือต้องคีย์เอง มีปุ่มว่ารับของเข้าแล้ว … ค้างรับในประเทศส่วนใหญ่ทำ Manual เพราะมันไม่บอกเลข PO”</div>
+      <p>ผมยัดเรื่องนี้เป็นบรรทัดเดียวใน P2 ซึ่ง<b>เล็กเกินไปสำหรับปัญหาจริง</b> — ของนำเข้าไม่ใช่แค่ “คีย์เอง” แต่มี<b>ต้นทุนที่ไม่อยู่ในใบ PO</b></p>
+      <div class="scroll">
+      <table>
+        <tr><th class="nw">เรื่อง</th><th>ปัญหา</th><th>ต้องมี</th></tr>
+        <tr><td class="nw"><b>ต้นทุนนำเข้า</b></td><td class="bad">ราคาใน PO เป็นราคาต่างประเทศ ยังไม่รวมค่าขนส่ง อากร ค่าดำเนินการ → <b>ต้นทุนจริงสูงกว่าที่ระบบเห็น</b></td><td>ช่องบวกค่าใช้จ่ายนำเข้าเข้าไปในต้นทุนสินค้า แล้วเฉลี่ยตามมูลค่าหรือน้ำหนัก</td></tr>
+        <tr><td class="nw"><b>อัตราแลกเปลี่ยน</b></td><td class="bad">สั่งวันหนึ่ง จ่ายอีกวันหนึ่ง เรตไม่เท่ากัน</td><td>เก็บเรตที่ใช้จริง + วันที่ · ใช้เรตวันรับของเป็นต้นทุน</td></tr>
+        <tr><td class="nw"><b>ติดตามของ</b></td><td class="bad">ของลอยอยู่กลางทาง 30–60 วัน ไม่มีใครเห็น</td><td>สถานะ: สั่งแล้ว → ลงเรือ → ถึงท่า → ผ่านศุลกากร → ถึงโรงงาน</td></tr>
+        <tr><td class="nw"><b>มัดจำ</b></td><td class="bad">15 ใบ <b>฿2,502,107.08</b> โยงกลับ PO ไม่ได้ เพราะรายงานไม่มีเลข PO</td><td>ทะเบียนมัดจำ: จ่ายเมื่อไหร่ · ผูก PO ไหน · ตัดไปแล้วเท่าไหร่ · <b>คงเหลือเท่าไหร่</b></td></tr>
+      </table>
+      </div>
+      <div class="good" style="margin-bottom:0">
+        <b>เรื่องมัดจำมีข่าวดี</b> — ผมเจอแล้วว่ามัดจำที่<b>ตัดไปแล้ว</b> โยงกลับ PO ได้ผ่านใบรับของ
+        (102 ใบ ฿6,220,603.69) เหลือแค่ 15 ใบที่<b>ยังไม่ได้ตัด</b> ที่ต้องขอให้ My Account ใส่เลข PO เพิ่ม
+      </div>
+    </div>
+  </div>
+
+  <h2>กลุ่ม ข — ไม่มีใครพูดถึง แต่ขาดไม่ได้ (5 อย่าง)</h2>
+  <p class="small">นี่คือส่วนที่ผมเติมให้ในข้อ “1.7 อื่นๆ ยังคิดไม่ออก” และ “2.5 อื่นๆ”</p>
+
+  <div class="mod new">
+    <div class="hd"><span class="tag x">X1</span><b>ยามตรวจข้อมูล (กระทบยอดทุกคืน)</b></div>
+    <div class="bd">
+      <p style="margin-top:0">ผมเคยพูดถึงว่าอยู่ใน P1 แต่จริง ๆ มัน<b>ต้องเป็นตัวของตัวเอง</b> เพราะต้องตรวจข้ามทุกโมดูล</p>
+      <ul style="margin-bottom:0">
+        <li>ยอดในระบบ เทียบกับ My Account — ต่างกันแม้บาทเดียว หยุดและแจ้ง</li>
+        <li>ผลรวม PO = ผลรวมรับ + ผลรวมค้างรับ (ต้องเท่ากันเสมอ)</li>
+        <li>ยอดใน Stock Card = ยอดที่นับได้ครั้งล่าสุด + รับ − จ่าย</li>
+        <li>จำนวนแถวที่ NOVA ส่งมา = จำนวนแถวที่เข้า Stock Card</li>
+        <li>ทุกบรรทัดต้องมีต้นทุนและมี Source — ไม่มีช่องว่าง ไม่มี <code>#N/A</code></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="mod new">
+    <div class="hd"><span class="tag x">X2</span><b>แจ้งเตือน</b></div>
+    <div class="bd">
+      <p style="margin-top:0">ระบบที่ไม่เตือน = คนต้องเข้ามาดูเอง = สุดท้ายไม่มีใครดู</p>
+      <div class="scroll">
+      <table>
+        <tr><th class="nw">เตือนเรื่อง</th><th class="nw">เตือนใคร</th><th class="nw">เมื่อไหร่</th></tr>
+        <tr><td class="nw">PO ค้างรับเกินกำหนดส่ง</td><td class="nw">จัดซื้อ</td><td class="nw">ทุกเช้า</td></tr>
+        <tr><td class="nw">มีของรอจัดซื้ออนุมัติรับ</td><td class="nw">จัดซื้อ</td><td class="nw">ทันที</td></tr>
+        <tr><td class="nw">ของต่ำกว่าจุดสั่งซื้อ</td><td class="nw">สโตร์ + จัดซื้อ</td><td class="nw">ทุกเช้า</td></tr>
+        <tr><td class="nw">ผลต่างการนับรออนุมัติ</td><td class="nw">ผู้จัดการ</td><td class="nw">ทุกวัน</td></tr>
+        <tr><td class="nw">ยามตรวจข้อมูลเจอไม่ตรง</td><td class="nw">เบียร์</td><td class="nw">ทันที</td></tr>
+        <tr><td class="nw">ราคาตลาดหมดอายุ</td><td class="nw">จัดซื้อ</td><td class="nw">ทุกเดือน</td></tr>
+        <tr><td class="nw">ใกล้ถึงกำหนดจ่ายเงิน</td><td class="nw">จัดซื้อ + บัญชี</td><td class="nw">ล่วงหน้า 3 วัน</td></tr>
+      </table>
+      </div>
+      <p class="small" style="margin-bottom:0">ส่งเข้า LINE (โทเคนเก็บใน Script Properties ไม่ใส่ในโค้ด) + มีกระดิ่งในระบบ · <b>ทุกอันปิดได้รายคน</b> ไม่งั้นคนจะปิดทั้งหมด</p>
+    </div>
+  </div>
+
+  <div class="mod new">
+    <div class="hd"><span class="tag x">X3</span><b>ตั้งค่า + จัดการผู้ใช้และสิทธิ์</b></div>
+    <div class="bd">
+      <div class="quote" style="margin-top:0">เบียร์เคยบอกไว้: “<b>เบียร์จะต้องเพิ่มและลบคนได้</b>”</div>
+      <p style="margin-bottom:0">ต้องมีหน้าจอให้เบียร์ทำเองโดยไม่ต้องเรียกผม: เพิ่ม/ลบ/ระงับผู้ใช้ · เปลี่ยนสิทธิ์ · รีเซ็ต PIN ·
+      ตั้งค่าเกณฑ์ทั้งหมด (จุดสั่งซื้อ · อายุราคาตลาด · เกณฑ์แนะนำ Stock · วันหยุด · VAT) ·
+      ทะเบียนไฟล์รายปี (เพิ่มปีใหม่ = เพิ่ม 1 แถว ไม่ต้องแก้โค้ด)</p>
+    </div>
+  </div>
+
+  <div class="mod new">
+    <div class="hd"><span class="tag x">X4</span><b>ประวัติการใช้งาน (ตรวจย้อนหลัง)</b></div>
+    <div class="bd">
+      <div class="quote" style="margin-top:0">Policy ของเบียร์เอง: “<b>Source = Transparency</b> · เพื่อรองรับการตรวจสอบย้อนหลัง”</div>
+      <p style="margin-bottom:0">ทุกการกระทำที่เปลี่ยนตัวเลข ต้องรู้ว่า <b>ใคร · ทำอะไร · เมื่อไหร่ · จากอะไรเป็นอะไร · เหตุผล</b>
+      · ลบไม่ได้ · <b>ทุกตัวเลขบนหน้าจอต้องกดดูได้ว่ามาจากไหน</b> ย้อนกลับไปถึงใบ RR ต้นทาง</p>
+    </div>
+  </div>
+
+  <div class="mod new">
+    <div class="hd"><span class="tag x">X5</span><b>สำรองข้อมูล + ปิดปี</b></div>
+    <div class="bd">
+      <ul style="margin:0">
+        <li><b>สำรอง</b> — รายคืนเก็บ 7 วัน · รายเดือนเก็บถาวร · <b>ต้องทดลองกู้จริงปีละครั้ง</b> (สำรองที่ไม่เคยกู้ = ไม่รู้ว่าใช้ได้จริงไหม)</li>
+        <li><b>ปิดปี</b> — กดปุ่มเดียว: สร้างไฟล์ปีใหม่ · เพิ่มแถวในทะเบียน · ยกยอดคงเหลือ · ล็อกปีเก่าเป็นอ่านอย่างเดียว · ย้ายเข้า ARCHIVE</li>
+        <li><b>ตรวจขนาดไฟล์ทุกสิ้นปี</b> — เตือนถ้าไฟล์ไหนเกิน 70% ของเพดาน</li>
+      </ul>
+    </div>
+  </div>
+
+</section>
+
+<!-- ==================== TAB 3 ==================== -->
+<section class="pane" id="p3">
+
+  <h2>โมดูลชุดใหม่ — 22 ตัว</h2>
+  <div class="grid g4">
+    <div class="kpi"><div class="v" style="color:var(--blue)">10</div><div class="l">จัดซื้อ (P)</div></div>
+    <div class="kpi"><div class="v" style="color:var(--purple)">2</div><div class="l">ต้นทุน (C)</div></div>
+    <div class="kpi"><div class="v" style="color:var(--teal)">5</div><div class="l">สโตร์ (S)</div></div>
+    <div class="kpi"><div class="v" style="color:#5b6a7d">5</div><div class="l">งานระบบ (X)</div></div>
+  </div>
+
+  <div class="scroll">
+  <table>
+    <tr><th class="nw">รหัส</th><th>ชื่อโมดูล</th><th class="nw">มาจาก</th><th class="nw">ใหม่?</th></tr>
+    <tr class="grp"><td colspan="4">ฝั่งจัดซื้อ</td></tr>
+    <tr><td class="nw"><span class="tag">P1</span></td><td>นำเข้า PO/RR + จับคู่ 5 ชั้น</td><td class="nw">1.1</td><td class="nw"></td></tr>
+    <tr><td class="nw"><span class="tag">P2</span></td><td>PO ค้างรับ (ข้ามปี)</td><td class="nw">1.1</td><td class="nw"></td></tr>
+    <tr><td class="nw"><span class="tag">P3</span></td><td>แผนจ่ายเงิน + ตั้งเบิก</td><td class="nw">1.1</td><td class="nw"></td></tr>
+    <tr><td class="nw"><span class="tag">P4</span></td><td>สรุปการสั่งซื้อ</td><td class="nw">1.1</td><td class="nw"></td></tr>
+    <tr><td class="nw"><span class="tag">P5</span></td><td>ผู้รับเหมา (สัญญา + ใบรับเงิน)</td><td class="nw">1.3</td><td class="nw"></td></tr>
+    <tr><td class="nw"><span class="tag">P6</span></td><td>ลิงก์ไปดู PR</td><td class="nw">1.4</td><td class="nw"></td></tr>
+    <tr><td class="nw"><span class="tag">P7</span></td><td>Dashboard KPI + กลุ่มสินค้าเทียบเท่า</td><td class="nw">1.6</td><td class="nw"></td></tr>
+    <tr class="miss"><td class="nw"><span class="tag n">P8</span></td><td><b>Performance พนักงาน</b></td><td class="nw">เบียร์พูด</td><td class="nw bad">ใหม่</td></tr>
+    <tr class="miss"><td class="nw"><span class="tag n">P9</span></td><td><b>วางแผนการซื้อล่วงหน้า</b></td><td class="nw">เบียร์พูด</td><td class="nw bad">ใหม่</td></tr>
+    <tr class="miss"><td class="nw"><span class="tag n">P10</span></td><td><b>ของนำเข้า + มัดจำ</b></td><td class="nw">เบียร์พูด</td><td class="nw bad">ใหม่</td></tr>
+
+    <tr class="grp"><td colspan="4">ต้นทุน</td></tr>
+    <tr><td class="nw"><span class="tag c">C1</span></td><td>Costing Engine (RR รวมทุกปี)</td><td class="nw">1.2</td><td class="nw"></td></tr>
+    <tr class="miss"><td class="nw"><span class="tag n">C2</span></td><td><b>Sales ขอราคาต้นทุน (งาน JM)</b></td><td class="nw">1.2</td><td class="nw bad">ใหม่</td></tr>
+
+    <tr class="grp"><td colspan="4">ฝั่งสโตร์</td></tr>
+    <tr><td class="nw"><span class="tag s">S1</span></td><td>รับสินค้าประจำวัน (GRN)</td><td class="nw">2.1</td><td class="nw"></td></tr>
+    <tr><td class="nw"><span class="tag s">S2</span></td><td>Stock Card 3 คลัง</td><td class="nw">2.2</td><td class="nw"></td></tr>
+    <tr><td class="nw"><span class="tag s">S3</span></td><td>นับสต๊อกเดือน + ใบขอซื้อ</td><td class="nw">2.3</td><td class="nw"></td></tr>
+    <tr><td class="nw"><span class="tag s">S4</span></td><td>มูลค่าสต๊อก + ABC ส่งบัญชี</td><td class="nw">2.3</td><td class="nw"></td></tr>
+    <tr><td class="nw"><span class="tag s">S5</span></td><td>แนะนำสินค้าเข้า/ออก Stock</td><td class="nw">2.4</td><td class="nw"></td></tr>
+
+    <tr class="grp"><td colspan="4">งานระบบ (ข้อ 1.7 / 2.5 “อื่นๆ”)</td></tr>
+    <tr class="miss"><td class="nw"><span class="tag x">X1</span></td><td><b>ยามตรวจข้อมูล</b></td><td class="nw">Candy เติม</td><td class="nw bad">ใหม่</td></tr>
+    <tr class="miss"><td class="nw"><span class="tag x">X2</span></td><td><b>แจ้งเตือน</b></td><td class="nw">Candy เติม</td><td class="nw bad">ใหม่</td></tr>
+    <tr class="miss"><td class="nw"><span class="tag x">X3</span></td><td><b>ตั้งค่า + ผู้ใช้/สิทธิ์</b></td><td class="nw">เบียร์พูด</td><td class="nw bad">ใหม่</td></tr>
+    <tr class="miss"><td class="nw"><span class="tag x">X4</span></td><td><b>ประวัติการใช้งาน</b></td><td class="nw">Policy เบียร์</td><td class="nw bad">ใหม่</td></tr>
+    <tr class="miss"><td class="nw"><span class="tag x">X5</span></td><td><b>สำรอง + ปิดปี</b></td><td class="nw">Candy เติม</td><td class="nw bad">ใหม่</td></tr>
+  </table>
+  </div>
+
+  <h2>ผังใหม่</h2>
+  <div class="tree">┌─────────────────────────── งานระบบ (คลุมทุกโมดูล) ───────────────────────────┐
+│  X1 ยามตรวจข้อมูล  ·  X2 แจ้งเตือน  ·  X3 ตั้งค่า/สิทธิ์  ·  X4 ประวัติ  ·  X5 สำรอง+ปิดปี  │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+My Account ──▶ P1 นำเข้า+จับคู่ ──┬──▶ P2 ค้างรับ ──┬──▶ P3 แผนจ่ายเงิน ──▶ บัญชี
+                                  │                 │
+                                  │                 └──▶ S1 สโตร์รับของ ──▶ S2 Stock Card
+                                  │                                            ▲       │
+                                  ├──▶ P4 สรุปสั่งซื้อ                          │       │
+                                  │                              NOVA ใหญ่ ─────┘       │
+                                  ├──▶ P10 นำเข้า+มัดจำ                                 │
+                                  │                                                     ▼
+                                  ├──▶ P5 ผู้รับเหมา                        S3 นับสต๊อกเดือน
+                                  │                                                     │
+RR ทุกปี 2562→ ──▶ C1 Costing ────┼──▶ C2 Sales ขอราคา ──▶ Sales (งาน JM)               ├──▶ ใบขอซื้อ ──▶ จัดซื้อ
+                    │             │                                                     │
+                    ├─ ราคาล่าสุด ─┼──────────────────────▶ NOVA ใหญ่                    └──▶ S4 มูลค่า+ABC ──▶ บัญชี
+                    └─ Carry Fwd ──┴──────────────────────▶ S4                                      │
+                                                                                                    │
+BOM จ๊อบ (NOVA) ──▶ P9 วางแผนซื้อล่วงหน้า ◀── S2 ของในคลัง + P2 ของกำลังมา                          │
+                                                                                                    │
+ทุกโมดูล ──▶ P7 Dashboard KPI  ·  P8 Performance พนักงาน  ·  S5 แนะนำ Stock ◀────────────────────────┘</div>
+
+</section>
+
+<!-- ==================== TAB 4 ==================== -->
+<section class="pane" id="p4">
+
+  <h2>คำถามที่ต้องให้เบียร์ตอบ</h2>
+
+  <div class="card">
+    <h4 style="margin-top:0"><span class="pill p-p">1</span> ข้อ 1.5 คืออะไร</h4>
+    <p style="margin-bottom:0">ในข้อความที่เบียร์ส่งมา เขียน 1.4 แล้วข้ามไป 1.6 เลย — <b>มีข้อ 1.5 ที่ตกหล่นไหม</b> หรือแค่พิมพ์เลขข้าม</p>
+  </div>
+
+  <div class="card">
+    <h4 style="margin-top:0"><span class="pill p-p">2</span> 9 โมดูลใหม่ เอาไหม ตัดตัวไหนออก</h4>
+    <p>ผมไม่อยากใส่ของที่เบียร์ไม่ได้อยากได้ · ผมคิดว่า <b>X1–X5 (งานระบบ) ตัดไม่ได้</b> แต่ 4 ตัวแรกเบียร์เลือกได้:</p>
+    <div class="scroll">
+    <table>
+      <tr><th class="nw">โมดูล</th><th>ถ้าไม่ทำ จะเป็นยังไง</th><th class="nw">ผมแนะนำ</th></tr>
+      <tr><td class="nw"><b>C2</b> Sales ขอราคา</td><td>Sales ยังต้องเดินมาถามจัดซื้อเหมือนเดิม · ไม่มีใครรู้ว่าประเมินต้นทุนแม่นแค่ไหน</td><td class="nw ok">ควรทำ</td></tr>
+      <tr><td class="nw"><b>P8</b> Performance</td><td>ไม่มีตัวเลขวัดคน — แต่ข้อมูลจะถูกเก็บไว้อยู่แล้ว ทำทีหลังได้</td><td class="nw warn">ทำทีหลังได้</td></tr>
+      <tr><td class="nw"><b>P9</b> วางแผนซื้อ</td><td>ยังเป็นการซื้อตามหลัง ไม่ได้วางแผน · <b>ต้องรอ BOM จาก NOVA ก่อนอยู่แล้ว</b></td><td class="nw warn">เฟสท้าย</td></tr>
+      <tr><td class="nw"><b>P10</b> นำเข้า+มัดจำ</td><td>ต้นทุนของนำเข้าจะต่ำกว่าความจริง · มัดจำ ฿2.5 ล้าน ยังลอยอยู่</td><td class="nw ok">ควรทำ</td></tr>
+    </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h4 style="margin-top:0"><span class="pill p-p">3</span> ของนำเข้า — บวกค่าขนส่ง/อากร เข้าต้นทุนสินค้าไหม</h4>
+    <p style="margin-bottom:0">Policy ที่เบียร์เขียนไว้ไม่ได้พูดถึงเรื่องนี้ · ถ้าบวก ต้นทุนจะสูงขึ้นและตรงความจริงกว่า
+    แต่ต้องตกลงกับบัญชีว่าเฉลี่ยยังไง (ตามมูลค่า หรือ ตามน้ำหนัก) — <b>รบกวนถามบัญชีพร้อมเรื่องหัก ณ ที่จ่าย</b></p>
+  </div>
+
+  <div class="card">
+    <h4 style="margin-top:0"><span class="pill p-p">4</span> Performance พนักงาน — เอาไปประเมินผลงานจริงไหม</h4>
+    <p style="margin-bottom:0">ถ้าใช่ ผมจะออกแบบตัวชี้วัดให้<b>เล่นกับตัวเลขยาก</b>ตั้งแต่แรก (เช่น จับเวลาจาก “ของถึงหน้าโรงงาน” ไม่ใช่ “เปิดหน้าจอ”)
+    ถ้าแค่ดูภาพรวม ออกแบบง่ายกว่ามาก</p>
+  </div>
+
+  <h2>ลำดับใหม่ 8 เฟส (ใส่ 9 โมดูลใหม่เข้าไปแล้ว)</h2>
+  <p class="small">ใช้หลักเกณฑ์เดิม 4 ข้อ — งานระบบ X1/X3/X4 ขยับขึ้นมาต้น ๆ เพราะ <b>“แก้ทีหลังยาก”</b> ได้ 5 คะแนนเต็ม (ต้องฝังตั้งแต่วันแรก ไม่ใช่มาแปะทีหลัง)</p>
+  <div class="scroll">
+  <table>
+    <tr><th class="nw">เฟส</th><th>โมดูล</th><th>ได้อะไร</th><th class="nw">รอเบียร์</th></tr>
+    <tr><td class="nw"><span class="pill p-g">0</span></td><td>เปิดบ้าน · ล็อกอิน · <b>X3</b> ตั้งค่า/สิทธิ์ · <b>X4</b> ประวัติ</td><td>ล็อกอินได้ · เบียร์เพิ่ม/ลบคนเองได้</td><td class="nw bad">Script ID + โฟลเดอร์</td></tr>
+    <tr><td class="nw"><span class="pill p-g">1</span></td><td>P1 · P2 · <b>X1</b> ยามตรวจข้อมูล</td><td>ค้างรับถูก 100% + มีคนเฝ้าตัวเลข</td><td class="nw bad">ชุดข้อมูล PO+RR</td></tr>
+    <tr><td class="nw"><span class="pill p-g">2</span></td><td>S1 · สร้างรหัสคลัง · <b>X2</b> แจ้งเตือน</td><td>สโตร์รับของด้วยมือถือ + เตือนอัตโนมัติ</td><td class="nw warn">map รหัสคลังเก่า</td></tr>
+    <tr><td class="nw"><span class="pill p-b">3</span></td><td>C1 · S2 (+ ท่อ NOVA ถ้าอนุมัติ)</td><td>ราคากลาง/ล่าสุดส่ง NOVA · Stock Card เดิน</td><td class="nw bad">RR ย้อนหลัง 2562→</td></tr>
+    <tr><td class="nw"><span class="pill p-b">4</span></td><td>P3 · S3 · <b>P10</b> นำเข้า+มัดจำ</td><td>แผนจ่ายเงิน · ปิดเดือน · มัดจำไม่ลอย</td><td class="nw warn">เลข PO ในรายงานมัดจำ</td></tr>
+    <tr><td class="nw"><span class="pill p-a">5</span></td><td>S4 · <b>C2</b> Sales ขอราคา · <b>X5</b> สำรอง+ปิดปี</td><td>ส่งบัญชี Google Sheet · Sales ขอราคาเองได้</td><td class="nw">—</td></tr>
+    <tr><td class="nw"><span class="pill p-a">6</span></td><td>P7 · <b>P8</b> Performance · P4</td><td>Dashboard KPI ครบ</td><td class="nw warn">ยืนยันกลุ่มสินค้า + ตอบข้อ 4</td></tr>
+    <tr><td class="nw"><span class="pill p-p">7</span></td><td>P5 ผู้รับเหมา · S5 · P6 · <b>P9</b> วางแผนซื้อ</td><td>เอกสารผู้รับเหมา · วางแผนล่วงหน้า</td><td class="nw bad">ฟอร์มสัญญา + BOM จาก NOVA</td></tr>
+  </table>
+  </div>
+
+  <div class="note">
+    <b>P5 ผู้รับเหมายังยืดหยุ่นเหมือนเดิม</b> — ไม่มีใครพึ่งมัน ดันขึ้นมาเฟส 3 ได้ทันทีถ้าเบียร์อยากได้เร็ว
+  </div>
+
+  <div class="good">
+    <b>คำตอบสั้นสำหรับคำถามของเบียร์</b><br>
+    <b>ไม่ครบครับ</b> — ที่เบียร์เขียนเป็นข้อ ๆ ผมทำครบหมด<b>ยกเว้น 1 บรรทัด</b> (Sales ขอราคา)
+    แต่มีอีก <b>3 อย่างที่เบียร์เคยพูดในบทสนทนาก่อนหน้าแล้วผมตกไป</b> (Performance พนักงาน · การวางแผน · ของนำเข้า/มัดจำ)
+    และ <b>5 อย่างที่ยังไม่มีใครพูดถึงแต่ขาดไม่ได้</b> ซึ่งผมใส่ให้ในข้อ “อื่นๆ” ที่เบียร์เว้นไว้
+    <br><br><b>ตอนนี้ 22 โมดูล ผมมั่นใจว่าครบแล้ว</b> — แต่ถ้าเบียร์นึกออกเพิ่ม บอกได้ตลอด ยังไม่ได้เขียนโค้ดสักบรรทัด แก้ตอนนี้ฟรี
+  </div>
+
+</section>
+
+<footer>
+  NOVA – PURCHASE &amp; STORE HUB · ตรวจความครบของโมดูล v1 · จัดทำโดย Candy สำหรับเบียร์<br>
+  ตรวจเทียบกับข้อความที่เบียร์เขียนทั้งหมดในการสนทนานี้ ทีละบรรทัด
+</footer>
+
+</div>
+
+<script>
+(function(){
+  var tabs = document.querySelectorAll('.tab');
+  var panes = document.querySelectorAll('.pane');
+  tabs.forEach(function(b){
+    b.addEventListener('click', function(){
+      tabs.forEach(function(x){ x.classList.remove('on'); });
+      panes.forEach(function(x){ x.classList.remove('on'); });
+      b.classList.add('on');
+      var el = document.getElementById('p' + b.dataset.t);
+      if (el) el.classList.add('on');
+      window.scrollTo({top:0, behavior:'smooth'});
+    });
+  });
+})();
+</script>
+</body>
+</html>

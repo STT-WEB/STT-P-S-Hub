@@ -1,0 +1,547 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>แผนแม่บท P&S Hub</title>
+<style>
+:root{
+  --bg:#f4f6f9; --card:#fff; --ink:#16202e; --sub:#5b6a7d; --line:#dde4ec;
+  --blue:#1c5fd0; --blue-l:#eaf1fd; --green:#127a4b; --green-l:#e6f6ee;
+  --red:#c02b2b; --red-l:#fdeceb; --amber:#a86500; --amber-l:#fff5e2;
+  --purple:#6a2fb5; --purple-l:#f2ebfd; --teal:#0d7080; --teal-l:#e4f4f7;
+  --grey:#5b6a7d; --grey-l:#eef2f7;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Sarabun","Leelawadee UI","Tahoma","Segoe UI",sans-serif;font-size:15.5px;line-height:1.75}
+.wrap{max-width:1120px;margin:0 auto;padding:0 16px 80px}
+header{background:linear-gradient(135deg,#0f2b57,#1c5fd0);color:#fff;padding:30px 0 26px}
+header .wrap{padding-bottom:0}
+.badge{display:inline-block;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);
+  padding:3px 12px;border-radius:99px;font-size:12.5px;margin-bottom:10px}
+h1{margin:0 0 6px;font-size:27px;line-height:1.4}
+header p{margin:0;opacity:.92;font-size:14.5px}
+.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);
+  box-shadow:0 2px 8px rgba(20,40,70,.06)}
+.tabs .wrap{display:flex;gap:4px;overflow-x:auto;padding-top:8px;padding-bottom:0}
+.tab{flex:0 0 auto;border:0;background:transparent;font:inherit;font-size:14.5px;color:var(--sub);
+  padding:11px 14px 12px;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
+.tab:hover{color:var(--ink)}
+.tab.on{color:var(--blue);border-bottom-color:var(--blue);font-weight:600}
+.pane{display:none;padding-top:26px}
+.pane.on{display:block}
+h2{font-size:21px;margin:34px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--line)}
+h2:first-child{margin-top:0}
+h3{font-size:17px;margin:26px 0 8px}
+h4{font-size:15.5px;margin:16px 0 6px}
+p{margin:10px 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin:14px 0;
+  box-shadow:0 1px 3px rgba(20,40,70,.05)}
+.card.tight{padding:13px 16px}
+ul,ol{margin:10px 0;padding-inline-start:24px}
+li{margin:6px 0}
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14.5px;background:#fff}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+th,td{border:1px solid var(--line);padding:8px 10px;text-align:start;vertical-align:top}
+th{background:#eef2f7;font-weight:600}
+th.nw,td.nw{white-space:nowrap}
+td.num,th.num{text-align:end;font-variant-numeric:tabular-nums;white-space:nowrap}
+td.ctr,th.ctr{text-align:center}
+tr.grp td{background:#e9eff7;font-weight:700}
+tr.done td{background:#f2fbf6}
+.ok{color:var(--green);font-weight:600}
+.bad{color:var(--red);font-weight:600}
+.warn{color:var(--amber);font-weight:600}
+.pill{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12.5px;font-weight:600;white-space:nowrap}
+.p-g{background:var(--green-l);color:var(--green)}
+.p-r{background:var(--red-l);color:var(--red)}
+.p-a{background:var(--amber-l);color:var(--amber)}
+.p-b{background:var(--blue-l);color:var(--blue)}
+.p-p{background:var(--purple-l);color:var(--purple)}
+.p-t{background:var(--teal-l);color:var(--teal)}
+.p-s{background:var(--grey-l);color:var(--grey)}
+.note{border-inline-start:4px solid var(--blue);background:var(--blue-l);padding:12px 16px;border-radius:0 10px 10px 0;margin:14px 0}
+.danger{border-inline-start:4px solid var(--red);background:var(--red-l);padding:12px 16px;border-radius:0 10px 10px 0;margin:14px 0}
+.good{border-inline-start:4px solid var(--green);background:var(--green-l);padding:12px 16px;border-radius:0 10px 10px 0;margin:14px 0}
+.amberbox{border-inline-start:4px solid var(--amber);background:var(--amber-l);padding:12px 16px;border-radius:0 10px 10px 0;margin:14px 0}
+code{font-family:ui-monospace,"Cascadia Mono","Consolas",monospace;font-size:13.3px;
+  background:#eef2f7;padding:1px 6px;border-radius:5px}
+.tree{background:#101a29;color:#dbe6f5;padding:16px 18px;border-radius:10px;overflow-x:auto;
+  font-family:ui-monospace,"Cascadia Mono","Consolas",monospace;font-size:12.8px;line-height:1.7;white-space:pre;margin:12px 0}
+.grid{display:grid;gap:14px}
+@media(min-width:760px){.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:12px;padding:15px 16px;text-align:center}
+.kpi .v{font-size:25px;font-weight:800;line-height:1.25}
+.kpi .l{font-size:13px;color:var(--sub);margin-top:4px}
+.tag{display:inline-block;color:#fff;font-size:12.5px;font-weight:700;
+  padding:2px 9px;border-radius:6px;white-space:nowrap;background:var(--blue)}
+.tag.s{background:var(--teal)} .tag.c{background:var(--purple)} .tag.x{background:var(--grey)}
+.small{font-size:13.5px;color:var(--sub)}
+.ph{background:#fff;border:1px solid var(--line);border-radius:12px;margin:14px 0;overflow:hidden}
+.ph > .hd{padding:12px 18px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;
+  background:#f2f6fb;border-bottom:1px solid var(--line)}
+.ph.done > .hd{background:var(--green-l);border-bottom-color:#b6e3cd}
+.ph > .hd .n{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;
+  border-radius:9px;background:var(--blue);color:#fff;font-weight:800;font-size:16px;flex:0 0 auto}
+.ph.done > .hd .n{background:var(--green)}
+.ph > .hd b{font-size:16.5px}
+.ph > .bd{padding:14px 18px}
+.row2{display:flex;gap:16px;flex-wrap:wrap}
+.row2 > div{flex:1 1 260px;min-width:0}
+footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);color:var(--sub);font-size:13.5px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="badge">NOVA – PURCHASE &amp; STORE HUB · แผนแม่บท v1 · 15 ก.ย. 2569</div>
+    <h1>ภาพเดียวกัน — เราจะทำอะไร ตามลำดับไหน</h1>
+    <p>22 โมดูล · 8 เฟส · ตอนนี้อยู่เฟส 0 เสร็จแล้ว รอของ 2 อย่างเพื่อเริ่มเฟส 1</p>
+  </div>
+</header>
+
+<div class="tabs">
+  <div class="wrap">
+    <button class="tab on" data-t="1">1 · ภาพรวม</button>
+    <button class="tab" data-t="2">2 · 22 โมดูล</button>
+    <button class="tab" data-t="3">3 · 8 เฟส</button>
+    <button class="tab" data-t="4">4 · ข้อตกลงที่เคาะแล้ว</button>
+    <button class="tab" data-t="5">5 · กฎเหล็ก + รอจากเบียร์</button>
+  </div>
+</div>
+
+<div class="wrap">
+
+<!-- ==================== TAB 1 ==================== -->
+<section class="pane on" id="p1">
+
+  <h2>ระบบนี้คืออะไร</h2>
+  <div class="card">
+    <p style="margin-top:0">เว็บแอป <b>แยกจาก NOVA ใหญ่</b> ใช้ภายในสำหรับ <b>จัดซื้อ + สโตร์</b> โดยเฉพาะ</p>
+    <div class="scroll">
+    <table>
+      <tr><th></th><th>NOVA ใหญ่ (ของเดิม)</th><th>P&amp;S Hub (ที่กำลังทำ)</th></tr>
+      <tr><td class="nw"><b>ทำอะไร</b></td><td>เก็บต้นทุนตามจ๊อบที่เปิด (BOM)</td><td>ระบบจัดซื้อจัดจ้าง + คลังสินค้า</td></tr>
+      <tr><td class="nw"><b>มุมมอง</b></td><td>ราย<b>จ๊อบ</b></td><td><b>ข้ามจ๊อบ · ข้ามปี · มองไปข้างหน้า</b></td></tr>
+      <tr><td class="nw"><b>ใครใช้</b></td><td>ผลิต · Design · จัดซื้อ · สโตร์</td><td>จัดซื้อ 4 · สโตร์ 3 · ผู้บริหาร 3</td></tr>
+      <tr><td class="nw"><b>ทะเบียนผู้ใช้</b></td><td colspan="2" class="ctr">ใช้ร่วมกัน — แท็บ <code>USERS</code> ใน <code>STT-DB-MASTER</code></td></tr>
+    </table>
+    </div>
+  </div>
+
+  <h2>ทิศทางข้อมูล — ใครเป็นเจ้าของอะไร</h2>
+  <div class="tree">My Account  ──▶  P&S Hub  ──▶  ราคาซื้อล่าสุด + ต้นทุนเฉลี่ยกลาง  ──▶  NOVA ใหญ่
+                    ▲                                                          │
+                    └────────── เบิกของตามจ๊อบ + Plan PO รายจ๊อบ ─────────────┘
+
+P&S Hub = เจ้าของ "ราคา"      NOVA ใหญ่ = ผู้ใช้ราคา
+NOVA ใหญ่ = เจ้าของ "จ๊อบ"     P&S Hub = ผู้ใช้ข้อมูลจ๊อบ</div>
+  <p class="small">แต่ละฝั่งเป็นเจ้าของคนละเรื่อง ไม่ทำซ้ำกัน — นี่คือกติกาที่ทำให้ระบบอยู่ได้ 10-20 ปีโดยข้อมูลไม่ขัดกัน</p>
+
+  <h2>วันนี้อยู่ตรงไหน</h2>
+  <div class="grid g4">
+    <div class="kpi"><div class="v ok">เฟส 0</div><div class="l">เสร็จแล้ว<br><span class="small">โครง + ล็อกอิน</span></div></div>
+    <div class="kpi"><div class="v">v0.1.0</div><div class="l">เวอร์ชันปัจจุบัน<br><span class="small">ยังไม่ได้ deploy</span></div></div>
+    <div class="kpi"><div class="v ok">15/15</div><div class="l">ชุดทดสอบกันพัง<br><span class="small">ผ่านทั้งหมด</span></div></div>
+    <div class="kpi"><div class="v warn">2</div><div class="l">ของที่รอจากเบียร์<br><span class="small">เพื่อเริ่มเฟส 1</span></div></div>
+  </div>
+
+  <div class="good">
+    <b>ที่ทำเสร็จแล้ว</b> — โครงโปรเจกต์บนเครื่อง + git + clasp + ปุ่ม <code>อัปเดตระบบ PS Hub.bat</code> กดครั้งเดียวขึ้นทั้งหมด ·
+    ล็อกอินด้วยรหัสพนักงาน + PIN · หน้าลงทะเบียนรับ PIN · หน้าตรวจระบบสำหรับผู้ดูแล · เอกสารออกแบบ 5 ฉบับ
+  </div>
+  <div class="amberbox" style="margin-top:0">
+    <b>ที่รอ</b> — ① <s>สร้าง GitHub repo</s> <span class="ok">เสร็จแล้ว</span> <code>STT-WEB/STT-P-S-Hub</code> &nbsp;
+    ② กดปุ่มอัปเดตระบบ แล้วยืนยันป้ายเวอร์ชัน &nbsp; ③ ชุดข้อมูล PO + RR จริง 1 รอบ
+  </div>
+
+  <h2>งานทั้งหมดแบ่ง 4 กลุ่ม</h2>
+  <div class="grid g4">
+    <div class="card tight" style="margin:0;border-top:4px solid var(--blue)">
+      <b>จัดซื้อ · 10 โมดูล</b><br>
+      <span class="small">นำเข้าข้อมูล · ค้างรับ · จ่ายเงิน · สรุปซื้อ · ผู้รับเหมา · PR · KPI · Performance · วางแผนซื้อ · ของนำเข้า</span>
+    </div>
+    <div class="card tight" style="margin:0;border-top:4px solid var(--purple)">
+      <b>ต้นทุน · 2 โมดูล</b><br>
+      <span class="small">เครื่องคิดต้นทุน (RR รวมทุกปี) · Sales ขอราคา</span>
+    </div>
+    <div class="card tight" style="margin:0;border-top:4px solid var(--teal)">
+      <b>สโตร์ · 5 โมดูล</b><br>
+      <span class="small">รับของ · Stock Card 3 คลัง · นับสต๊อกเดือน · มูลค่า+ABC · แนะนำ Stock</span>
+    </div>
+    <div class="card tight" style="margin:0;border-top:4px solid var(--grey)">
+      <b>งานระบบ · 5 โมดูล</b><br>
+      <span class="small">ยามตรวจข้อมูล · แจ้งเตือน · ตั้งค่า/สิทธิ์ · ประวัติการใช้งาน · สำรอง+ปิดปี</span>
+    </div>
+  </div>
+
+  <h2>ผลลัพธ์ที่วัดได้ ถ้าทำครบ</h2>
+  <div class="scroll">
+  <table>
+    <tr><th>เรื่อง</th><th class="num">วันนี้</th><th>หลังทำระบบ</th></tr>
+    <tr><td>ความถูกต้องของ PO ค้างรับ</td><td class="num bad">98.1%</td><td class="ok">100.0000% (พิสูจน์แล้ว 427/427 รายการ)</td></tr>
+    <tr><td>ค้างรับผิดพลาด</td><td class="num bad">540 รายการ</td><td class="ok">0 — เลิกไล่เช็คมือ</td></tr>
+    <tr><td>เงินที่ตัวเลขบอกผิดอยู่</td><td class="num bad">~฿10.0 ล้าน</td><td class="ok">แก้ได้หมด (ดูรายละเอียดในเฟส 1 และ 4)</td></tr>
+    <tr><td>จัดซื้อ vs สโตร์ ตรงกันไหม</td><td class="num bad">20.3%</td><td class="ok">100% — ข้อมูลชุดเดียวกัน</td></tr>
+    <tr><td>สโตร์รับของ</td><td>จดกระดาษ + คีย์ทีหลัง</td><td class="ok">กดมือถือหน้ารถส่งของ &lt; 2 วินาที</td></tr>
+    <tr><td>ปิดสต๊อกส่งบัญชี</td><td>ทำมือทุกเดือน</td><td class="ok">กดปุ่มเดียว ออก Google Sheet พร้อมสูตร</td></tr>
+    <tr><td>ราคากลาง / ราคาซื้อล่าสุด</td><td>ไฟล์ Excel ต้อง copy-paste ทุกสิ้นปี</td><td class="ok">ปิดยอดอัตโนมัติตี 2 · NOVA มาดึงได้เอง</td></tr>
+  </table>
+  </div>
+
+</section>
+
+<!-- ==================== TAB 2 ==================== -->
+<section class="pane" id="p2">
+
+  <h2>22 โมดูล</h2>
+  <p class="small">คอลัมน์ "มาจาก" บอกว่ามาจากข้อไหนที่เบียร์เขียน หรือเป็นของที่เติมให้ในข้อ "อื่นๆ"</p>
+
+  <div class="scroll">
+  <table>
+    <tr><th class="nw">รหัส</th><th>ชื่อ</th><th>ทำอะไร</th><th class="nw">มาจาก</th><th class="nw">เฟส</th></tr>
+
+    <tr class="grp"><td colspan="5">ฝั่งจัดซื้อ (10)</td></tr>
+    <tr><td class="nw"><span class="tag">P1</span></td><td>นำเข้า PO/RR + จับคู่</td><td>อัปไฟล์จาก My Account → จับคู่ PO↔RR ด้วยรหัสสินค้า 5 ชั้น</td><td class="nw">1.1</td><td class="nw"><span class="pill p-g">1</span></td></tr>
+    <tr><td class="nw"><span class="tag">P2</span></td><td>PO ค้างรับ</td><td>ของที่ยังไม่เข้า · <b>ข้ามปีได้</b> · ตัดยอดที่ตั้งเบิกบัญชีแล้ว</td><td class="nw">1.1</td><td class="nw"><span class="pill p-g">1</span></td></tr>
+    <tr><td class="nw"><span class="tag">P3</span></td><td>แผนจ่ายเงิน + ตั้งเบิก</td><td>เงินสด / เครดิตวางบิล / ตั้งเบิก · <b>ตัดยอดมัดจำออก</b></td><td class="nw">1.1</td><td class="nw"><span class="pill p-b">4</span></td></tr>
+    <tr><td class="nw"><span class="tag">P4</span></td><td>สรุปการสั่งซื้อ</td><td>ยอดซื้อ รายเดือน/ปี/ผู้ขาย/หมวด/จ๊อบ/คนซื้อ</td><td class="nw">1.1</td><td class="nw"><span class="pill p-a">6</span></td></tr>
+    <tr><td class="nw"><span class="tag">P5</span></td><td>งานผู้รับเหมา</td><td>สัญญา + ใบรับเงิน ผูกกับ PO · เลขวิ่งอัตโนมัติ · พิมพ์ได้</td><td class="nw">1.3</td><td class="nw"><span class="pill p-p">7</span></td></tr>
+    <tr><td class="nw"><span class="tag">P6</span></td><td>ลิงก์ไปดู PR</td><td>ปุ่มเปิดไปโปรแกรมเดิม ไม่ทำซ้ำ</td><td class="nw">1.4</td><td class="nw"><span class="pill p-p">7</span></td></tr>
+    <tr><td class="nw"><span class="tag">P7</span></td><td>Dashboard KPI</td><td>% ลดต้นทุน (เทียบปี/ปี ข้ามยี่ห้อได้) · ผู้ขายใหม่</td><td class="nw">1.6</td><td class="nw"><span class="pill p-a">6</span></td></tr>
+    <tr><td class="nw"><span class="tag">P8</span></td><td>Performance พนักงาน</td><td>วัดผลงานจัดซื้อ/สโตร์ · <b>ใช้คิด Incentive จริง</b></td><td class="nw">เบียร์พูด</td><td class="nw"><span class="pill p-a">6</span></td></tr>
+    <tr><td class="nw"><span class="tag">P9</span></td><td>วางแผนซื้อล่วงหน้า</td><td>รวม Plan PO ทุกจ๊อบจาก NOVA − ของในคลัง − ของกำลังมา → แผนซื้อ + แผนเงิน</td><td class="nw">เบียร์พูด</td><td class="nw"><span class="pill p-p">7</span></td></tr>
+    <tr><td class="nw"><span class="tag">P10</span></td><td>PO ต่างประเทศ</td><td>ติดตามของกลางทาง · คีย์รับเอง · <b>เก็บค่าขนส่ง/อากรส่งให้ C1</b></td><td class="nw">เบียร์พูด</td><td class="nw"><span class="pill p-p">7</span></td></tr>
+
+    <tr class="grp"><td colspan="5">ต้นทุน (2)</td></tr>
+    <tr><td class="nw"><span class="tag c">C1</span></td><td>เครื่องคิดต้นทุน</td><td>RR รวมทุกปี 2562→ · Carry Forward · WAC Policy · ราคาซื้อล่าสุด · Sales Cost · <b>บวกต้นทุนนำเข้า</b></td><td class="nw">1.2</td><td class="nw"><span class="pill p-b">3</span></td></tr>
+    <tr><td class="nw"><span class="tag c">C2</span></td><td>Sales ขอราคา (งาน JM)</td><td>Sales กรอกเองว่าต้องการราคาอะไร → ระบบตอบ → ปิดวงจรเทียบกับราคาซื้อจริง · <b>มีสูตร Cross</b></td><td class="nw">1.2</td><td class="nw"><span class="pill p-a">5</span></td></tr>
+
+    <tr class="grp"><td colspan="5">ฝั่งสโตร์ (5)</td></tr>
+    <tr><td class="nw"><span class="tag s">S1</span></td><td>รับสินค้าประจำวัน</td><td>กดรับตาม PO · คอม+มือถือ · แนบรูป · จัดซื้ออนุมัติ · รับข้ามปีได้</td><td class="nw">2.1</td><td class="nw"><span class="pill p-g">2</span></td></tr>
+    <tr><td class="nw"><span class="tag s">S2</span></td><td>Stock Card 3 คลัง</td><td>รับ/เบิก/ยืม/โอน/ปรับ แบบทันที · คลังใหญ่ · Store · Service</td><td class="nw">2.2</td><td class="nw"><span class="pill p-b">3</span></td></tr>
+    <tr><td class="nw"><span class="tag s">S3</span></td><td>นับสต๊อกประจำเดือน</td><td>นับ → เทียบ → ผลต่างขออนุมัติ → ปิดงวด → ออกใบขอซื้อให้จัดซื้อ</td><td class="nw">2.3</td><td class="nw"><span class="pill p-b">4</span></td></tr>
+    <tr><td class="nw"><span class="tag s">S4</span></td><td>มูลค่าสต๊อก + ABC</td><td>ยกมา-เข้า-ออก-คงเหลือ · มูลค่า · ABC · <b>ส่งบัญชีเป็น Google Sheet</b></td><td class="nw">2.3</td><td class="nw"><span class="pill p-a">5</span></td></tr>
+    <tr><td class="nw"><span class="tag s">S5</span></td><td>แนะนำสินค้าเข้า Stock</td><td>ควรเพิ่ม/ลด/ตัดออก พร้อมเหตุผลเป็นตัวเลข</td><td class="nw">2.4</td><td class="nw"><span class="pill p-p">7</span></td></tr>
+
+    <tr class="grp"><td colspan="5">งานระบบ (5) — จากข้อ "1.7 / 2.5 อื่นๆ"</td></tr>
+    <tr class="done"><td class="nw"><span class="tag x">X3</span></td><td>ตั้งค่า + ผู้ใช้/สิทธิ์</td><td>เบียร์เพิ่ม/ลบคนเองได้ · รีเซ็ต PIN · ตั้งเกณฑ์ทุกอย่างโดยไม่ต้องแก้โค้ด</td><td class="nw">เบียร์พูด</td><td class="nw"><span class="pill p-g">0 ✓</span></td></tr>
+    <tr class="done"><td class="nw"><span class="tag x">X4</span></td><td>ประวัติการใช้งาน</td><td>ใคร ทำอะไร เมื่อไหร่ จากอะไรเป็นอะไร · ทุกตัวเลขกดดูที่มาได้</td><td class="nw">Policy เบียร์</td><td class="nw"><span class="pill p-g">0 ✓</span></td></tr>
+    <tr><td class="nw"><span class="tag x">X1</span></td><td>ยามตรวจข้อมูล</td><td>กระทบยอดทุกคืน · ไม่ตรงแม้บาทเดียว หยุดและแจ้งทันที</td><td class="nw">Candy เติม</td><td class="nw"><span class="pill p-g">1</span></td></tr>
+    <tr><td class="nw"><span class="tag x">X2</span></td><td>แจ้งเตือน</td><td>LINE + กระดิ่งในระบบ · 7 เรื่อง · ปิดได้รายคน</td><td class="nw">Candy เติม</td><td class="nw"><span class="pill p-g">2</span></td></tr>
+    <tr><td class="nw"><span class="tag x">X5</span></td><td>สำรอง + ปิดปี</td><td>สำรองรายคืน/รายเดือน · ทดลองกู้ปีละครั้ง · ปิดปีกดปุ่มเดียว</td><td class="nw">Candy เติม</td><td class="nw"><span class="pill p-a">5</span></td></tr>
+  </table>
+  </div>
+
+  <div class="note">
+    <b>ปรับตามที่เบียร์แก้มา</b> — เดิม P10 ชื่อ "นำเข้า + มัดจำ" ผมแยกใหม่ตามที่เบียร์ชี้:
+    <b>มัดจำ</b> ไปอยู่กับ <b>P3 แผนจ่ายเงิน</b> (แค่ตัดยอดออก) · <b>ค่าขนส่ง/อากรของนำเข้า</b> ไปอยู่กับ <b>C1 ต้นทุน</b> (บวกเข้าต้นทุนสินค้า) ·
+    P10 เหลือแค่งานติดตามของต่างประเทศ
+  </div>
+
+</section>
+
+<!-- ==================== TAB 3 ==================== -->
+<section class="pane" id="p3">
+
+  <h2>ลำดับ 8 เฟส</h2>
+  <p>เรียงด้วย 4 เกณฑ์ ไม่ใช่ความรู้สึก: <b>① ลำดับบังคับ</b> (ของที่เป็นวัตถุดิบของอย่างอื่นมาก่อน) ·
+  <b>② เงินที่เสียอยู่</b> · <b>③ ความถี่ที่คนใช้</b> · <b>④ แก้ทีหลังยากแค่ไหน</b></p>
+
+  <div class="ph done">
+    <div class="hd"><span class="n">0</span><b>เปิดบ้าน</b><span class="pill p-g">เสร็จแล้ว</span>
+      <span class="small">X3 ตั้งค่า/สิทธิ์ · X4 ประวัติ</span></div>
+    <div class="bd">
+      <div class="row2">
+        <div><b>ทำอะไร</b><ul style="margin:6px 0">
+          <li>โครงโปรเจกต์ + git + clasp + ปุ่มอัปเดตระบบกดครั้งเดียว</li>
+          <li>ล็อกอินรหัสพนักงาน + PIN 6 หลัก · หน้าลงทะเบียนรับ PIN</li>
+          <li>หน้าตรวจระบบสำหรับผู้ดูแล</li>
+        </ul></div>
+        <div><b>ได้อะไร</b><ul style="margin:6px 0">
+          <li class="ok">ล็อกอินเข้าได้จริง · เบียร์เพิ่ม/ลบคนเองได้</li>
+          <li class="ok">ชุดทดสอบกันพัง 15 ข้อ ผ่านหมด</li>
+        </ul>
+        <b>ค้าง</b> <span class="warn">รอสร้าง GitHub repo + กดปุ่ม deploy ยืนยันป้ายเวอร์ชัน</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ph">
+    <div class="hd"><span class="n">1</span><b>ข้อมูลตั้งต้น + PO ค้างรับ</b>
+      <span class="pill p-b">P1 · P2 · X1</span></div>
+    <div class="bd">
+      <div class="row2">
+        <div><b>ทำอะไร</b><ul style="margin:6px 0">
+          <li>นำเข้า PO/RR จาก My Account → จับคู่ด้วยรหัสสินค้า 5 ชั้น</li>
+          <li>หน้า PO ค้างรับ (ข้ามปีได้)</li>
+          <li>ยามตรวจข้อมูล — กระทบยอดกับ My Account ทุกครั้ง</li>
+        </ul></div>
+        <div><b>ได้อะไร</b><ul style="margin:6px 0">
+          <li class="ok">ค้างรับถูก <b>100.0000%</b> เลิกไล่เช็คมือ</li>
+          <li class="ok">แก้ค้างรับเกินจริง <b>฿2.28 ล้าน</b> + ค้างรับผี ฿38,496</li>
+        </ul>
+        <b>ต้องรอ</b> <span class="bad">ชุดข้อมูล PO + RR จริง 1 รอบ</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ph">
+    <div class="hd"><span class="n">2</span><b>สโตร์รับของ</b>
+      <span class="pill p-b">S1 · รหัสคลัง · X2</span></div>
+    <div class="bd">
+      <div class="row2">
+        <div><b>ทำอะไร</b><ul style="margin:6px 0">
+          <li>หน้ารับของ คอม + มือถือ · แนบรูป · จัดซื้ออนุมัติ</li>
+          <li>สร้างรหัสคลังใหม่ <code>WH-01</code> คลังใหญ่ · <code>WH-02</code> Store · <code>WH-03</code> Service</li>
+          <li>ระบบแจ้งเตือน LINE + กระดิ่ง</li>
+        </ul></div>
+        <div><b>ได้อะไร</b><ul style="margin:6px 0">
+          <li class="ok">สโตร์เลิกจดกระดาษ — กดรับหน้ารถส่งของ &lt; 2 วินาที</li>
+          <li class="ok">จัดซื้อกับสโตร์เห็นตัวเลขเดียวกัน (วันนี้ตรงกันแค่ 20.3%)</li>
+        </ul>
+        <b>ต้องรอ</b> <span class="warn">เบียร์ชี้ว่ารหัสคลังเก่า (01–10, 22, 88) → คลังใหม่ตัวไหน</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ph">
+    <div class="hd"><span class="n">3</span><b>ต้นทุน + Stock Card</b>
+      <span class="pill p-b">C1 · S2</span><span class="pill p-a">หัวใจของระบบ</span></div>
+    <div class="bd">
+      <div class="row2">
+        <div><b>ทำอะไร</b><ul style="margin:6px 0">
+          <li>รวม RR ทุกปี 2562→ปัจจุบัน เป็นไฟล์เดียว</li>
+          <li>สูตรต้นทุน 10 ข้อ (Carry Forward · WAC Policy · ราคาล่าสุด · Sales Cost) + บวกต้นทุนนำเข้า</li>
+          <li>Stock Card 3 คลัง แบบทันที (+ ท่อจาก NOVA ถ้าเบียร์อนุมัติ)</li>
+        </ul></div>
+        <div><b>ได้อะไร</b><ul style="margin:6px 0">
+          <li class="ok">เลิก copy-paste ไฟล์ราคาทุกสิ้นปี — ปิดยอดอัตโนมัติตี 2</li>
+          <li class="ok">NOVA มาดึงราคาซื้อล่าสุดได้เอง</li>
+          <li class="ok">เห็นของในคลังแบบทันที ไม่ต้องรอสิ้นเดือน</li>
+        </ul>
+        <b>ต้องรอ</b> <span class="bad">RR ย้อนหลังตั้งแต่ 2562</span> · <span class="warn">อนุมัติให้แตะ NOVA</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ph">
+    <div class="hd"><span class="n">4</span><b>จ่ายเงิน + ปิดสต๊อกเดือน</b>
+      <span class="pill p-b">P3 · S3</span></div>
+    <div class="bd">
+      <div class="row2">
+        <div><b>ทำอะไร</b><ul style="margin:6px 0">
+          <li>แผนจ่ายเงิน — เงินสด / วางบิล (อังคารแรกที่ตรงหรือหลังวันที่ 6) / ตั้งเบิก · ตัดมัดจำออก</li>
+          <li>นับสต๊อกเดือน — นับ → เทียบ → ผลต่างขออนุมัติ → ปิดงวด → ออกใบขอซื้อ</li>
+        </ul></div>
+        <div><b>ได้อะไร</b><ul style="margin:6px 0">
+          <li class="ok">แก้แผนจ่ายเงินที่เพี้ยน <b>฿5.22 ล้าน</b> (702 แถว)</li>
+          <li class="ok">ปิดเดือนไม่ต้องทำมือ · ใบขอซื้อออกเอง</li>
+        </ul>
+        <b>ต้องรอ</b> <span class="warn">ขอ My Account ใส่เลข PO ในรายงานมัดจำ (฿2.50 ล้าน)</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ph">
+    <div class="hd"><span class="n">5</span><b>ส่งบัญชี + Sales ขอราคา</b>
+      <span class="pill p-b">S4 · C2 · X5</span></div>
+    <div class="bd">
+      <div class="row2">
+        <div><b>ทำอะไร</b><ul style="margin:6px 0">
+          <li>มูลค่าสต๊อก + ABC → ส่งบัญชีเป็น Google Sheet พร้อมสูตร</li>
+          <li><b>C2 Sales ขอราคา</b> — ต่อยอดจากต้นทุนกลางที่เสร็จในเฟส 3</li>
+          <li>สำรองข้อมูล + ปิดปีกดปุ่มเดียว</li>
+        </ul></div>
+        <div><b>ได้อะไร</b><ul style="margin:6px 0">
+          <li class="ok">บัญชีเปิดดูเองได้ ตรวจสูตรได้ ไม่ต้องส่งไฟล์ไปมา</li>
+          <li class="ok">Sales ขอราคาเองได้ · รู้ว่าประเมินต้นทุนแม่นแค่ไหน</li>
+        </ul>
+        <b>ต้องรอ</b> <span class="warn">สเปก "สูตร Cross" จากเบียร์ (เขียนหลังต้นทุนกลางเสร็จ)</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ph">
+    <div class="hd"><span class="n">6</span><b>ตัวเลขให้ผู้บริหาร</b>
+      <span class="pill p-b">P7 · P8 · P4</span></div>
+    <div class="bd">
+      <div class="row2">
+        <div><b>ทำอะไร</b><ul style="margin:6px 0">
+          <li>Dashboard KPI — % ลดต้นทุน เทียบปี/ปี <b>ข้ามยี่ห้อได้</b> (กลุ่มสินค้าเทียบเท่า) · ผู้ขายใหม่</li>
+          <li>Performance พนักงาน — <b>ใช้คิด Incentive จริง</b></li>
+          <li>สรุปการสั่งซื้อทุกมุม</li>
+        </ul></div>
+        <div><b>ได้อะไร</b><ul style="margin:6px 0">
+          <li class="ok">เห็นฝีมือจัดซื้อเป็นตัวเลข — ทั้งต่อราคาเจ้าเดิม และหาเจ้าใหม่</li>
+          <li class="ok">คิด Incentive ได้จากข้อมูลจริง ไม่ใช่ความรู้สึก</li>
+        </ul>
+        <b>ต้องรอ</b> <span class="warn">จัดซื้อยืนยันกลุ่มสินค้าเทียบเท่า (ระบบเสนอให้ คนกดยืนยัน)</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ph">
+    <div class="hd"><span class="n">7</span><b>ส่วนที่เหลือ</b>
+      <span class="pill p-b">P5 · P9 · P10 · S5 · P6</span></div>
+    <div class="bd">
+      <div class="row2">
+        <div><b>ทำอะไร</b><ul style="margin:6px 0">
+          <li>ผู้รับเหมา — สัญญา + ใบรับเงิน ผูก PO · เลขวิ่งเอง (แก้เลขซ้ำ 2 คู่ที่เจอ)</li>
+          <li>วางแผนซื้อล่วงหน้า — รวม Plan PO ทุกจ๊อบจาก NOVA</li>
+          <li>PO ต่างประเทศ · แนะนำ Stock · ลิงก์ PR</li>
+        </ul></div>
+        <div><b>ได้อะไร</b><ul style="margin:6px 0">
+          <li class="ok">เอกสารผู้รับเหมาครบวงจร (฿11.47 ล้าน/2 ปี ที่ตอนนี้ทำมือ 50 ชีต)</li>
+          <li class="ok">เห็นล่วงหน้าว่าเดือนหน้าต้องซื้ออะไร ใช้เงินเท่าไหร่</li>
+        </ul>
+        <b>ต้องรอ</b> <span class="bad">ฟอร์มสัญญาตัวเต็ม + มีประกันผลงานไหม กี่ %</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>P5 ผู้รับเหมาเป็นตัวเดียวที่ยืดหยุ่น</b> — พึ่งแค่ P1 และไม่มีใครพึ่งมัน
+    <b>ดันขึ้นมาทำเมื่อไหร่ก็ได้โดยไม่กระทบลำดับตัวอื่นเลย</b> บอกได้ตลอดถ้าอยากได้เร็ว
+  </div>
+
+</section>
+
+<!-- ==================== TAB 4 ==================== -->
+<section class="pane" id="p4">
+
+  <h2>ข้อตกลงที่เคาะแล้ว — ไม่ต้องคุยซ้ำ</h2>
+  <p class="small">ทั้งหมดบันทึกใน <code>CLAUDE.md</code> บนเครื่องเบียร์แล้ว · เปิดแชทใหม่เมื่อไหร่ก็อ่านต่อได้</p>
+
+  <div class="scroll">
+  <table>
+    <tr><th class="nw">เรื่อง</th><th>ข้อสรุป</th></tr>
+
+    <tr class="grp"><td colspan="2">ขอบเขตงาน</td></tr>
+    <tr><td class="nw">ข้อ 1.5</td><td><b>ไม่มี</b> — เบียร์เขียนเลขข้ามเอง</td></tr>
+    <tr><td class="nw">C2 Sales ขอราคา</td><td><b>ต้องมีแน่นอน</b> ทำหน้าจอแยกให้ Sales กรอกเอง · มี "สูตร Cross" ที่ละเอียดมาก · <b>ห้ามเริ่มจนกว่าต้นทุนกลาง (C1) จะเสร็จ</b></td></tr>
+    <tr><td class="nw">P8 Performance</td><td><b>ต้องทำ</b> · ในข้อมูลมีชื่อคนอยู่แล้ว · <b>เอาไปประเมินผลงานและคิด Incentive จริง</b></td></tr>
+    <tr><td class="nw">P9 วางแผนซื้อ</td><td><b>Plan PO อยู่ใน NOVA แล้ว</b> (หน้า 3.3.2) — ห้ามสร้างใหม่ทับ · P&amp;S เอายอดมาต่อยอดเป็นแผนข้ามจ๊อบ</td></tr>
+    <tr><td class="nw">มัดจำ</td><td>ไม่ได้ทำให้ต้นทุนผิด — แค่<b>ตัดยอดออกจากแผนจ่ายเงินรายเดือน</b> (ไปอยู่ใน P3)</td></tr>
+    <tr><td class="nw">ของนำเข้า</td><td><b>ต้องบวกค่าขนส่ง/อากรเข้าต้นทุนสินค้า</b> — "ควรอย่างมาก"</td></tr>
+    <tr><td class="nw">หัก ณ ที่จ่าย</td><td><b>ไม่เกี่ยวกับจัดซื้อ</b> อยู่ฝั่งบัญชีแล้ว — ตัดออกจากขอบเขต</td></tr>
+
+    <tr class="grp"><td colspan="2">การออกแบบ</td></tr>
+    <tr><td class="nw">KPI ลดต้นทุน</td><td>เทียบ <b>ปี/ปี</b> และต้องเทียบ<b>ข้ามยี่ห้อ/ข้ามรหัส</b>ที่สเปกเดียวกันได้ → ทำตาราง "กลุ่มสินค้าเทียบเท่า" ระบบเสนอ คนยืนยัน</td></tr>
+    <tr><td class="nw">รหัสคลัง</td><td>ยังไม่มี <b>สร้างใหม่</b> — <code>WH-01</code> คลังใหญ่ · <code>WH-02</code> Stock Store · <code>WH-03</code> Stock Service (+ พักตรวจ / รอส่งคืน ถ้าเบียร์เอา)</td></tr>
+    <tr><td class="nw">ส่งบัญชี</td><td><b>Google Sheet</b> (มีปุ่มดาวน์โหลด Excel และ PDF ให้เซ็นด้วย)</td></tr>
+    <tr><td class="nw">Market Price</td><td>จัดซื้อกรอก (หาจากอินเทอร์เน็ตได้) + ผู้บริหารอนุมัติ · บังคับแนบแหล่งที่มา + วันที่ + ภาพหน้าจอ · หมดอายุ 6 เดือน</td></tr>
+    <tr><td class="nw">Supplier ใหม่</td><td>ตัดสินจาก<b>ธุรกรรมจริง</b> — ไม่เคยมีใบรับของมาก่อน = ใหม่ทันที (ไม่รอคนกรอกทะเบียน)</td></tr>
+    <tr><td class="nw">ผู้รับเหมา</td><td>2 เอกสารผูกกัน — <b>สัญญา</b> (นิติบุคคล) · <b>ใบรับรองแทนใบเสร็จ</b> (บุคคลธรรมดา) · ประเภทผู้รับเหมาเป็นตัวเลือกฟอร์มให้เอง</td></tr>
+    <tr><td class="nw">ราคาเก่า</td><td><b>ห้ามลบแถว RR เก่า</b> — Carry Forward ใช้ผลรวมสะสม · ใช้เขียนทับตารางราคาล่าสุดแทน ผลลัพธ์เหมือนกันแต่ประวัติอยู่ครบ</td></tr>
+
+    <tr class="grp"><td colspan="2">ระบบ</td></tr>
+    <tr><td class="nw">โครงไฟล์</td><td>1 ปี 1 ไฟล์ (15.6% ของเพดาน) · RR รวมไฟล์เดียว 20 ปี (34.6%) · ไฟล์กลาง (62.1%) — <b>ไม่มีไฟล์ไหนตัน</b></td></tr>
+    <tr><td class="nw">ความเร็ว</td><td>5 ชั้น — แคช → ตารางสรุปปิดยอดตี 2 → อ่านทีละแท็บ → แบ่งหน้า → เปิดไฟล์ปีเก่าเฉพาะตอนกดขอ · <b>ไม่มีหน้าจอไหนเปิดเกิน 2 ไฟล์</b></td></tr>
+    <tr><td class="nw">ท่อ NOVA → Stock Card</td><td><b>ยังไม่อนุมัติ — ห้ามแตะ NOVA จนกว่าเบียร์จะสั่ง</b> · ถ้าอนุมัติจะทำแบบไม่แตะตรรกะเดิม (เพิ่มไฟล์ใหม่ เรียก 1 บรรทัด + สวิตช์ปิดฉุกเฉิน)</td></tr>
+    <tr><td class="nw">ลำดับเฟส</td><td>ยังไงก็ได้ แต่<b>ต้องมีหลักเกณฑ์</b> → ใช้ 4 เกณฑ์ให้คะแนนทุกโมดูล</td></tr>
+  </table>
+  </div>
+
+</section>
+
+<!-- ==================== TAB 5 ==================== -->
+<section class="pane" id="p5">
+
+  <h2>กฎเหล็กของโปรเจกต์</h2>
+  <p class="small">เขียนไว้ใน <code>CLAUDE.md</code> และมีชุดทดสอบคอยเช็คให้ทุกครั้งที่แก้โค้ด</p>
+
+  <div class="grid g2">
+    <div class="card tight" style="margin:0;border-inline-start:4px solid var(--red)">
+      <b class="bad">สโตร์ต้องไม่เห็นราคา</b><br>
+      <span class="small">ตัดที่ฝั่งเซิร์ฟเวอร์ ราคาไม่เคยถูกส่งออกไปเลย ไม่ใช่แค่ซ่อนคอลัมน์ · ชุดทดสอบเช็คว่า STORE ไม่อยู่ในรายชื่อที่เห็นราคา</span>
+    </div>
+    <div class="card tight" style="margin:0;border-inline-start:4px solid var(--red)">
+      <b class="bad">ห้ามฝังรหัสไฟล์รายปีในโค้ด</b><br>
+      <span class="small">อ่านจากทะเบียน REGISTRY เสมอ · เพิ่มปีใหม่ = เพิ่ม 1 แถว ไม่ต้องแก้โค้ดตลอด 20 ปี</span>
+    </div>
+    <div class="card tight" style="margin:0;border-inline-start:4px solid var(--red)">
+      <b class="bad">ห้ามลบข้อมูล</b><br>
+      <span class="small">แก้ = ออกแถวกลับรายการพร้อมเหตุผล · ตรวจย้อนหลังได้เสมอ</span>
+    </div>
+    <div class="card tight" style="margin:0;border-inline-start:4px solid var(--amber)">
+      <b class="warn">ป้ายเวอร์ชันคือหลักฐานเดียว</b><br>
+      <span class="small">ข้อความ DONE ในปุ่มอัปเดตเชื่อไม่ได้ — ถ้าป้ายไม่เปลี่ยน = ยังไม่ขึ้นจริง ผมจะไม่บอกว่าเสร็จ</span>
+    </div>
+    <div class="card tight" style="margin:0;border-inline-start:4px solid var(--amber)">
+      <b class="warn">ไฟล์โค้ดไม่เกิน 1,500 บรรทัด</b><br>
+      <span class="small">บทเรียนจาก NOVA — ไฟล์เดียว 807 KB แก้ทีเสี่ยงพังทั้งระบบ</span>
+    </div>
+    <div class="card tight" style="margin:0;border-inline-start:4px solid var(--green)">
+      <b class="ok">ทุกครั้งที่แก้โค้ด ต้องมีชุดทดสอบ</b><br>
+      <span class="small">เขียนเป็นกติกาที่ต้องจริงเสมอ ไม่ล็อกค่าเป๊ะ ๆ · ตอนนี้ 15 ข้อ ผ่านหมด</span>
+    </div>
+  </div>
+
+  <h2>รอจากเบียร์ — เรียงตามความเร่ง</h2>
+  <div class="scroll">
+  <table>
+    <tr><th class="nw">#</th><th>เรื่อง</th><th class="nw">บล็อกอะไร</th><th class="nw">เร่งแค่ไหน</th></tr>
+    <tr class="done"><td class="nw ctr">1</td><td><s>สร้าง GitHub repo</s> → <code>STT-WEB/STT-P-S-Hub</code> · Candy ตั้ง remote ให้แล้ว</td><td class="nw">สำรองขึ้นคลาวด์</td><td class="nw ok">เสร็จ ✓</td></tr>
+    <tr><td class="nw ctr">2</td><td>กด <code>ติดตั้งเครื่องมือครั้งแรก.bat</code> → <code>เข้าสู่ระบบ clasp.bat</code> → <code>อัปเดตระบบ PS Hub.bat</code> แล้วบอกผมว่าป้ายขึ้น v0.1.0 ไหม</td><td class="nw">ยืนยันว่าระบบขึ้นได้จริง</td><td class="nw bad">เร่ง</td></tr>
+    <tr><td class="nw ctr">3</td><td>ลบไฟล์ <code>อัปเดตระบบ.bat</code> ตัวเก่าทิ้ง (ตอนนี้เป็นไฟล์เปล่าแล้ว)</td><td class="nw">กันกดผิดปุ่ม</td><td class="nw">เมื่อสะดวก</td></tr>
+    <tr><td class="nw ctr">4</td><td>เปลี่ยนชื่อโฟลเดอร์เป็น <code>STT NOVA-Purchase&amp;Store Hub</code> แล้วเชื่อมใหม่ในแอป</td><td class="nw">—</td><td class="nw">เมื่อสะดวก</td></tr>
+    <tr><td class="nw ctr">5</td><td><b>ชุดข้อมูล PO + RR จริง 1 รอบ</b></td><td class="nw">เฟส 1</td><td class="nw bad">เร่ง</td></tr>
+    <tr><td class="nw ctr">6</td><td>ชี้ว่ารหัสคลังเก่า (01–10, 22, 88) → คลังใหม่ตัวไหน</td><td class="nw">เฟส 2</td><td class="nw warn">ก่อนเฟส 2</td></tr>
+    <tr><td class="nw ctr">7</td><td><b>RR ย้อนหลังตั้งแต่ 2562</b> + อนุมัติ/ไม่อนุมัติให้แตะ NOVA</td><td class="nw">เฟส 3</td><td class="nw warn">ก่อนเฟส 3</td></tr>
+    <tr><td class="nw ctr">8</td><td>ขอ My Account ใส่เลข PO ในรายงานมัดจำ</td><td class="nw">เฟส 4</td><td class="nw">ก่อนเฟส 4</td></tr>
+    <tr><td class="nw ctr">9</td><td>สเปก "สูตร Cross"</td><td class="nw">เฟส 5</td><td class="nw">หลังเฟส 3</td></tr>
+    <tr><td class="nw ctr">10</td><td>ฟอร์มสัญญาผู้รับเหมาตัวเต็ม + ประกันผลงานกี่ %</td><td class="nw">เฟส 7</td><td class="nw">ไว้ก่อนได้</td></tr>
+  </table>
+  </div>
+
+  <div class="good">
+    <b>ถ้าเบียร์ให้ข้อ 1–2 และ 5 ได้ ผมเริ่มเฟส 1 ได้ทันที</b><br>
+    และระหว่างรอ ผมทำ <b>สูตรต้นทุน 10 ข้อ</b> (<code>05-costing.js</code>) พร้อมชุดทดสอบที่รันเทียบกับตัวเลขในไฟล์
+    <code>Update inventory price</code> ของเบียร์ได้เลย — ถ้าคำนวณไม่ตรงระบบจะฟ้องทันทีว่าไม่ตรงบรรทัดไหน
+    <b>สั่งได้เลยว่าจะให้เริ่มไหม</b>
+  </div>
+
+  <h2>เอกสารทั้งหมดที่มีแล้ว</h2>
+  <p class="small">อยู่ในโฟลเดอร์ <code>เอกสารออกแบบ/</code> บนเครื่องเบียร์</p>
+  <div class="scroll">
+  <table>
+    <tr><th>ไฟล์</th><th>เรื่อง</th></tr>
+    <tr><td class="nw">ความเร็ว-แยกไฟล์รายปี</td><td>ทำไมแยกไฟล์รายปีแล้วเร็วขึ้น · 5 ชั้นความเร็ว · เป้าหมายเวลาต่อหน้าจอ</td></tr>
+    <tr><td class="nw">โครงระบบ-จัดซื้อ-สโตร์-12โมดูล</td><td>ผลวิเคราะห์ไฟล์ Update inventory price · สูตรต้นทุน 10 ข้อ · โครงไฟล์ข้อมูล</td></tr>
+    <tr><td class="nw">ตอบ6ข้อ-และ-โมดูลผู้รับเหมา</td><td>KPI ข้ามยี่ห้อ · รหัสคลัง · ท่อ NOVA (ความเสี่ยง) · Supplier ใหม่ · ผู้รับเหมา</td></tr>
+    <tr><td class="nw">ตรวจความครบ-โมดูล-22ตัว</td><td>ตรวจทีละบรรทัดว่าครบไหม · 9 โมดูลที่เคยขาด</td></tr>
+    <tr><td class="nw"><b>แผนแม่บท (ฉบับนี้)</b></td><td><b>ภาพรวมทั้งหมด — เปิดอันนี้อันเดียวก็เห็นภาพครบ</b></td></tr>
+    <tr><td class="nw">CLAUDE.md</td><td>ความจำถาวรของโปรเจกต์ — เปิดแชทใหม่เมื่อไหร่ ผมอ่านไฟล์นี้แล้วทำงานต่อได้เลย</td></tr>
+  </table>
+  </div>
+
+</section>
+
+<footer>
+  NOVA – PURCHASE &amp; STORE HUB · แผนแม่บท v1 · 15 ก.ย. 2569 · จัดทำโดย Candy สำหรับเบียร์<br>
+  ตัวเลขทั้งหมดคำนวณจากข้อมูลจริงของ STT · ถ้ามีอะไรเปลี่ยน แก้ที่เอกสารฉบับนี้เป็นหลัก
+</footer>
+
+</div>
+
+<script>
+(function(){
+  var tabs = document.querySelectorAll('.tab');
+  var panes = document.querySelectorAll('.pane');
+  tabs.forEach(function(b){
+    b.addEventListener('click', function(){
+      tabs.forEach(function(x){ x.classList.remove('on'); });
+      panes.forEach(function(x){ x.classList.remove('on'); });
+      b.classList.add('on');
+      var el = document.getElementById('p' + b.dataset.t);
+      if (el) el.classList.add('on');
+      window.scrollTo({top:0, behavior:'smooth'});
+    });
+  });
+})();
+</script>
+</body>
+</html>

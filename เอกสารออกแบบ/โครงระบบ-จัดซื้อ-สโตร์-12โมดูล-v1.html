@@ -1,0 +1,879 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>โครงระบบ P&S Hub — จัดซื้อ + สโตร์ ครบทุกข้อ</title>
+<style>
+:root{
+  --bg:#f4f6f9; --card:#fff; --ink:#16202e; --sub:#5b6a7d; --line:#dde4ec;
+  --blue:#1c5fd0; --blue-l:#eaf1fd; --green:#127a4b; --green-l:#e6f6ee;
+  --red:#c02b2b; --red-l:#fdeceb; --amber:#a86500; --amber-l:#fff5e2;
+  --purple:#6a2fb5; --purple-l:#f2ebfd; --teal:#0d7080; --teal-l:#e4f4f7;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Sarabun","Leelawadee UI","Tahoma","Segoe UI",sans-serif;font-size:15.5px;line-height:1.75}
+.wrap{max-width:1120px;margin:0 auto;padding:0 16px 80px}
+header{background:linear-gradient(135deg,#0f2b57,#1c5fd0);color:#fff;padding:30px 0 26px}
+header .wrap{padding-bottom:0}
+.badge{display:inline-block;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);
+  padding:3px 12px;border-radius:99px;font-size:12.5px;margin-bottom:10px}
+h1{margin:0 0 6px;font-size:27px;line-height:1.4}
+header p{margin:0;opacity:.92;font-size:14.5px}
+.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);
+  box-shadow:0 2px 8px rgba(20,40,70,.06)}
+.tabs .wrap{display:flex;gap:4px;overflow-x:auto;padding-top:8px;padding-bottom:0}
+.tab{flex:0 0 auto;border:0;background:transparent;font:inherit;font-size:14.5px;color:var(--sub);
+  padding:11px 14px 12px;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
+.tab:hover{color:var(--ink)}
+.tab.on{color:var(--blue);border-bottom-color:var(--blue);font-weight:600}
+.pane{display:none;padding-top:26px}
+.pane.on{display:block}
+h2{font-size:21px;margin:34px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--line)}
+h2:first-child{margin-top:0}
+h3{font-size:17px;margin:26px 0 8px}
+h4{font-size:15.5px;margin:16px 0 6px}
+p{margin:10px 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin:14px 0;
+  box-shadow:0 1px 3px rgba(20,40,70,.05)}
+.card.tight{padding:14px 18px}
+ul,ol{margin:10px 0;padding-inline-start:24px}
+li{margin:6px 0}
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14.5px;background:#fff}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+th,td{border:1px solid var(--line);padding:8px 10px;text-align:start;vertical-align:top}
+th{background:#eef2f7;font-weight:600}
+th.nw,td.nw{white-space:nowrap}
+td.num,th.num{text-align:end;font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.tot td{background:#f7f9fc;font-weight:700}
+.ok{color:var(--green);font-weight:600}
+.bad{color:var(--red);font-weight:600}
+.warn{color:var(--amber);font-weight:600}
+.pill{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12.5px;font-weight:600;white-space:nowrap}
+.p-g{background:var(--green-l);color:var(--green)}
+.p-r{background:var(--red-l);color:var(--red)}
+.p-a{background:var(--amber-l);color:var(--amber)}
+.p-b{background:var(--blue-l);color:var(--blue)}
+.p-p{background:var(--purple-l);color:var(--purple)}
+.p-t{background:var(--teal-l);color:var(--teal)}
+.note{border-inline-start:4px solid var(--blue);background:var(--blue-l);padding:12px 16px;border-radius:0 10px 10px 0;margin:14px 0}
+.danger{border-inline-start:4px solid var(--red);background:var(--red-l);padding:12px 16px;border-radius:0 10px 10px 0;margin:14px 0}
+.good{border-inline-start:4px solid var(--green);background:var(--green-l);padding:12px 16px;border-radius:0 10px 10px 0;margin:14px 0}
+.amberbox{border-inline-start:4px solid var(--amber);background:var(--amber-l);padding:12px 16px;border-radius:0 10px 10px 0;margin:14px 0}
+code,.mono{font-family:ui-monospace,"Cascadia Mono","Consolas",monospace;font-size:13.3px;
+  background:#eef2f7;padding:1px 6px;border-radius:5px}
+pre{background:#101a29;color:#dbe6f5;padding:14px 16px;border-radius:10px;overflow-x:auto;font-size:13px;line-height:1.65;margin:12px 0}
+pre code{background:transparent;color:inherit;padding:0}
+.tree{background:#101a29;color:#dbe6f5;padding:16px 18px;border-radius:10px;overflow-x:auto;
+  font-family:ui-monospace,"Cascadia Mono","Consolas",monospace;font-size:12.8px;line-height:1.7;white-space:pre;margin:12px 0}
+.grid{display:grid;gap:14px}
+@media(min-width:760px){.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:12px;padding:15px 16px;text-align:center}
+.kpi .v{font-size:24px;font-weight:800;line-height:1.25}
+.kpi .l{font-size:13px;color:var(--sub);margin-top:4px}
+.mod{background:#fff;border:1px solid var(--line);border-radius:12px;margin:14px 0;overflow:hidden}
+.mod > .hd{background:#f2f6fb;border-bottom:1px solid var(--line);padding:12px 18px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.mod > .hd b{font-size:16.5px}
+.mod > .bd{padding:14px 18px}
+.tag{display:inline-block;background:var(--blue);color:#fff;font-size:12.5px;font-weight:700;
+  padding:2px 9px;border-radius:6px;white-space:nowrap}
+.tag.s{background:var(--teal)}
+.small{font-size:13.5px;color:var(--sub)}
+.flow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}
+.flow .b{background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:13.5px;font-weight:600}
+.flow .a{color:var(--sub);font-weight:700}
+footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);color:var(--sub);font-size:13.5px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="badge">NOVA – PURCHASE &amp; STORE HUB · โครงระบบฉบับเต็ม v1</div>
+    <h1>จัดซื้อ 7 โมดูล + สโตร์ 5 โมดูล — ต่อกันเป็นเส้นเดียว</h1>
+    <p>รวมผลวิเคราะห์ไฟล์ <b>Update inventory price</b> ของเบียร์ · ถอด Costing Policy ออกมาเป็นสูตรที่ระบบใหม่ต้องมี</p>
+  </div>
+</header>
+
+<div class="tabs">
+  <div class="wrap">
+    <button class="tab on" data-t="1">1 · อ่านไฟล์เบียร์แล้วได้อะไร</button>
+    <button class="tab" data-t="2">2 · แผนที่ระบบ</button>
+    <button class="tab" data-t="3">3 · ฝั่งจัดซื้อ</button>
+    <button class="tab" data-t="4">4 · ฝั่งสโตร์</button>
+    <button class="tab" data-t="5">5 · สูตรทั้งหมด</button>
+    <button class="tab" data-t="6">6 · โครงไฟล์ข้อมูล</button>
+    <button class="tab" data-t="7">7 · ต้องตัดสินใจ + ลำดับงาน</button>
+  </div>
+</div>
+
+<div class="wrap">
+
+<!-- ==================== TAB 1 ==================== -->
+<section class="pane on" id="p1">
+
+  <div class="good">
+    <b>สรุปก่อน:</b> ไฟล์ <code>Update inventory price</code> ที่เบียร์ทำไว้ <b>ไม่ใช่แค่ไฟล์ราคา</b> — มันคือ
+    <b>สเปกระบบต้นทุนที่เขียนจบแล้ว</b> ทั้งนโยบาย ผังการไหล และลำดับการเลือกราคา
+    ผมไม่ต้องออกแบบใหม่ ผมแค่ต้องเอาสิ่งนี้ไปทำให้มัน<b>ทำงานเองอัตโนมัติ</b> แทนที่จะต้อง copy-paste มือทุกสิ้นปี
+  </div>
+
+  <h2>ในไฟล์มีอะไรบ้าง — 10 ส่วน</h2>
+  <div class="scroll">
+  <table>
+    <tr><th class="nw">#</th><th class="nw">ส่วน</th><th>เก็บอะไร</th><th class="nw">ในระบบใหม่กลายเป็น</th></tr>
+    <tr><td>1</td><td class="nw"><b>Costing Policy</b></td><td>นโยบายต้นทุน 9 หัวข้อ — RR เป็นต้นทุนจริง / PO ไม่ใช่ / ต้นทุน 4 ระดับ / Fallback / Age / ABC</td><td class="nw"><span class="pill p-b">กฎในโค้ด</span></td></tr>
+    <tr><td>2</td><td class="nw"><b>Flow Diagram</b></td><td>ผัง 7 Level: RR → Clean → Data Price Update → Carry Forward / Sales Cost → Stock Count → Report</td><td class="nw"><span class="pill p-b">ผังโมดูล</span></td></tr>
+    <tr><td>3</td><td class="nw"><b>วิธีขึ้นปีใหม่</b></td><td>Step 1–4: ปิดปีเก่าเป็น Value → สร้าง Carry Forward ปีใหม่ → เปลี่ยน Control → Data Price Update ไม่ต้องแตะ</td><td class="nw"><span class="pill p-g">ปิดงวดอัตโนมัติ</span></td></tr>
+    <tr><td>4</td><td class="nw"><b>Control</b></td><td>1 แถว 12 คอลัมน์ = วันสิ้นเดือน 31/1/2025 … 31/12/2025 + ปี</td><td class="nw"><span class="pill p-b">ตาราง PERIOD</span></td></tr>
+    <tr><td>5</td><td class="nw"><b>RR Report (Clean)</b></td><td>26 คอลัมน์ — ข้อมูลดิบ RR + คอลัมน์ทำความสะอาด <code>Qty_num</code> <code>Price_num</code> <code>Amt_num</code> <code>DocMonth</code> <code>DocYear</code> + <code>DELETE/KEEP</code></td><td class="nw"><span class="pill p-t">ตาราง RR_ALL</span></td></tr>
+    <tr><td>6</td><td class="nw"><b>Data Price Update</b></td><td>WAC Policy · Last Receipt Date/Price (Ever) · Sales Cost · Market Price · Source Label · Age (Days) · Stock Reference Cost</td><td class="nw"><span class="pill p-t">ตาราง PRICE_LATEST</span></td></tr>
+    <tr><td>7</td><td class="nw"><b>Carry Forward</b></td><td>สินค้า × เดือน 1–12 = ต้นทุนเฉลี่ยสะสมของแต่ละเดือน (มี 2 ชุด)</td><td class="nw"><span class="pill p-p">ตาราง CARRY_FWD</span></td></tr>
+    <tr><td>8</td><td class="nw"><b>Market Price</b></td><td>3 คอลัมน์ — รหัส / ชื่อ / ราคาตลาดที่กรอกเอง</td><td class="nw"><span class="pill p-a">ตาราง MARKET_PRICE</span></td></tr>
+    <tr><td>9</td><td class="nw"><b>Stock Count</b></td><td>Qty นับจริง · Carry Forward Cost · ราคาที่ใช้คำนวณ · มูลค่า Stock · Source of Cost · Age · Stock Status · Pareto % · ABC Class</td><td class="nw"><span class="pill p-p">หน้าจอนับสต๊อก</span></td></tr>
+    <tr><td>10</td><td class="nw"><b>รายการสินค้า</b></td><td>รหัส · ชื่อ · หน่วย · Category · Type — <b>412 รายการ</b></td><td class="nw"><span class="pill p-t">ตาราง ITEM_MASTER</span></td></tr>
+  </table>
+  </div>
+
+  <h3>รายการสินค้า 412 ตัว แบ่งยังไง</h3>
+  <div class="grid g4">
+    <div class="kpi"><div class="v">412</div><div class="l">รายการทั้งหมดในไฟล์</div></div>
+    <div class="kpi"><div class="v" style="color:var(--blue)">241</div><div class="l">Type = <b>For Job</b></div></div>
+    <div class="kpi"><div class="v" style="color:var(--red)">162</div><div class="l">Type = <b>Dead Stock</b></div></div>
+    <div class="kpi"><div class="v" style="color:var(--amber)">9</div><div class="l">Type = <b>Inventory</b></div></div>
+  </div>
+  <p class="small">Category มี 2 ค่า: <code>1</code> (255 รายการ · รหัสขึ้นต้น 1) และ <code>D</code> (157 รายการ · รหัส DS-xxx)</p>
+
+  <h2>5 สิ่งที่ผมเจอ และต้องบอกเบียร์</h2>
+
+  <div class="mod">
+    <div class="hd"><span class="tag" style="background:var(--green)">1</span><b>นโยบายต้นทุนของเบียร์ถูกต้องตามหลักบัญชี — ผมจะยึดตามนี้ทั้งหมด</b></div>
+    <div class="bd">
+      <p style="margin-top:0">ประโยคที่เป็นแกนของทั้งระบบ และผมจะเขียนเป็นกฎในโค้ดตรง ๆ:</p>
+      <div class="grid g2">
+        <div class="card tight" style="margin:0"><b class="ok">RR = Truth</b><br><span class="small">ต้นทุนเกิดจากการรับของจริงเท่านั้น</span></div>
+        <div class="card tight" style="margin:0"><b class="bad">PO ≠ ต้นทุน</b><br><span class="small">เป็นแค่ความตั้งใจซื้อ</span></div>
+        <div class="card tight" style="margin:0"><b class="ok">Carry Forward = Accounting</b><br><span class="small">ใช้ปิดงวด นับสต๊อก Job Cost</span></div>
+        <div class="card tight" style="margin:0"><b class="ok">Policy = Management</b><br><span class="small">ใช้ตั้งราคาขาย วิเคราะห์</span></div>
+        <div class="card tight" style="margin:0"><b class="ok">Fallback = Safety</b><br><span class="small">ทุกสินค้าต้องมีต้นทุนเสมอ ไม่มีช่องว่าง</span></div>
+        <div class="card tight" style="margin:0"><b class="ok">Source = Transparency</b><br><span class="small">ทุกตัวเลขต้องบอกที่มา</span></div>
+      </div>
+      <p style="margin-bottom:0" class="small">ข้อ <b>Source = Transparency</b> สำคัญที่สุดสำหรับระบบใหม่ — ทุกตัวเลขบนหน้าจอต้องกดดูได้ว่ามาจาก RR ใบไหน บรรทัดไหน</p>
+    </div>
+  </div>
+
+  <div class="mod">
+    <div class="hd"><span class="tag" style="background:var(--red)">2</span><b>⚠️ เรื่อง “มีรายการซื้อใหม่แล้วต้องลบรายการเก่าออกทั้งหมด” — ห้ามลบครับ</b></div>
+    <div class="bd">
+      <p style="margin-top:0">เบียร์เขียนมาว่า <i>“ถ้าเมื่อไหร่มีรายการซื้อแล้ว ก็ต้องไปลบรายการเก่าออกทั้งหมด เพื่อที่จะได้ราคาซื้อล่าสุด”</i></p>
+      <p><b>แต่ Policy ที่เบียร์เขียนเองข้อ 3.1 บอกว่า</b> Carry Forward = ผลรวมมูลค่ารับสะสม ÷ ผลรวมจำนวนรับสะสมตั้งแต่ต้นปี
+      → <b>ถ้าลบแถวเก่าทิ้ง สูตรนี้พังทันที</b> เพราะไม่มีตัวสะสมให้บวก และย้อนหลังตรวจไม่ได้</p>
+      <div class="good" style="margin-bottom:0">
+        <b>สิ่งที่เบียร์ต้องการจริง ๆ คือ “เห็นแค่แถวล่าสุด” ไม่ใช่ “ลบแถวเก่า”</b> — ทำได้โดยไม่ต้องลบเลย:
+        <ul style="margin:8px 0 0">
+          <li><code>RR_ALL</code> เก็บทุกแถวตลอดกาล = ฐานคำนวณ (ห้ามลบ ห้ามแก้)</li>
+          <li><code>PRICE_LATEST</code> เก็บ <b>1 แถวต่อ 1 รหัสสินค้า</b> = สิ่งที่เบียร์เปิดดู และที่ NOVA ใหญ่มาดึง</li>
+          <li>ซื้อใหม่เข้ามา → ระบบ<b>เขียนทับแถวใน PRICE_LATEST</b> ให้เอง (ผลลัพธ์เหมือนลบ แต่ประวัติยังอยู่ครบ)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="mod">
+    <div class="hd"><span class="tag" style="background:var(--amber)">3</span><b>จุดที่ไฟล์ปัจจุบันจะพังเมื่อใช้ไปหลายปี</b></div>
+    <div class="bd">
+      <div class="scroll">
+      <table>
+        <tr><th>ไฟล์ปัจจุบันทำยังไง</th><th>ปัญหา</th><th>ระบบใหม่ทำยังไง</th></tr>
+        <tr><td>สิ้นปีต้อง Copy → Paste values only ด้วยมือ</td><td class="bad">ลืมทำ = ตัวเลขปีเก่าเปลี่ยนย้อนหลัง · Audit ไม่ผ่าน</td><td class="ok">กด “ปิดงวด” ครั้งเดียว ระบบเขียน snapshot ล็อกถาวรเอง</td></tr>
+        <tr><td>สร้าง Carry Forward ปีใหม่ = copy sheet แล้ว<b>แก้ปีในสูตร</b></td><td class="bad">แก้ตกไป 1 เซลล์ = ต้นทุนผิดทั้งปี หาไม่เจอ</td><td class="ok">ไม่มีสูตรในชีต โปรแกรมคำนวณจากตาราง PERIOD</td></tr>
+        <tr><td><code>Control</code> เป็นรีโมตตัวเดียวคุมทั้งไฟล์</td><td class="bad">เปลี่ยน Control = ทุกอย่างที่ยังมีสูตร recalculate หมด</td><td class="ok">งวดที่ปิดแล้วเป็นตัวเลขนิ่ง เปลี่ยนงวดไม่กระทบ</td></tr>
+        <tr><td>สูตรสดทั้งชีตบนข้อมูล RR หลายปี</td><td class="bad">ยิ่งปีเยอะยิ่งอืด เปิดไฟล์ค้าง</td><td class="ok">คำนวณตอนตี 2 เก็บผลไว้ · หน้าจออ่านผลอย่างเดียว</td></tr>
+        <tr><td>เห็น <code>#N/A</code> / <code>#ERROR!</code> ในคอลัมน์ ABC และในสูตร Carry Forward</td><td class="bad">ตัวเลขที่ส่งบัญชีมีช่องว่าง</td><td class="ok">ทุกช่องต้องมีค่า + Source เสมอ (Fallback 3 ชั้น)</td></tr>
+      </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="mod">
+    <div class="hd"><span class="tag" style="background:var(--purple)">4</span><b>ตอนนี้ครอบคลุมแค่ 412 รายการ — ของจริงมากกว่านี้มาก</b></div>
+    <div class="bd">
+      <p style="margin-top:0">RR จริงตั้งแต่ปี 2562 มีรหัสสินค้าหลายพันตัว แต่ในไฟล์นี้มี 412 และเป็น <b>Type = Inventory แค่ 9 รายการ</b></p>
+      <p style="margin-bottom:0">ระบบใหม่จะสร้าง <code>ITEM_MASTER</code> จาก <b>ทุก goodcode ที่เคยปรากฏใน RR</b> โดยอัตโนมัติ
+      แล้วให้สโตร์มาติดป้าย Type ทีหลัง (For Job / Inventory / Dead Stock) — ไม่ต้องพิมพ์รายการเองทีละตัว</p>
+    </div>
+  </div>
+
+  <div class="mod">
+    <div class="hd"><span class="tag" style="background:var(--teal)">5</span><b>“RR รวมไฟล์เดียวตั้งแต่ 2562” — ทำได้ และไม่ตัน</b></div>
+    <div class="bd">
+      <p style="margin-top:0">เบียร์กังวลว่า <i>“อาจจะยาวมากๆๆๆๆเลย”</i> — ผมคำนวณให้แล้ว</p>
+      <div class="scroll">
+      <table>
+        <tr><th>ช่วงปี</th><th class="num">บรรทัด</th><th class="num">เซลล์ (26 คอลัมน์)</th><th class="num">% ของเพดาน 10 ล้าน</th><th>สรุป</th></tr>
+        <tr><td>2562–2569 (8 ปี · วันนี้)</td><td class="num">53,272</td><td class="num">1,385,072</td><td class="num ok">13.9%</td><td class="ok">สบายมาก</td></tr>
+        <tr><td>2562–2581 (20 ปี)</td><td class="num">133,180</td><td class="num">3,462,680</td><td class="num ok">34.6%</td><td class="ok">ยังเหลืออีก 65%</td></tr>
+      </table>
+      </div>
+      <p class="small">คิดที่ปีละ 6,659 บรรทัดเท่าปีปัจจุบัน — ปีเก่าน่าจะน้อยกว่านี้ ตัวเลขจริงจะต่ำกว่าที่คำนวณ</p>
+      <div class="good" style="margin-bottom:0">
+        <b>RR จะเป็นไฟล์เดียวตลอด 20 ปี ตามที่เบียร์ขอ</b> — และมันควรเป็นแบบนั้นด้วย เพราะต้นทุนต้องมองข้ามปีเป็นหลัก
+        แต่ต้องเป็น <b>ไฟล์ของมันเอง</b> ไม่ยัดรวมกับไฟล์กลาง (ถ้ารวมจะไปแตะ 96.8% ซึ่งเสี่ยง)
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<!-- ==================== TAB 2 ==================== -->
+<section class="pane" id="p2">
+
+  <h2>แผนที่ระบบทั้งหมด — 12 โมดูล</h2>
+  <p>ทุกข้อที่เบียร์เขียนมา ผมจับเป็นโมดูล แล้วเรียงตามลำดับที่ข้อมูลไหล ไม่ใช่ตามลำดับที่เขียนมา</p>
+
+  <div class="tree">ต้นทาง (My Account)                  ระบบเรา                              ปลายทาง
+─────────────────────         ────────────────────────────         ──────────────────────
+
+  PO Report  ──────┐
+                   ├──▶  [ P1 ] นำเข้า + จับคู่ PO↔RR
+  RR Report  ──────┘             │
+                                 ├──▶ [ P2 ] PO ค้างรับ ─────────────▶ จัดซื้อติดตามของ
+                                 │            │
+                                 │            └──▶ [ P3 ] แผนจ่ายเงิน ──▶ บัญชี / ตั้งเบิก
+                                 │
+                                 ├──▶ [ P4 ] สรุปการสั่งซื้อ ──────────▶ ผู้บริหาร
+                                 │
+                                 └──▶ [ S1 ] สโตร์รับของ (GRN) ───┐
+                                              ▲                    │
+                              (รับข้ามปีได้)  │                    ▼
+                                              │           [ S2 ] Stock Card ◀── เบิกตามจ๊อบ (NOVA ใหญ่)
+                                              │                    │
+                                              │                    ▼
+  RR ทุกปี 2562→ปัจจุบัน                      │           [ S3 ] นับสต๊อกประจำเดือน
+        │                                     │                    │
+        ▼                                     │                    ├──▶ ใบขอซื้อ ──▶ จัดซื้อ
+  [ C1 ] ต้นทุน (Costing Engine)              │                    │
+        ├─ Carry Forward (ปิดงวด) ────────────┼────────────────────┘
+        ├─ WAC Policy / ราคากลาง              │
+        ├─ ราคาซื้อล่าสุด ────────────────────┼──────────────────▶ NOVA ใหญ่ (BOM/Job Cost)
+        └─ Sales Cost ────────────────────────┼──────────────────▶ Sales (เสนอราคางาน JM)
+                                              │                    │
+                                              │                    ▼
+                                              │           [ S4 ] มูลค่าสต๊อก + ABC ──▶ บัญชี (Excel/GGS)
+                                              │
+  ผู้รับเหมา ──▶ [ P5 ] งานผู้รับเหมา ────────┘
+  PR (โปรแกรมเดิม) ──▶ [ P6 ] ลิงก์ไปดู
+                       [ P7 ] Dashboard KPI จัดซื้อ ◀── ทุกโมดูล
+                       [ S5 ] แนะนำสินค้าที่ควรเข้า Stock ◀── S2 + S3</div>
+
+  <h2>โมดูลทั้งหมด เทียบกับข้อที่เบียร์เขียน</h2>
+  <div class="scroll">
+  <table>
+    <tr><th class="nw">โมดูล</th><th class="nw">ข้อของเบียร์</th><th>ชื่อ</th><th class="nw">พึ่งพาโมดูลไหน</th><th class="nw">ลำดับทำ</th></tr>
+    <tr><td class="nw"><span class="tag">P1</span></td><td class="nw">1.1</td><td>นำเข้า PO/RR รายปี + จับคู่ (C1–C5)</td><td class="nw">—</td><td class="nw"><span class="pill p-g">เฟส 1</span></td></tr>
+    <tr><td class="nw"><span class="tag">P2</span></td><td class="nw">1.1</td><td>PO ค้างรับ (ข้ามปีได้)</td><td class="nw">P1</td><td class="nw"><span class="pill p-g">เฟส 1</span></td></tr>
+    <tr><td class="nw"><span class="tag s">S1</span></td><td class="nw">2.1</td><td>สโตร์รับของ (GRN) + จัดซื้ออนุมัติ</td><td class="nw">P2</td><td class="nw"><span class="pill p-g">เฟส 2</span></td></tr>
+    <tr><td class="nw"><span class="tag">P3</span></td><td class="nw">1.1</td><td>แผนจ่ายเงิน + ตั้งเบิก</td><td class="nw">P2, S1</td><td class="nw"><span class="pill p-b">เฟส 3</span></td></tr>
+    <tr><td class="nw"><span class="tag">P4</span></td><td class="nw">1.1</td><td>สรุปการสั่งซื้อ</td><td class="nw">P1</td><td class="nw"><span class="pill p-b">เฟส 3</span></td></tr>
+    <tr><td class="nw"><span class="tag s">S2</span></td><td class="nw">2.2</td><td>Stock Card 3 คลัง real-time</td><td class="nw">S1 + NOVA</td><td class="nw"><span class="pill p-b">เฟส 4</span></td></tr>
+    <tr><td class="nw"><span class="tag" style="background:var(--purple)">C1</span></td><td class="nw">1.2</td><td><b>Costing Engine</b> (RR รวมทุกปี)</td><td class="nw">P1</td><td class="nw"><span class="pill p-b">เฟส 4</span></td></tr>
+    <tr><td class="nw"><span class="tag s">S3</span></td><td class="nw">2.3</td><td>นับสต๊อกประจำเดือน + ใบขอซื้อ</td><td class="nw">S2, C1</td><td class="nw"><span class="pill p-a">เฟส 5</span></td></tr>
+    <tr><td class="nw"><span class="tag s">S4</span></td><td class="nw">2.3</td><td>มูลค่าสต๊อก + ABC ส่งบัญชี</td><td class="nw">S3, C1</td><td class="nw"><span class="pill p-a">เฟส 5</span></td></tr>
+    <tr><td class="nw"><span class="tag">P7</span></td><td class="nw">1.6</td><td>Dashboard KPI จัดซื้อ</td><td class="nw">ทุกตัว</td><td class="nw"><span class="pill p-a">เฟส 6</span></td></tr>
+    <tr><td class="nw"><span class="tag s">S5</span></td><td class="nw">2.4</td><td>แนะนำสินค้าที่ควรเข้า/ออก Stock</td><td class="nw">S2, S3</td><td class="nw"><span class="pill p-a">เฟส 6</span></td></tr>
+    <tr><td class="nw"><span class="tag">P5</span></td><td class="nw">1.3</td><td>งานผู้รับเหมา ผูกกับ PO</td><td class="nw">P1</td><td class="nw"><span class="pill p-p">เฟส 7</span></td></tr>
+    <tr><td class="nw"><span class="tag">P6</span></td><td class="nw">1.4</td><td>ลิงก์ไปดู PR ในโปรแกรมเดิม</td><td class="nw">—</td><td class="nw"><span class="pill p-p">เฟส 7</span></td></tr>
+  </table>
+  </div>
+
+  <div class="note">
+    <b>ทำไม C1 (ต้นทุน) ถึงอยู่เฟส 4 ไม่ใช่เฟส 1</b> — เพราะ C1 ต้องใช้ RR ที่<b>สะอาดแล้ว</b> ซึ่ง P1 เป็นคนทำ
+    ถ้าทำ C1 ก่อน จะได้ต้นทุนจากข้อมูลที่ยังจับคู่ไม่ครบ = ตัวเลขผิด แล้วต้องรื้อทำใหม่
+    แต่ถ้าเบียร์อยากได้ต้นทุนเร็วกว่านั้น ผมสลับ C1 ขึ้นมาเฟส 2 ได้ (บอกได้เลย)
+  </div>
+
+</section>
+
+<!-- ==================== TAB 3 ==================== -->
+<section class="pane" id="p3">
+
+  <h2>ฝั่งจัดซื้อ</h2>
+
+  <div class="mod">
+    <div class="hd"><span class="tag">P1</span><b>นำเข้า PO/RR รายปี + จับคู่</b><span class="pill p-b">ข้อ 1.1</span></div>
+    <div class="bd">
+      <p style="margin-top:0"><b>ทำอะไร</b> — เด็กดึงไฟล์จาก My Account ทุกวัน → อัปโหลดเข้าระบบ → ระบบจับคู่ PO กับ RR ให้อัตโนมัติ</p>
+      <ul>
+        <li>จับคู่ด้วย <b>รหัสสินค้าเป็นหลัก 5 ชั้น (C1–C5)</b> ไม่ใช้ List No. — พิสูจน์แล้วได้ <b>100.0000%</b> เทียบกับตัวเลขของ My Account เอง (427/427 รายการค้างรับ)</li>
+        <li>คีย์ถาวรของทุกบรรทัด = <code>Poid + listno</code> (ไม่ซ้ำใน 6,914 แถว)</li>
+        <li>ที่จับคู่ไม่ได้ → <b>เข้าคิวให้คนตัดสิน ไม่เดา</b></li>
+        <li><b>ยามตรวจข้อมูล</b> — ทุกครั้งที่นำเข้า ระบบกระทบยอดกับ My Account ถ้าไม่ตรงแม้บาทเดียว หยุดและรายงาน</li>
+        <li>PO ที่ยกเลิก (<code>cancelflag=Y</code>) ตัดออกทั้งหมด ไม่นับเป็นค้างรับ</li>
+      </ul>
+      <p style="margin-bottom:0"><b>เก็บที่ไหน</b> — <code>PO_LINE</code> ในไฟล์รายปี · <code>RR_ALL</code> ในไฟล์ต้นทุน (ไฟล์เดียวตลอด)</p>
+    </div>
+  </div>
+
+  <div class="mod">
+    <div class="hd"><span class="tag">P2</span><b>PO ค้างรับ</b><span class="pill p-b">ข้อ 1.1</span><span class="pill p-a">รับข้ามปีได้</span></div>
+    <div class="bd">
+      <p style="margin-top:0"><b>สูตรค้างรับ</b> (ตามที่เบียร์แก้ให้):</p>
+      <pre><code>ค้างรับ = จำนวนสั่ง − รับแล้ว(RR) − จำนวนที่ตั้งเบิกบัญชีไปแล้ว</code></pre>
+      <p class="small">เหตุผลของเบียร์: “ค้างรับคือรับรู้ยอดจากจัดซื้อ แต่ที่ตั้งเบิกบัญชีแล้ว บัญชีรับรู้ยอดไปแล้ว เลยไม่คิด”</p>
+      <ul>
+        <li>อยู่ใน <b>ไฟล์กลาง ไม่ผูกปี</b> → สั่งปี 2569 ของมาปี 2570 ระบบไม่งง</li>
+        <li>มีคอลัมน์ <code>year_th</code> บอกว่าต้นทางอยู่ไฟล์ปีไหน กดแล้วเด้งไปดูได้</li>
+        <li>รับครบ/ปิด PO → ย้ายออกจากตาราง ตารางจึงเล็กตลอด (ของจริงตอนนี้ 427 บรรทัด)</li>
+        <li>PO ต่างประเทศที่ My Account ไม่บอกเลข PO → มีปุ่มให้จัดซื้อกดยืนยันรับเอง</li>
+      </ul>
+      <div class="amberbox" style="margin-bottom:0">
+        <b>เงินที่ตอนนี้บอกผิดอยู่ ~10 ล้านบาท</b> ซึ่งโมดูลนี้แก้ให้: แผนจ่ายเงินเพี้ยน 702 แถว ฿5.22 ล้าน ·
+        ค้างรับเกินจริง 27 แถว ฿2.28 ล้าน · มัดจำโยงไม่ได้ 15 ใบ ฿2.50 ล้าน · ค้างรับผี ฿38,496
+      </div>
+    </div>
+  </div>
+
+  <div class="mod">
+    <div class="hd"><span class="tag">P3</span><b>แผนจ่ายเงิน + ตั้งเบิก</b><span class="pill p-b">ข้อ 1.1</span></div>
+    <div class="bd">
+      <ul style="margin-top:0">
+        <li><b>เงินสด</b> — จ่ายตามเงื่อนไขผู้ขาย</li>
+        <li><b>เครดิตวางบิล</b> — ถอดสูตรจากไฟล์เบียร์ได้แล้ว = <b>“อังคารแรกที่ตรงหรือหลังวันที่ 6 ของเดือนถัดไป”</b> (พิสูจน์ครบ 4,917 แถว ลงวันอังคาร วันที่ 6–12 ทุกแถว)</li>
+        <li><b>เครดิตตั้งเบิก</b> — ไม่คิดวัน จัดซื้อทำตั้งเบิกส่งบัญชี บัญชีรับรู้ยอดเอง</li>
+        <li>วันตั้งต้นของการนับ = <b>วันที่ WH รับของจริง</b> (ไม่ใช่ ShipDate) ตามที่เบียร์บอก — ถูกต้องกว่าด้วย</li>
+      </ul>
+      <p style="margin-bottom:0" class="small">ยังค้าง: ขอให้ My Account ใส่เลขที่ PO ในรายงานมัดจำ (15 ใบ ฿2,502,107.08 ยังโยงกลับ PO ไม่ได้)</p>
+    </div>
+  </div>
+
+  <div class="mod">
+    <div class="hd"><span class="tag">P4</span><b>สรุปการสั่งซื้อ</b><span class="pill p-b">ข้อ 1.1</span></div>
+    <div class="bd">
+      <p style="margin-top:0">อ่านจากตารางสรุปที่ปิดยอดไว้ตี 2 — ไม่คำนวณสด</p>
+      <ul style="margin-bottom:0">
+        <li>ยอดซื้อ รายเดือน / รายปี / รายผู้ขาย / รายหมวด / รายจ๊อบ</li>
+        <li>ในประเทศ vs ต่างประเทศ · เงินสด vs เครดิต</li>
+        <li>ยอดซื้อรายคน (ใครเป็นคนซื้อ) → ต่อยอดเป็น Performance ใน P7</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="mod">
+    <div class="hd"><span class="tag" style="background:var(--purple)">C1</span><b>Costing Engine — RR รวมทุกปี</b><span class="pill p-p">ข้อ 1.2 · หัวใจของระบบ</span></div>
+    <div class="bd">
+      <p style="margin-top:0">โมดูลนี้คือสิ่งที่ไฟล์ <code>Update inventory price</code> ทำอยู่ แต่ทำให้อัตโนมัติ · สูตรทั้งหมดอยู่ในแท็บ 5</p>
+      <p><b>ผลิตออกมา 4 ราคา</b> — แต่ละราคามีที่ใช้ต่างกัน ห้ามใช้ปนกัน:</p>
+      <div class="scroll">
+      <table>
+        <tr><th class="nw">ราคา</th><th>คืออะไร</th><th>ใครใช้</th></tr>
+        <tr><td class="nw"><b>Carry Forward Cost</b></td><td>ต้นทุนเฉลี่ยถ่วงน้ำหนักสะสมต้นปี→สิ้นเดือนนั้น</td><td><span class="pill p-p">บัญชี</span> ปิดงวด · นับสต๊อก · Job Cost</td></tr>
+        <tr><td class="nw"><b>WAC Policy</b></td><td>ต้นทุนเฉลี่ยเชิงนโยบาย (ปีงวด → ถ้าไม่มี ย้อนหลัง ≤3 ปี)</td><td><span class="pill p-b">ผู้บริหาร</span> ราคากลาง · วิเคราะห์</td></tr>
+        <tr><td class="nw"><b>Sales Cost</b></td><td>WAC → Ever → Market (เลือกตัวแรกที่มี)</td><td><span class="pill p-a">Sales</span> ตั้งราคาขายงาน JM</td></tr>
+        <tr><td class="nw"><b>Last Receipt Ever</b></td><td>ราคาต่อหน่วยของการรับครั้งล่าสุด ไม่จำกัดปี</td><td><span class="pill p-t">NOVA ใหญ่</span> + ใช้เป็น Fallback</td></tr>
+      </table>
+      </div>
+      <div class="danger" style="margin-bottom:0">
+        <b>กฎที่ห้ามพลาด (จาก Policy ของเบียร์เอง):</b> ❌ ห้ามเอา Carry Forward ไปตั้งราคาขาย · ❌ ห้ามเอา WAC Policy ไปปิดงวดบัญชี ·
+        ❌ ห้ามใช้ Carry Forward ปีเก่าไปประเมินปีใหม่ — ระบบจะบังคับแยกให้เอง คนเลือกผิดไม่ได้
+      </div>
+    </div>
+  </div>
+
+  <div class="mod">
+    <div class="hd"><span class="tag">P5</span><b>งานผู้รับเหมา</b><span class="pill p-b">ข้อ 1.3</span></div>
+    <div class="bd">
+      <p style="margin-top:0"><b>ทำอะไร</b> — แบบฟอร์มเก็บงานผู้รับเหมา ผูกกับเลข PO ได้โดยตรง มีเลขเอกสารวิ่งเอง พิมพ์ได้ทุกใบ</p>
+      <ul>
+        <li>ทะเบียนผู้รับเหมา (ชื่อ · เลขผู้เสียภาษี · ประเภทงาน · เอกสารประกอบ)</li>
+        <li>สัญญา/ใบสั่งจ้าง → ผูก <code>Poid</code> → งวดงาน → ตรวจรับ → ตั้งเบิก</li>
+        <li>หัก ณ ที่จ่าย + ประกันผลงาน (retention) คำนวณอัตโนมัติ</li>
+        <li>แนบรูปหน้างานก่อน/หลัง จากมือถือ</li>
+      </ul>
+      <div class="amberbox" style="margin-bottom:0"><b>ต้องขอจากเบียร์:</b> ฟอร์มสัญญา + ใบตรวจรับที่ใช้จริง · รูปแบบเลขเอกสาร · % หัก ณ ที่จ่าย · % ประกันผลงาน · งวดงานแบ่งยังไง</div>
+    </div>
+  </div>
+
+  <div class="mod">
+    <div class="hd"><span class="tag">P6</span><b>ลิงก์ไปดู PR</b><span class="pill p-b">ข้อ 1.4</span></div>
+    <div class="bd">
+      <p style="margin:0">งาน PR อยู่ในโปรแกรมเดิมแล้ว — ในนี้ทำเป็น<b>ปุ่มลิงก์</b> เปิดไปหน้านั้นตรง ๆ พร้อมส่งเลข PR/จ๊อบไปด้วย
+      ไม่ทำซ้ำ ไม่ก๊อปข้อมูล (ข้อมูลซ้ำ 2 ที่ = ไม่ตรงกันแน่นอน)</p>
+    </div>
+  </div>
+
+  <div class="mod">
+    <div class="hd"><span class="tag">P7</span><b>Dashboard KPI จัดซื้อ</b><span class="pill p-b">ข้อ 1.6</span></div>
+    <div class="bd">
+      <h4 style="margin-top:0">ก. KPI ลดต้นทุน — “ลดราคาไปได้กี่ %”</h4>
+      <p>ตัวนี้ต้องนิยาม<b>เทียบกับอะไร</b> ก่อน ผมเสนอ 3 แบบ ให้เบียร์เลือก (อยู่ในแท็บ 7 ข้อ 1):</p>
+      <div class="scroll">
+      <table>
+        <tr><th class="nw">แบบ</th><th>สูตร</th><th>ข้อดี / ข้อเสีย</th></tr>
+        <tr><td class="nw"><b>ก1</b> เทียบราคาครั้งก่อน</td><td><code>(ราคาก่อนหน้า − ราคานี้) ÷ ราคาก่อนหน้า</code></td><td class="ok">คำนวณได้ทันทีจาก RR ที่มีอยู่ ไม่ต้องกรอกอะไรเพิ่ม</td></tr>
+        <tr><td class="nw"><b>ก2</b> เทียบราคากลาง</td><td><code>(WAC Policy − ราคานี้) ÷ WAC Policy</code></td><td>สะท้อนราคากลางทั้งปี แต่แกว่งตามการซื้อ</td></tr>
+        <tr><td class="nw"><b>ก3</b> เทียบใบเสนอราคาแรก</td><td><code>(ราคาเสนอ − ราคาที่ต่อได้) ÷ ราคาเสนอ</code></td><td class="warn">ตรงกับ “ฝีมือต่อรอง” ที่สุด แต่จัดซื้อต้องกรอกราคาเสนอทุกครั้ง</td></tr>
+      </table>
+      </div>
+      <p class="small"><b>ผมแนะนำ ก1 + ก3 คู่กัน</b> — ก1 ให้ตัวเลขได้เลยวันนี้จากข้อมูลเก่า, ก3 ค่อยเก็บสะสมไปข้างหน้าเมื่อจัดซื้อเริ่มกรอก</p>
+
+      <h4>ข. ตรวจ Supplier ใหม่อัตโนมัติ</h4>
+      <p style="margin-bottom:0">ระบบเทียบ <code>VendorCode</code> ของทุกใบ PO/RR กับทะเบียนผู้ขาย 497 ราย →
+      ถ้าเจอรหัสที่ไม่เคยมี หรือมีชื่อแต่ไม่มีในทะเบียน → ขึ้นป้าย <span class="pill p-a">Supplier ใหม่</span> ทันที
+      พร้อมนับว่าปีนี้หาผู้ขายใหม่ได้กี่ราย ซื้อไปเท่าไหร่ ประหยัดได้เท่าไหร่เทียบเจ้าเดิม</p>
+    </div>
+  </div>
+
+</section>
+
+<!-- ==================== TAB 4 ==================== -->
+<section class="pane" id="p4">
+
+  <h2>ฝั่งสโตร์</h2>
+
+  <div class="mod">
+    <div class="hd"><span class="tag s">S1</span><b>รับสินค้าประจำวัน (GRN)</b><span class="pill p-t">ข้อ 2.1</span><span class="pill p-a">ข้ามปีได้</span></div>
+    <div class="bd">
+      <p style="margin-top:0">ตกลงกันไว้แล้วรอบก่อน สรุปสั้น ๆ:</p>
+      <ul>
+        <li>สโตร์เลือก PO จาก <code>OPEN_PO</code> → ใส่จำนวนที่รับจริง → แนบรูป → กดบันทึก (คอม + มือถือ)</li>
+        <li><b>ของไม่ครบ = รับ</b> แล้วให้ผู้ขายแก้เอกสารตามมา · ของชำรุด/ผิดสเปก = ไม่รับ ส่งคืน</li>
+        <li><b>จัดซื้ออนุมัติก่อนเสมอ</b> — มีคิวรออนุมัติแยกหน้า</li>
+        <li>หมวด 1–7 ต้องกดรับ (5,480 บรรทัด · 80.8%) · หมวด 8–9 ข้าม (1,301 บรรทัด)</li>
+        <li>รับข้ามปีทำได้ เพราะ <code>OPEN_PO</code> ไม่ผูกปี</li>
+      </ul>
+      <div class="danger" style="margin-bottom:0">
+        <b>ต้องแยกให้ชัด:</b> หมวด 8–9 <b>ไม่ต้องกดรับของ</b> ≠ <b>ไม่คิดต้นทุน</b> —
+        ตาม Policy ของเบียร์ RR คือต้นทุนจริง ดังนั้นค่าบริการ/งานโรงงานหมวด 8–9 <b>ยังเข้าระบบต้นทุนตามปกติ</b>
+        แค่ไม่เข้า Stock Card (เพราะไม่มีของให้นับ)
+      </div>
+    </div>
+  </div>
+
+  <div class="mod">
+    <div class="hd"><span class="tag s">S2</span><b>Stock Card 3 คลัง real-time</b><span class="pill p-t">ข้อ 2.2</span></div>
+    <div class="bd">
+      <p style="margin-top:0"><b>ทุกการเคลื่อนไหวลงตารางเดียว</b> <code>STOCK_MOVE</code> — เพิ่มแถวอย่างเดียว ไม่ลบ ไม่แก้ (แก้ = ออกแถวกลับรายการพร้อมเหตุผล)</p>
+      <div class="scroll">
+      <table>
+        <tr><th class="nw">ประเภท</th><th>มาจากไหน</th><th class="nw">+/−</th><th class="nw">อัตโนมัติ?</th></tr>
+        <tr><td class="nw">รับเข้า</td><td>S1 กดรับของ</td><td class="nw ok">+</td><td class="nw ok">อัตโนมัติ</td></tr>
+        <tr><td class="nw">เบิกตามจ๊อบ</td><td><b>NOVA ใหญ่</b> ส่งเข้ามา</td><td class="nw bad">−</td><td class="nw warn">ต้องต่อท่อ (ดูกล่องล่าง)</td></tr>
+        <tr><td class="nw">เบิกทั่วไป</td><td>สโตร์คีย์</td><td class="nw bad">−</td><td class="nw">คีย์</td></tr>
+        <tr><td class="nw">ยืม / คืน</td><td>สโตร์คีย์ + มีกำหนดคืน + เตือนเมื่อเลยกำหนด</td><td class="nw">− / +</td><td class="nw">คีย์</td></tr>
+        <tr><td class="nw">โอนระหว่างคลัง</td><td>สโตร์คีย์ — ออกคลังหนึ่ง เข้าอีกคลัง <b>2 แถวคู่กันเสมอ</b></td><td class="nw">− +</td><td class="nw">คีย์</td></tr>
+        <tr><td class="nw">ปรับปรุง</td><td>จากการนับ (S3) ต้องมีเหตุผล + ผู้จัดการอนุมัติ</td><td class="nw">± </td><td class="nw">อนุมัติ</td></tr>
+        <tr><td class="nw">ส่งคืนผู้ขาย</td><td>ของชำรุด</td><td class="nw bad">−</td><td class="nw ok">อัตโนมัติจาก S1</td></tr>
+      </table>
+      </div>
+
+      <h4>3 คลัง แยกกันเด็ดขาด</h4>
+      <div class="grid g3">
+        <div class="card tight" style="margin:0"><b>คลังใหญ่</b><br><span class="small">วัตถุดิบหลัก ของเข้างานผลิต</span></div>
+        <div class="card tight" style="margin:0"><b>Stock Store</b><br><span class="small">ของที่กำหนดว่าต้องซื้อทุกเดือน มี min/max</span></div>
+        <div class="card tight" style="margin:0"><b>Stock Service</b><br><span class="small">งานขาย After Sales Service</span></div>
+      </div>
+      <div class="note" style="margin-bottom:0">
+        <b>สินค้าตัวเดียวกันอยู่ได้หลายคลัง</b> — ทุกแถวใน <code>STOCK_MOVE</code> จึงต้องมี <code>warehouse</code> เสมอ
+        และยอดคงเหลือคิด<b>แยกคลัง</b> ไม่รวมกัน · ข้อมูล PO/RR เดิมมี <code>LocaCode</code> และ <code>InveCode</code> อยู่แล้ว →
+        ผมจะใช้ 2 ตัวนี้ map เข้าคลัง (ในข้อมูลจริงเห็นรหัส 01–10, 22, 88 — <b>ขอให้เบียร์บอกว่ารหัสไหนคือคลังไหน</b>)
+      </div>
+
+      <div class="amberbox" style="margin-bottom:0">
+        <b>ท่อจาก NOVA ใหญ่ → P&amp;S Hub</b> — ตอนนี้เบียร์ดึงรายงานออกมาแล้ว paste เข้า Google Sheet เอง
+        ระบบใหม่ควรให้ NOVA <b>ส่งเข้ามาเองทันทีที่เบิก</b> (จ๊อบ · รหัสสินค้า · จำนวน · คลัง · คนเบิก · เวลา)
+        เพราะถ้ายัง paste มือ Stock Card จะไม่มีวัน real-time จริง — <b>เรื่องนี้ผมต้องเข้าไปแก้ NOVA ด้วย ต้องขออนุญาตเบียร์ก่อน</b>
+      </div>
+    </div>
+  </div>
+
+  <div class="mod">
+    <div class="hd"><span class="tag s">S3</span><b>นับสต๊อกประจำเดือน + ใบขอซื้อ</b><span class="pill p-t">ข้อ 2.3</span></div>
+    <div class="bd">
+      <p style="margin-top:0"><b>ขั้นตอนปิดเดือน 6 สเต็ป</b></p>
+      <ol>
+        <li><b>เปิดรอบนับ</b> — ระบบล็อกยอดตามบัญชี ณ วันสิ้นเดือน (ยอดยกมา + รับเข้า − จ่ายออก = ควรเหลือ)</li>
+        <li><b>นับจริง</b> — สโตร์นับด้วยมือถือ ทีละคลัง กรอก Qty นับจริง</li>
+        <li><b>ระบบเทียบให้</b> — ผลต่าง = นับจริง − ควรเหลือ · ถ้าตรงหมดจบเลย</li>
+        <li><b>ไม่ตรงต้องมีเหตุผล</b> — เลือกเหตุผล + แนบรูป → <b>ส่งผู้จัดการอนุมัติ</b> + ประเมินค่าเสียหาย (จำนวน × ต้นทุน)</li>
+        <li><b>อนุมัติแล้วระบบออกแถวปรับปรุงใน STOCK_MOVE ให้เอง</b> — ยอดถึงตรงกัน (ไม่ใช่ไปแก้ตัวเลขเก่า)</li>
+        <li><b>ปิดงวด</b> — เขียน snapshot ล็อกถาวร แก้ไม่ได้อีก</li>
+      </ol>
+      <div class="good">
+        <b>ใบสรุปการสั่งซื้อให้จัดซื้อ — ออกอัตโนมัติทันทีที่นับเสร็จ</b><br>
+        ระบบเทียบ <code>ยอดคงเหลือ</code> กับ <code>จุดสั่งซื้อ (min)</code> ที่ตั้งไว้ → ตัวไหนต่ำกว่า ขึ้นใบขอซื้อพร้อมจำนวนที่ควรสั่ง
+        (= max − คงเหลือ) → กดส่งเข้าคิวจัดซื้อได้เลย ไม่ต้องพิมพ์ใหม่
+      </div>
+      <p style="margin-bottom:0" class="small">ผลต่างที่ยังไม่อนุมัติ = <b>ปิดงวดไม่ได้</b> — บังคับในระบบ ไม่ใช่แค่เตือน</p>
+    </div>
+  </div>
+
+  <div class="mod">
+    <div class="hd"><span class="tag s">S4</span><b>มูลค่าสต๊อก + ABC ส่งบัญชี</b><span class="pill p-t">ข้อ 2.3</span></div>
+    <div class="bd">
+      <p style="margin-top:0"><b>ราคาที่ใช้ตีมูลค่า</b> — ตาม Policy ของเบียร์เป๊ะ ๆ:</p>
+      <pre><code>ถ้ามี Carry Forward Cost ของเดือนนั้น  →  ใช้ Carry Forward Cost
+มิฉะนั้น                                →  ใช้ Stock Reference Cost
+                                            (WAC Policy → Last Receipt Ever → Market/Manual)</code></pre>
+      <p>ทุกแถวต้องมี <b>Source of Cost</b> เขียนกำกับ เช่น <code>Carry Forward 08/2569</code> · <code>WAC Policy</code> ·
+      <code>Last Receipt Ever</code> · <code>Market Manual</code> — เพื่อให้บัญชีและ Audit ตรวจย้อนหลังได้</p>
+
+      <h4>ส่งบัญชียังไง — ผมแนะนำแบบไหน</h4>
+      <div class="scroll">
+      <table>
+        <tr><th class="nw">รูปแบบ</th><th>ข้อดี</th><th>ข้อเสีย</th><th class="nw">ผมแนะนำ</th></tr>
+        <tr><td class="nw"><b>Google Sheet</b></td><td>บัญชีเปิดดูได้ทันที · มีสูตรให้ตรวจ · ไม่ต้องดาวน์โหลด · แก้ที่เดียวเห็นพร้อมกัน</td><td>บัญชีต้องมีบัญชี Google</td><td class="nw ok">✅ หลัก</td></tr>
+        <tr><td class="nw"><b>Excel (.xlsx)</b></td><td>ส่งแนบเมลได้ · เอาไปเข้าโปรแกรมบัญชีได้</td><td>เป็นไฟล์นิ่ง ถ้าตัวเลขเปลี่ยนต้องส่งใหม่</td><td class="nw">ปุ่มดาวน์โหลด</td></tr>
+        <tr><td class="nw"><b>PDF</b></td><td>เซ็นอนุมัติ · เก็บเป็นหลักฐาน</td><td>แก้ไม่ได้ ตรวจสูตรไม่ได้</td><td class="nw">ใบสรุปอนุมัติ</td></tr>
+      </table>
+      </div>
+      <p class="small"><b>ทำทั้ง 3 อย่างจากปุ่มเดียว</b> — Google Sheet ให้บัญชีทำงาน · Excel เผื่อขอ · PDF ให้ผู้จัดการเซ็น
+      ทุกไฟล์มีสูตรจริงและ Source of Cost ครบ</p>
+
+      <h4>ABC / Pareto</h4>
+      <p style="margin-bottom:0">เรียงมูลค่าจากมากไปน้อย → สะสม % → <b>A</b> ≤80% · <b>B</b> ≤95% · <b>C</b> ที่เหลือ ·
+      พร้อม <b>Stock Status</b>: Active ≤1 ปี · Slow Moving &gt;1 ปี · Dead Stock &gt;3 ปี · No Stock = 0
+      <span class="small">(ในไฟล์เดิมคอลัมน์ ABC ขึ้น <code>#N/A</code> อยู่ — ระบบใหม่ต้องไม่มีช่องว่าง)</span></p>
+    </div>
+  </div>
+
+  <div class="mod">
+    <div class="hd"><span class="tag s">S5</span><b>แนะนำสินค้าที่ควรเข้า/ปรับ Stock</b><span class="pill p-t">ข้อ 2.4</span></div>
+    <div class="bd">
+      <p style="margin-top:0">ระบบดูย้อนหลัง 12 เดือนแล้วเสนอ <b>พร้อมเหตุผลเป็นตัวเลข</b> ให้สโตร์กดรับ/ปฏิเสธ</p>
+      <div class="scroll">
+      <table>
+        <tr><th class="nw">ข้อเสนอ</th><th>เงื่อนไขที่ระบบใช้</th><th>เหตุผลที่แสดง</th></tr>
+        <tr><td class="nw"><span class="pill p-g">ควรเพิ่มเป็น Stock</span></td><td>ยังไม่อยู่ใน Inventory แต่ซื้อ ≥ 6 ครั้ง/ปี และ ≥ 4 เดือนที่ต่างกัน</td><td>“ปีนี้ซื้อ 11 ครั้ง 8 เดือน รวม ฿xxx — ซื้อบ่อยพอที่จะเก็บสต๊อก”</td></tr>
+        <tr><td class="nw"><span class="pill p-a">ควรเพิ่มจำนวน</span></td><td>เป็น Stock อยู่แล้ว แต่แตะ 0 หรือต่ำกว่า min ≥ 3 ครั้ง/ปี</td><td>“ของขาด 4 ครั้งในปีนี้ — min ควรขึ้นจาก 10 เป็น 18”</td></tr>
+        <tr><td class="nw"><span class="pill p-b">ควรลดจำนวน</span></td><td>คงเหลือ ÷ ยอดใช้เฉลี่ยต่อเดือน &gt; 6 เดือน</td><td>“ของพอใช้อีก 14 เดือน — เงินจม ฿xxx”</td></tr>
+        <tr><td class="nw"><span class="pill p-r">ควรตัดออก</span></td><td>ไม่เคลื่อนไหว &gt; 3 ปี (= Dead Stock)</td><td>“ไม่มีการเคลื่อนไหวตั้งแต่ x/xx — มูลค่าค้าง ฿xxx”</td></tr>
+      </table>
+      </div>
+      <p class="small" style="margin-bottom:0">ตัวเลขเงื่อนไข (6 ครั้ง, 3 ครั้ง, 6 เดือน, 3 ปี) เป็น <b>ค่าตั้งต้นที่ผมเสนอ</b> — เบียร์ปรับได้ในหน้าตั้งค่า ไม่ต้องแก้โค้ด</p>
+    </div>
+  </div>
+
+</section>
+
+<!-- ==================== TAB 5 ==================== -->
+<section class="pane" id="p5">
+
+  <h2>สูตรทั้งหมดที่ระบบใหม่ต้องมี</h2>
+  <p>ถอดจาก Policy + ผังในไฟล์เบียร์ · เขียนเป็นกฎที่ตรวจสอบได้ ไม่ใช่สูตรในเซลล์ที่แก้ตกหล่นได้</p>
+
+  <h3>1. ทำความสะอาดข้อมูล RR (Normalize)</h3>
+  <div class="card">
+    <pre><code>Qty_num    = ตัวเลขจาก goodqty2   (ตัด comma, ช่องว่าง; ว่าง → 0)
+Price_num  = ตัวเลขจาก goodprice2
+Amt_num    = ตัวเลขจาก goodamnt    (ถ้าว่าง → Qty_num × Price_num)
+DocMonth   = เดือนของ docudate
+DocYear    = ปีของ docudate
+GoodCode   = ตัดคำนำหน้า  ^\d-  และ  ^INT-  ออก   (8-81641001 → 81641001)
+KEEP/DELETE= DELETE เมื่อ cancelflag=Y หรือ Qty_num≤0 หรือ Price_num≤0</code></pre>
+    <p class="small" style="margin-bottom:0">เหตุผลตามไฟล์เบียร์: “ลดความผิดพลาดของสูตร · ทำให้ระบบเร็วและเสถียร” — ระบบใหม่ทำตอนนำเข้า ครั้งเดียว</p>
+  </div>
+
+  <h3>2. Carry Forward Cost (ต้นทุนปิดงวด)</h3>
+  <div class="card">
+    <p style="margin-top:0"><b>นี่คือสูตรที่ในไฟล์เดิมขึ้น <code>#ERROR!</code></b> — ผมเขียนกลับให้เต็มตามคำอธิบายในเอกสาร Policy ข้อ 3.1</p>
+    <pre><code>Carry Forward (สินค้า i, เดือน m, ปี y)
+
+        Σ Amt_num   ของ i ที่ DocYear=y และ DocMonth ≤ m
+    = ───────────────────────────────────────────────────
+        Σ Qty_num   ของ i ที่ DocYear=y และ DocMonth ≤ m
+
+ถ้าตัวหารเป็น 0 (เดือนนั้นและก่อนหน้ายังไม่เคยรับของในปีนี้)
+    →  ใช้ค่าเดือนก่อนหน้า  (Carry Forward ต่อมา)
+ถ้าเดือนก่อนหน้าก็ไม่มี (คือยังไม่เคยรับเลยทั้งปี)
+    →  ใช้ Stock Reference Cost</code></pre>
+    <div class="note" style="margin-bottom:0">
+      <b>เป็น Moving Average แบบผูกงวด</b> — สะสมตั้งแต่ ม.ค. ของปีนั้น ไม่ข้ามปี · ใช้เฉพาะ RR ไม่ใช้ PO ·
+      <b>นี่คือเหตุผลที่ห้ามลบแถว RR เก่า</b> เพราะตัวสะสมจะหาย
+    </div>
+  </div>
+
+  <h3>3. WAC Policy (ราคากลาง)</h3>
+  <div class="card">
+    <pre><code>ถ้ามีการรับสินค้า i ในปีงวดปัจจุบัน
+    WAC Policy = Σ Amt_num(ปีนี้) ÷ Σ Qty_num(ปีนี้)
+
+มิฉะนั้น ถ้ามีการรับย้อนหลัง ≤ 3 ปี
+    WAC Policy (3Y) = Σ Amt_num(3 ปีล่าสุดที่มี) ÷ Σ Qty_num(3 ปีล่าสุดที่มี)
+
+มิฉะนั้น
+    ไม่มีค่า  →  ไปใช้ Fallback</code></pre>
+  </div>
+
+  <h3>4. Last Receipt (Ever) + Age</h3>
+  <div class="card">
+    <pre><code>Last Receipt Date (Ever)  = docudate ที่มากที่สุดของ i (ทุกปี ไม่จำกัด)
+Last Receipt Price (Ever) = Price_num ของแถวนั้น
+                            (ถ้าวันเดียวกันหลายแถว → ใช้ Σ Amt ÷ Σ Qty ของวันนั้น)
+Age (Days)                = วันนี้ − Last Receipt Date (Ever)</code></pre>
+    <p class="small" style="margin-bottom:0">ในไฟล์เดิมเห็นค่า Age = 2808 วัน สำหรับของที่รับล่าสุด 1/1/2019 — ตรงกับนิยามนี้</p>
+  </div>
+
+  <h3>5. Stock Reference Cost (Fallback 3 ชั้น)</h3>
+  <div class="card">
+    <div class="flow">
+      <span class="b">WAC Policy</span><span class="a">→ ถ้าไม่มี →</span>
+      <span class="b">Last Receipt Ever</span><span class="a">→ ถ้าไม่มี →</span>
+      <span class="b">Market / Manual</span>
+    </div>
+    <p style="margin-bottom:0" class="small">เหตุผลตาม Policy: “เพื่อให้ระบบไม่เกิดช่องว่างของต้นทุน · ทุกสินค้าในระบบมีต้นทุนอ้างอิงเสมอ”</p>
+  </div>
+
+  <h3>6. ราคาที่ใช้คำนวณจริง (Final Cost)</h3>
+  <div class="card">
+    <div class="flow">
+      <span class="b">Carry Forward Cost</span><span class="a">→ ถ้าไม่มี →</span>
+      <span class="b">Stock Reference Cost</span>
+    </div>
+    <pre><code>มูลค่า Stock = Qty นับจริง × ราคาที่ใช้คำนวณ
+Source of Cost = "Carry Forward mm/yyyy" | "WAC Policy" | "Last Receipt Ever" | "Market Manual"</code></pre>
+  </div>
+
+  <h3>7. Sales Cost (ให้ Sales ตั้งราคางาน JM)</h3>
+  <div class="card">
+    <div class="flow">
+      <span class="b">WAC Policy</span><span class="a">→</span>
+      <span class="b">Last Receipt Ever</span><span class="a">→</span>
+      <span class="b">Market</span>
+    </div>
+    <div class="danger" style="margin-bottom:0"><b>❌ ห้ามใช้ Carry Forward</b> — Policy ข้อ 7 ของเบียร์: “แยกบัญชีออกจากการขาย”</div>
+  </div>
+
+  <h3>8. Stock Status + ABC</h3>
+  <div class="card">
+    <pre><code>Stock Status:  Qty = 0            → No Stock
+               Age ≤ 365          → Active
+               365 &lt; Age ≤ 1095    → Slow Moving
+               Age &gt; 1095         → Dead Stock
+
+ABC:  เรียงมูลค่า Stock มาก→น้อย
+      % สะสม ≤ 80%   → A
+      % สะสม ≤ 95%   → B
+      ที่เหลือ        → C</code></pre>
+  </div>
+
+  <h3>9. ยอดคงเหลือ Stock Card (แยกคลัง)</h3>
+  <div class="card">
+    <pre><code>คงเหลือ (สินค้า i, คลัง w, ณ เวลา t)
+    = Σ qty ของทุกแถวใน STOCK_MOVE ที่ goodcode=i และ warehouse=w และ เวลา ≤ t
+      (รับเข้า/คืน/โอนเข้า = บวก · เบิก/ยืม/โอนออก/ส่งคืน = ลบ · ปรับปรุง = ±)
+
+ผลต่างจากการนับ = Qty นับจริง − คงเหลือตามบัญชี
+ค่าเสียหาย      = |ผลต่าง| × ราคาที่ใช้คำนวณ</code></pre>
+  </div>
+
+  <h3>10. KPI ลดต้นทุน</h3>
+  <div class="card">
+    <pre><code>% ลดต้นทุนต่อบรรทัด = (ราคาอ้างอิง − Price_num) ÷ ราคาอ้างอิง
+
+% ลดต้นทุนรวมของงวด = Σ (ราคาอ้างอิง − Price_num) × Qty_num
+                       ─────────────────────────────────────
+                            Σ  ราคาอ้างอิง × Qty_num
+
+ราคาอ้างอิง = แล้วแต่เบียร์เลือก (ก1 ราคาครั้งก่อน / ก2 WAC Policy / ก3 ราคาที่เสนอมา)</code></pre>
+    <p class="small" style="margin-bottom:0"><b>ต้องถ่วงน้ำหนักด้วยจำนวน</b> ไม่ใช่เฉลี่ย % ดื้อ ๆ — ไม่งั้นของถูก ๆ ที่ลดได้ 50% จะกลบของแพงที่ลดได้ 2%</p>
+  </div>
+
+  <div class="good">
+    <b>ทั้ง 10 สูตรนี้จะอยู่ในไฟล์โค้ดไฟล์เดียว</b> <code>05-costing.js</code> พร้อมชุดทดสอบที่รันตัวเลขจริงเทียบกับไฟล์
+    <code>Update inventory price</code> ของเบียร์ — ถ้าคำนวณออกมาไม่ตรงกับที่เบียร์ทำไว้ ระบบจะบอกทันทีว่าไม่ตรงตรงไหน
+    ก่อนขึ้นใช้จริง
+  </div>
+
+</section>
+
+<!-- ==================== TAB 6 ==================== -->
+<section class="pane" id="p6">
+
+  <h2>โครงไฟล์ข้อมูล — 4 ชนิด</h2>
+  <p>ปรับจากรอบก่อน เพราะเบียร์เพิ่มความต้องการใหม่ 2 อย่าง: <b>RR รวมไฟล์เดียว</b> และ <b>นับสต๊อกทุกเดือน</b></p>
+
+  <div class="tree">STT NOVA / P&S HUB /
+│
+├── 00-MASTER/
+│     └── STT-PS-MASTER                    ◀ ไฟล์เดียว ใช้ตลอด 20 ปี
+│           ├── USERS, SETTINGS, REGISTRY        (ใช้ร่วมกับ NOVA ใหญ่)
+│           ├── ITEM_MASTER      รหัสสินค้า · Category · Type · คลัง · min/max
+│           ├── VENDOR           ผู้ขาย 497 ราย + ป้าย "ใหม่"
+│           ├── MARKET_PRICE     ราคาตลาดที่กรอกเอง
+│           ├── OPEN_PO      ⭐  PO ค้างรับ (ข้ามปี) ~800 แถว
+│           ├── PRICE_LATEST ⭐  1 แถว/รหัส → NOVA ใหญ่มาดึงตัวนี้
+│           ├── SUM_YEAR · SUM_MONTH · SUM_VENDOR_YEAR · SUM_STAFF_MONTH
+│           └── DOC_INDEX        เลขเอกสารนี้อยู่ปีไหน ไฟล์ไหน
+│
+├── 01-COST/
+│     └── STT-PS-RR-ALL                    ◀ ไฟล์เดียว ตั้งแต่ 2562 → ตลอดไป
+│           ├── RR_ALL        ⭐  RR ทุกปี (ห้ามลบ ห้ามแก้)
+│           └── PRICE_HISTORY     ราคาต่อรหัส ต่อปี (สำหรับกราฟ + KPI)
+│
+├── 2569/  2570/  2571/ ...                ◀ 1 ปี 1 โฟลเดอร์ 1 ไฟล์
+│     └── STT-PS-2569
+│           ├── PO_LINE            ใบสั่งซื้อรายบรรทัด
+│           ├── GRN                สโตร์กดรับของ + รูป
+│           ├── STOCK_MOVE         การเคลื่อนไหวสต๊อกทุกแถว
+│           ├── STOCK_COUNT        นับสต๊อก 12 เดือน (ปิดแล้วล็อก)
+│           ├── CARRY_FWD          ต้นทุนปิดงวด 12 เดือน (ปิดแล้วล็อก)
+│           ├── MATCH_LINK         ผลจับคู่ PO↔RR
+│           ├── ตั้งเบิก / มัดจำ / ผู้รับเหมา
+│           └── LOG
+│
+├── หลักฐานรับของ/  2569/ 2570/ ...        ◀ รูปถ่าย ย่อเหลือ ~300 KB
+├── เอกสารผู้รับเหมา/
+├── BACKUP/          รายคืน 7 วัน · รายเดือนถาวร
+└── ARCHIVE/         ปีที่ปิดแล้ว ตั้งเป็นอ่านอย่างเดียว</div>
+
+  <h2>ขนาดแต่ละไฟล์ — ตรวจแล้วว่าไม่ตัน</h2>
+  <div class="scroll">
+  <table>
+    <tr><th>ไฟล์</th><th>โตแบบไหน</th><th class="num">เซลล์ที่ปีที่ 20</th><th class="num">% เพดาน</th><th>สรุป</th></tr>
+    <tr><td><b>STT-PS-2569</b> (และทุกปี)</td><td class="ok">ไม่โต — ปีใหม่เริ่มไฟล์ใหม่</td><td class="num">1,559,134</td><td class="num ok">15.6%</td><td class="ok">ปีที่ 20 เท่ากับปีที่ 1</td></tr>
+    <tr><td><b>STT-PS-RR-ALL</b></td><td class="warn">สะสมทุกปี</td><td class="num">3,462,680</td><td class="num ok">34.6%</td><td class="ok">เหลืออีก 65%</td></tr>
+    <tr><td><b>STT-PS-MASTER</b></td><td class="warn">สะสม (DOC_INDEX)</td><td class="num">6,212,900</td><td class="num warn">62.1%</td><td class="warn">ตัวที่ต้องเฝ้า</td></tr>
+  </table>
+  </div>
+
+  <div class="danger">
+    <b>เหตุผลที่ RR ต้องแยกออกมาเป็นไฟล์ของตัวเอง ไม่ยัดรวมกับ MASTER</b> —
+    ถ้ารวมกันจะได้ 9,675,580 เซลล์ = <b>96.8% ของเพดาน</b> ซึ่งเหลือที่ว่างแค่ 3% ไม่ปลอดภัยเลย
+    แยกออกมาแล้วทั้งสองไฟล์อยู่ที่ 34.6% และ 62.1% สบายทั้งคู่
+  </div>
+
+  <h2>อะไรอยู่ไฟล์ไหน — ตอบจากคำถามที่เจอบ่อย</h2>
+  <div class="scroll">
+  <table>
+    <tr><th>คำถาม</th><th class="nw">เปิดไฟล์ไหน</th><th class="nw">กี่ไฟล์</th></tr>
+    <tr><td>PO ค้างรับตอนนี้</td><td class="nw">MASTER</td><td class="nw ok">1</td></tr>
+    <tr><td>ราคาซื้อล่าสุด (NOVA มาดึง)</td><td class="nw">MASTER</td><td class="nw ok">1</td></tr>
+    <tr><td>สโตร์กดรับของวันนี้</td><td class="nw">ปีปัจจุบัน</td><td class="nw ok">1</td></tr>
+    <tr><td>Stock Card ยอดคงเหลือตอนนี้</td><td class="nw">ปีปัจจุบัน</td><td class="nw ok">1</td></tr>
+    <tr><td>ต้นทุนเฉลี่ยกลาง / WAC Policy</td><td class="nw">RR-ALL</td><td class="nw ok">1</td></tr>
+    <tr><td>ปิดงวดนับสต๊อกเดือนนี้</td><td class="nw">ปีปัจจุบัน + RR-ALL</td><td class="nw ok">2</td></tr>
+    <tr><td>เปรียบเทียบยอดซื้อ 20 ปี</td><td class="nw">MASTER (ตารางสรุป)</td><td class="nw ok">1</td></tr>
+    <tr><td>เปิดดู PO รายบรรทัดของปี 2562</td><td class="nw">ปี 2562</td><td class="nw ok">1</td></tr>
+  </table>
+  </div>
+  <p class="small">ไม่มีคำถามไหนที่ต้องเปิดเกิน 2 ไฟล์ — และไม่มีอันไหนที่ต้องวนเปิดหลายปี</p>
+
+  <div class="note">
+    <b>วิธีปิดงวดในระบบใหม่ vs ในไฟล์เดิม</b><br>
+    ไฟล์เดิม: Copy sheet → Paste values only → Rename → แก้ปีในสูตร → เปลี่ยน Control (5 ขั้นตอน ทำมือ พลาดได้)<br>
+    ระบบใหม่: <b>กดปุ่ม “ปิดงวด 08/2569” ครั้งเดียว</b> → ระบบเขียนตัวเลขลง <code>CARRY_FWD</code> และ <code>STOCK_COUNT</code>
+    แล้วตั้งสถานะเป็น <code>LOCKED</code> → หลังจากนั้นแก้ไม่ได้ ต้องขออนุมัติเปิดงวดใหม่เท่านั้น
+  </div>
+
+</section>
+
+<!-- ==================== TAB 7 ==================== -->
+<section class="pane" id="p7">
+
+  <h2>ต้องให้เบียร์ตัดสิน 8 เรื่อง</h2>
+  <p>ทุกข้อผมใส่คำแนะนำไว้แล้ว — ถ้าเห็นด้วยตอบว่า “เอาตามที่แนะนำ” ก็พอ ไม่ต้องตอบทีละข้อ</p>
+
+  <div class="scroll">
+  <table>
+    <tr><th class="nw">#</th><th>เรื่อง</th><th>ตัวเลือก</th><th class="nw">ผมแนะนำ</th></tr>
+    <tr>
+      <td class="nw">1</td><td><b>KPI ลดต้นทุนเทียบกับอะไร</b></td>
+      <td>ก1 ราคาครั้งก่อน · ก2 ราคากลาง WAC · ก3 ราคาที่ผู้ขายเสนอมาครั้งแรก</td>
+      <td class="nw ok">ก1 + ก3</td>
+    </tr>
+    <tr>
+      <td class="nw">2</td><td><b>รหัสคลังไหน = คลังอะไร</b><br><span class="small">ในข้อมูลเห็น LocaCode 01–10, 22, 88</span></td>
+      <td>ต้องให้เบียร์บอก map เข้า คลังใหญ่ / Stock Store / Stock Service</td>
+      <td class="nw warn">ต้องถาม</td>
+    </tr>
+    <tr>
+      <td class="nw">3</td><td><b>ท่อจาก NOVA ใหญ่ → Stock Card</b></td>
+      <td>ก. ให้ผมแก้ NOVA ให้ส่งเข้ามาเองทันทีที่เบิก · ข. คงไว้แบบดึงรายงานแล้วนำเข้าเอง</td>
+      <td class="nw ok">ก. (ไม่งั้นไม่ real-time)</td>
+    </tr>
+    <tr>
+      <td class="nw">4</td><td><b>ส่งบัญชีแบบไหน</b></td>
+      <td>Google Sheet / Excel / PDF</td>
+      <td class="nw ok">ทำทั้ง 3 จากปุ่มเดียว</td>
+    </tr>
+    <tr>
+      <td class="nw">5</td><td><b>Market Price ใครกรอก ใครอนุมัติ</b></td>
+      <td>จัดซื้อกรอก + ผบห.อนุมัติ · หรือ ผบห.กรอกเอง</td>
+      <td class="nw ok">จัดซื้อกรอก + ผบห.อนุมัติ</td>
+    </tr>
+    <tr>
+      <td class="nw">6</td><td><b>นิยาม “Supplier ใหม่”</b></td>
+      <td>ไม่เคยมี RR เลย · หรือ ไม่มี RR ในรอบ 3 ปี</td>
+      <td class="nw ok">ไม่เคยมี RR เลย</td>
+    </tr>
+    <tr>
+      <td class="nw">7</td><td><b>เอกสารผู้รับเหมา</b></td>
+      <td>ต้องขอ: ฟอร์มสัญญา · ใบตรวจรับ · รูปแบบเลขเอกสาร · % หัก ณ ที่จ่าย · % ประกันผลงาน</td>
+      <td class="nw warn">ต้องส่งไฟล์มา</td>
+    </tr>
+    <tr>
+      <td class="nw">8</td><td><b>ลำดับเฟส</b></td>
+      <td>ตามที่วางไว้ (ต้นทุนอยู่เฟส 4) · หรือ ดันต้นทุนขึ้นมาเฟส 2</td>
+      <td class="nw ok">ตามที่วางไว้</td>
+    </tr>
+  </table>
+  </div>
+
+  <h2>ลำดับงาน 7 เฟส</h2>
+  <div class="scroll">
+  <table>
+    <tr><th class="nw">เฟส</th><th>ทำอะไร</th><th class="nw">ได้อะไรจับต้องได้</th><th class="nw">ต้องรอเบียร์</th></tr>
+    <tr><td class="nw"><span class="pill p-g">0</span></td><td>เปิดบ้าน: โฟลเดอร์ Drive · Apps Script · REGISTRY · ล็อกอิน empId+PIN</td><td class="nw">ล็อกอินเข้าได้จริง</td><td class="nw bad">Script ID + โฟลเดอร์</td></tr>
+    <tr><td class="nw"><span class="pill p-g">1</span></td><td>P1 นำเข้า+จับคู่ · P2 PO ค้างรับ</td><td class="nw">หน้าค้างรับที่ถูก 100%</td><td class="nw bad">ชุดข้อมูล PO+RR</td></tr>
+    <tr><td class="nw"><span class="pill p-g">2</span></td><td>S1 สโตร์รับของ + จัดซื้ออนุมัติ (คอม+มือถือ)</td><td class="nw">สโตร์เลิกจดกระดาษ</td><td class="nw">—</td></tr>
+    <tr><td class="nw"><span class="pill p-b">3</span></td><td>P3 แผนจ่ายเงิน · P4 สรุปการสั่งซื้อ</td><td class="nw">เลิกทำ Manual 10 ล้าน</td><td class="nw warn">เลข PO ในรายงานมัดจำ</td></tr>
+    <tr><td class="nw"><span class="pill p-b">4</span></td><td>C1 Costing Engine (RR 2562→ปัจจุบัน) · S2 Stock Card</td><td class="nw">ราคากลาง + ราคาล่าสุดส่ง NOVA</td><td class="nw bad">RR ย้อนหลังทุกปี</td></tr>
+    <tr><td class="nw"><span class="pill p-a">5</span></td><td>S3 นับสต๊อกเดือน · S4 มูลค่าสต๊อก + ABC ส่งบัญชี</td><td class="nw">ปิดเดือนไม่ต้องทำมือ</td><td class="nw warn">รหัสคลัง + min/max</td></tr>
+    <tr><td class="nw"><span class="pill p-a">6</span></td><td>P7 Dashboard KPI · S5 แนะนำ Stock</td><td class="nw">ตัวเลขให้ผู้บริหาร</td><td class="nw warn">นิยาม KPI (ข้อ 1)</td></tr>
+    <tr><td class="nw"><span class="pill p-p">7</span></td><td>P5 ผู้รับเหมา · P6 ลิงก์ PR</td><td class="nw">เอกสารผู้รับเหมาครบวงจร</td><td class="nw bad">ฟอร์มเอกสาร</td></tr>
+  </table>
+  </div>
+
+  <h2>ที่ผมรอจากเบียร์ตอนนี้ — 3 อย่างเพื่อเริ่มเฟส 0</h2>
+  <div class="grid g3">
+    <div class="card" style="margin:0"><b>1. Script ID</b><br><span class="small">สร้าง Apps Script project ใหม่ แล้วส่ง ID มา</span></div>
+    <div class="card" style="margin:0"><b>2. โฟลเดอร์ P&amp;S HUB</b><br><span class="small">สร้างใน Drive แล้วส่งลิงก์ หรืออนุญาตให้ผมสร้างเอง</span></div>
+    <div class="card" style="margin:0"><b>3. ชุดข้อมูลจริง 1 รอบ</b><br><span class="small">PO 22 คอลัมน์ + RR ครบ (เฟส 1) · RR ย้อนหลังค่อยส่งตอนเฟส 4</span></div>
+  </div>
+
+  <div class="good" style="margin-top:18px">
+    <b>ระหว่างรอ ผมทำอะไรได้เลยโดยไม่ต้องใช้ของจากเบียร์:</b>
+    เขียน <code>05-costing.js</code> (สูตรทั้ง 10 ข้อในแท็บ 5) พร้อมชุดทดสอบที่รันเทียบกับตัวเลขในไฟล์
+    <code>Update inventory price</code> — พอเบียร์ส่ง RR มาก็เอาเข้าคำนวณได้ทันที ไม่ต้องรอเขียน
+    <br><b>ให้ผมเริ่มเลยไหมครับ?</b>
+  </div>
+
+</section>
+
+<footer>
+  NOVA – PURCHASE &amp; STORE HUB · โครงระบบฉบับเต็ม v1 · จัดทำโดย Candy สำหรับเบียร์<br>
+  ผลวิเคราะห์อ้างอิงไฟล์ <b>Update inventory price</b> (แก้ไขล่าสุด 19/05/2026) และข้อมูล PO/RR จริงของ STT ·
+  ตัวเลขในตัวอย่างสูตรเป็นค่าสมมติ
+</footer>
+
+</div>
+
+<script>
+(function(){
+  var tabs = document.querySelectorAll('.tab');
+  var panes = document.querySelectorAll('.pane');
+  tabs.forEach(function(b){
+    b.addEventListener('click', function(){
+      tabs.forEach(function(x){ x.classList.remove('on'); });
+      panes.forEach(function(x){ x.classList.remove('on'); });
+      b.classList.add('on');
+      var el = document.getElementById('p' + b.dataset.t);
+      if (el) el.classList.add('on');
+      window.scrollTo({top:0, behavior:'smooth'});
+    });
+  });
+})();
+</script>
+</body>
+</html>

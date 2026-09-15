@@ -1,0 +1,600 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>แยกไฟล์รายปี แล้วจะช้าไหม — NOVA P&S Hub</title>
+<style>
+:root{
+  --bg:#f4f6f9; --card:#fff; --ink:#16202e; --sub:#5b6a7d; --line:#dde4ec;
+  --blue:#1c5fd0; --blue-l:#eaf1fd; --green:#127a4b; --green-l:#e6f6ee;
+  --red:#c02b2b; --red-l:#fdeceb; --amber:#a86500; --amber-l:#fff5e2;
+  --purple:#6a2fb5; --purple-l:#f2ebfd;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Sarabun","Leelawadee UI","Tahoma","Segoe UI",sans-serif;font-size:15.5px;line-height:1.75}
+.wrap{max-width:1080px;margin:0 auto;padding:0 16px 80px}
+header{background:linear-gradient(135deg,#0f2b57,#1c5fd0);color:#fff;padding:30px 0 26px;margin-bottom:0}
+header .wrap{padding-bottom:0}
+.badge{display:inline-block;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);
+  padding:3px 12px;border-radius:99px;font-size:12.5px;letter-spacing:.3px;margin-bottom:10px}
+h1{margin:0 0 6px;font-size:27px;line-height:1.4}
+header p{margin:0;opacity:.9;font-size:14.5px}
+.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);
+  box-shadow:0 2px 8px rgba(20,40,70,.06)}
+.tabs .wrap{display:flex;gap:4px;overflow-x:auto;padding-top:8px;padding-bottom:0}
+.tab{flex:0 0 auto;border:0;background:transparent;font:inherit;font-size:14.5px;color:var(--sub);
+  padding:11px 15px 12px;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
+.tab:hover{color:var(--ink)}
+.tab.on{color:var(--blue);border-bottom-color:var(--blue);font-weight:600}
+.pane{display:none;padding-top:26px}
+.pane.on{display:block}
+h2{font-size:21px;margin:32px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--line)}
+h2:first-child{margin-top:0}
+h3{font-size:17px;margin:24px 0 8px}
+p{margin:10px 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin:14px 0;
+  box-shadow:0 1px 3px rgba(20,40,70,.05)}
+.hero{background:var(--green-l);border:1px solid #b6e3cd;border-radius:14px;padding:22px 24px;margin:0 0 18px}
+.hero .big{font-size:19px;font-weight:700;color:var(--green);line-height:1.6}
+.n{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;
+  background:var(--blue);color:#fff;font-size:14px;font-weight:700;margin-inline-end:8px;flex:0 0 auto}
+ul,ol{margin:10px 0;padding-inline-start:24px}
+li{margin:6px 0}
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14.5px;background:#fff}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+th,td{border:1px solid var(--line);padding:8px 10px;text-align:start;vertical-align:top}
+th{background:#eef2f7;font-weight:600;white-space:nowrap}
+td.num,th.num{text-align:end;font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.tot td{background:#f7f9fc;font-weight:700}
+.ok{color:var(--green);font-weight:600}
+.bad{color:var(--red);font-weight:600}
+.warn{color:var(--amber);font-weight:600}
+.pill{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12.5px;font-weight:600;white-space:nowrap}
+.p-g{background:var(--green-l);color:var(--green)}
+.p-r{background:var(--red-l);color:var(--red)}
+.p-a{background:var(--amber-l);color:var(--amber)}
+.p-b{background:var(--blue-l);color:var(--blue)}
+.p-p{background:var(--purple-l);color:var(--purple)}
+.note{border-inline-start:4px solid var(--blue);background:var(--blue-l);padding:12px 16px;border-radius:0 10px 10px 0;margin:14px 0}
+.danger{border-inline-start:4px solid var(--red);background:var(--red-l);padding:12px 16px;border-radius:0 10px 10px 0;margin:14px 0}
+.good{border-inline-start:4px solid var(--green);background:var(--green-l);padding:12px 16px;border-radius:0 10px 10px 0;margin:14px 0}
+.amberbox{border-inline-start:4px solid var(--amber);background:var(--amber-l);padding:12px 16px;border-radius:0 10px 10px 0;margin:14px 0}
+code,.mono{font-family:ui-monospace,"Cascadia Mono","Consolas",monospace;font-size:13.5px;
+  background:#eef2f7;padding:1px 6px;border-radius:5px}
+pre{background:#101a29;color:#dbe6f5;padding:14px 16px;border-radius:10px;overflow-x:auto;font-size:13px;line-height:1.65;margin:12px 0}
+pre code{background:transparent;color:inherit;padding:0}
+.tree{background:#101a29;color:#dbe6f5;padding:16px 18px;border-radius:10px;overflow-x:auto;
+  font-family:ui-monospace,"Cascadia Mono","Consolas",monospace;font-size:13px;line-height:1.7;white-space:pre;margin:12px 0}
+.grid{display:grid;gap:14px}
+@media(min-width:760px){.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 18px;text-align:center}
+.kpi .v{font-size:26px;font-weight:800;line-height:1.25}
+.kpi .l{font-size:13.5px;color:var(--sub);margin-top:4px}
+.layer{display:flex;gap:14px;align-items:flex-start;background:#fff;border:1px solid var(--line);
+  border-radius:12px;padding:16px 18px;margin:12px 0}
+.layer .lv{flex:0 0 68px;text-align:center}
+.layer .lv b{display:block;font-size:12px;color:var(--sub);letter-spacing:.5px}
+.layer .lv span{display:inline-block;margin-top:4px;font-size:20px;font-weight:800;color:var(--blue)}
+.layer .body{flex:1;min-width:0}
+.layer h4{margin:0 0 4px;font-size:16px}
+.small{font-size:13.5px;color:var(--sub)}
+.bar{height:14px;border-radius:7px;background:#e6ecf4;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;border-radius:7px}
+footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);color:var(--sub);font-size:13.5px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="badge">NOVA – PURCHASE &amp; STORE HUB · เอกสารออกแบบความเร็ว v1</div>
+    <h1>แยกไฟล์รายปี แล้วจะช้าไหม?</h1>
+    <p>คำตอบ: <b>เร็วขึ้น</b> ถ้าวางถูก — และนี่คือวิธีวางให้ถูก พร้อมตัวเลขและเป้าหมายเวลาต่อหน้าจอ</p>
+  </div>
+</header>
+
+<div class="tabs">
+  <div class="wrap">
+    <button class="tab on" data-t="1">1 · คำตอบสั้น</button>
+    <button class="tab" data-t="2">2 · ตัวเลขพิสูจน์</button>
+    <button class="tab" data-t="3">3 · 5 ชั้นความเร็ว</button>
+    <button class="tab" data-t="4">4 · ตารางสรุปที่ต้องสร้าง</button>
+    <button class="tab" data-t="5">5 · เป้าหมายเวลาต่อหน้าจอ</button>
+    <button class="tab" data-t="6">6 · กฎเหล็ก + ถัดไป</button>
+  </div>
+</div>
+
+<div class="wrap">
+
+<!-- ============ TAB 1 ============ -->
+<section class="pane on" id="p1">
+
+  <div class="hero">
+    <div class="big">แยกไฟล์รายปีไม่ทำให้ช้า เพราะเราจะ<u>ไม่เปิดไฟล์เก่าเลย</u>ตอนดูข้อมูลย้อนหลัง</div>
+    <p style="margin:10px 0 0">ข้อมูลย้อนหลังจะถูก<b>สรุปไว้ล่วงหน้า</b>เก็บใน<b>ไฟล์กลางไฟล์เดียว</b> (00-MASTER)
+    ระบบอ่านตารางสรุปเล็ก ๆ แค่ไม่กี่ร้อยแถว ไม่ได้ไล่อ่านข้อมูลดิบ 20 ปี</p>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0">อธิบายแบบง่ายที่สุด — เหมือนห้องเก็บเอกสารของโรงงาน</h3>
+    <table>
+      <tr>
+        <th style="width:33%">แบบที่คนกลัว</th>
+        <th style="width:33%">แบบที่เราจะทำ</th>
+        <th>ผลลัพธ์</th>
+      </tr>
+      <tr>
+        <td>อยากรู้ยอดซื้อ 10 ปี → <b>เดินเข้าไปเปิดแฟ้ม 10 แฟ้ม</b> นับทีละใบ</td>
+        <td>อยากรู้ยอดซื้อ 10 ปี → <b>เปิดสมุดสรุปหน้าเดียว</b>ที่หน้าห้อง ซึ่งเสมียนสรุปไว้ให้ทุกคืน</td>
+        <td><span class="ok">เร็วกว่าเป็นร้อยเท่า</span></td>
+      </tr>
+      <tr>
+        <td>อยากดูใบ PO ปี 2562 ใบนั้นใบเดียว → ต้องรื้อทั้งห้อง</td>
+        <td>สมุดสรุปบอกว่า “อยู่แฟ้มปี 2562” → <b>เดินไปหยิบแฟ้มเดียว</b></td>
+        <td><span class="ok">เปิด 1 แฟ้ม ไม่ใช่ 20</span></td>
+      </tr>
+      <tr>
+        <td>ทุกอย่างยัดแฟ้มเดียว 20 ปี → แฟ้มหนาจนเปิดไม่ขึ้น</td>
+        <td>1 ปี 1 แฟ้ม → แฟ้มบางเท่าเดิมตลอด 20 ปี</td>
+        <td><span class="ok">ปีที่ 20 เร็วเท่าปีที่ 1</span></td>
+      </tr>
+    </table>
+  </div>
+
+  <h2>3 บรรทัดที่ต้องจำ</h2>
+
+  <div class="card" style="display:flex;gap:12px;align-items:flex-start">
+    <span class="n">1</span>
+    <div><b>หน้าจอที่ใช้ทุกวัน 95% ดูแค่ปีปัจจุบัน</b> — PO ค้างรับ, สโตร์รับของ, แผนจ่ายเงิน, ตั้งเบิก
+    ทั้งหมดนี้เปิดไฟล์ปีปัจจุบันไฟล์เดียว ซึ่งบางตลอดกาล (~35,000 แถว/ปี ไม่โต)</div>
+  </div>
+
+  <div class="card" style="display:flex;gap:12px;align-items:flex-start">
+    <span class="n">2</span>
+    <div><b>หน้าจอย้อนหลัง/เปรียบเทียบปี อ่านตารางสรุป ไม่อ่านข้อมูลดิบ</b> — ตี 2 ทุกคืน ระบบจะปิดยอดสรุปไว้ให้
+    (ยอดซื้อรายปี, รายผู้ขาย, ราคาซื้อล่าสุด, ต้นทุนเฉลี่ยกลาง, Performance พนักงาน)
+    หน้าจอแค่หยิบมาโชว์ <span class="pill p-b">อ่าน ~300–10,000 เซลล์ ไม่ใช่ 21 ล้าน</span></div>
+  </div>
+
+  <div class="card" style="display:flex;gap:12px;align-items:flex-start">
+    <span class="n">3</span>
+    <div><b>เปิดไฟล์ปีเก่าจริง ๆ เฉพาะตอนกด “ดูรายละเอียดรายบรรทัด” ของปีนั้น</b> — ซึ่งเกิดนาน ๆ ครั้ง
+    และเปิดแค่ปีเดียวที่กด ไม่ใช่ทุกปี ระบบรู้ว่าไฟล์ไหนจาก <code>REGISTRY</code></div>
+  </div>
+
+  <div class="note">
+    <b>มีเรื่องเดียวที่ข้ามปีจริง ๆ และเราจัดการแล้ว</b><br>
+    (ก) <b>PO ค้างรับ</b> — สั่งปี 2569 ของมาปี 2570 ได้ → เก็บไว้ใน <b>ไฟล์กลาง</b> ตารางเดียว ~400–800 แถว ไม่ผูกกับปี<br>
+    (ข) <b>ราคาซื้อล่าสุด / ต้นทุนเฉลี่ยกลาง</b> — ต้องมองย้อนหลาย ๆ ปี → เก็บไว้ใน <b>ไฟล์กลาง</b> 1 แถวต่อ 1 รหัสสินค้า<br>
+    ทั้ง 2 ตัวนี้อยู่ใน 00-MASTER เล็ก ๆ ไม่ต้องแตะไฟล์รายปีเลย และ (ข) คือตัวที่ <b>NOVA ใหญ่</b> จะมาดึงไปใช้
+  </div>
+
+</section>
+
+<!-- ============ TAB 2 ============ -->
+<section class="pane" id="p2">
+
+  <h2>ข้อมูลจริง 1 ปี ใหญ่แค่ไหน</h2>
+  <p class="small">คำนวณจากข้อมูลจริงที่เราตรวจมาแล้ว (PO 6,914 บรรทัด · RR 6,659 บรรทัด ในรอบปีที่ดึงมา)</p>
+
+  <div class="scroll">
+  <table>
+    <tr><th>ตาราง</th><th class="num">แถว/ปี (ประมาณ)</th><th class="num">เซลล์/ปี</th><th>หมายเหตุ</th></tr>
+    <tr><td>PO_LINE (ใบสั่งซื้อรายบรรทัด)</td><td class="num">6,900</td><td class="num">241,389</td><td>จาก My Account</td></tr>
+    <tr><td>RR_LINE (ใบรับของรายบรรทัด)</td><td class="num">6,660</td><td class="num">211,351</td><td>จาก My Account</td></tr>
+    <tr><td>GRN (สโตร์กดรับในโปรแกรม)</td><td class="num">7,800</td><td class="num">116,817</td><td>ของใหม่ที่ระบบเราสร้าง</td></tr>
+    <tr><td>STOCK_MOVE (Stock Card)</td><td class="num">13,000</td><td class="num">324,388</td><td>รับ+เบิก+ปรับ</td></tr>
+    <tr><td>MATCH_LINK (คู่ PO↔RR)</td><td class="num">6,900</td><td class="num">84,540</td><td>ผลการจับคู่</td></tr>
+    <tr><td>อื่น ๆ (ตั้งเบิก / มัดจำ / ผู้รับเหมา / LOG)</td><td class="num">~4,000</td><td class="num">90,000</td><td></td></tr>
+    <tr class="tot"><td>รวม 1 ปี</td><td class="num">~35,300</td><td class="num">1,068,485</td><td>≈ 1.07 ล้านเซลล์</td></tr>
+  </table>
+  </div>
+
+  <h2>ถ้ายัดไฟล์เดียว 20 ปี — จะเกิดอะไร</h2>
+
+  <div class="grid g3">
+    <div class="kpi"><div class="v bad">ปีที่ 9.4</div><div class="l">ไฟล์ชนเพดาน Google Sheets<br>(10 ล้านเซลล์/ไฟล์)</div></div>
+    <div class="kpi"><div class="v bad">21.4 ล้าน</div><div class="l">เซลล์ที่จะมีในปีที่ 20<br>= เกินเพดาน 2.1 เท่า</div></div>
+    <div class="kpi"><div class="v bad">ทำไม่ได้</div><div class="l">ไม่ใช่ “ช้า” — คือ <b>สร้างไฟล์ไม่ได้</b><br>Google ปฏิเสธการเขียนแถวใหม่</div></div>
+  </div>
+
+  <div class="danger">
+    <b>ประเด็นสำคัญ:</b> “ไฟล์เดียว 20 ปี” ไม่ใช่ทางเลือกที่ช้ากว่า — มัน<b>ตายกลางทางในปีที่ 10</b>
+    ตอนนั้นข้อมูล 9 ปีอยู่ในไฟล์ที่เขียนต่อไม่ได้ และต้องมาแยกทีหลังตอนข้อมูลเยอะแล้ว ซึ่งเสี่ยงกว่าแยกตั้งแต่วันนี้มาก
+  </div>
+
+  <h2>เปรียบเทียบ “จำนวนเซลล์ที่ต้องอ่าน” ต่อ 1 คำถาม</h2>
+  <p class="small">กฎง่าย ๆ ของ Google Sheets: <b>เวลาอ่าน ≈ แปรผันตรงกับจำนวนเซลล์ที่อ่าน</b> ยิ่งอ่านน้อย ยิ่งเร็ว</p>
+
+  <div class="scroll">
+  <table>
+    <tr>
+      <th>คำถามของผู้ใช้</th>
+      <th>แบบไฟล์เดียว 20 ปี</th>
+      <th>แบบแยกปี + ตารางสรุป</th>
+      <th class="num">อ่านน้อยลง</th>
+    </tr>
+    <tr>
+      <td>PO ค้างรับตอนนี้มีอะไรบ้าง</td>
+      <td class="bad">21,400,000 เซลล์<br><span class="small">ต้องกรองทั้งกอง</span></td>
+      <td class="ok">~9,600 เซลล์<br><span class="small">ตาราง OPEN_PO ในไฟล์กลาง</span></td>
+      <td class="num">2,230 เท่า</td>
+    </tr>
+    <tr>
+      <td>ยอดซื้อรวมย้อนหลัง 20 ปี แยกปี</td>
+      <td class="bad">21,400,000 เซลล์</td>
+      <td class="ok">300 เซลล์<br><span class="small">SUM_YEAR 20 แถว × 15 คอลัมน์</span></td>
+      <td class="num">71,000 เท่า</td>
+    </tr>
+    <tr>
+      <td>ราคาซื้อล่าสุดของเหล็กตัวนี้</td>
+      <td class="bad">21,400,000 เซลล์</td>
+      <td class="ok">~12 เซลล์<br><span class="small">PRICE_LATEST 1 แถว</span></td>
+      <td class="num">1.8 ล้านเท่า</td>
+    </tr>
+    <tr>
+      <td>เปิดดู PO รายบรรทัดของปี 2562</td>
+      <td class="bad">21,400,000 เซลล์</td>
+      <td class="ok">241,389 เซลล์<br><span class="small">เปิดแท็บ PO_LINE ของปี 2562 ปีเดียว</span></td>
+      <td class="num">88 เท่า</td>
+    </tr>
+    <tr>
+      <td>งานประจำวันของจัดซื้อ (ปีปัจจุบัน)</td>
+      <td class="bad">21,400,000 เซลล์</td>
+      <td class="ok">241,389 เซลล์<br><span class="small">และไม่โตขึ้นอีกเลยตลอด 20 ปี</span></td>
+      <td class="num">88 เท่า</td>
+    </tr>
+  </table>
+  </div>
+
+  <div class="amberbox">
+    <b>หมายเหตุความซื่อสัตย์:</b> ตัวเลข “จำนวนเซลล์” ข้างบนคำนวณจากข้อมูลจริง 100% ส่วนการแปลงเป็น “วินาที”
+    ขึ้นกับเน็ตและโหลดของ Google ในวันนั้น จึงยังไม่ใส่ตัวเลขวินาทีที่นี่ —
+    เราจะ <b>วัดจริง</b> ในเฟส 1 ด้วยตัวจับเวลาที่ฝังในทุกหน้าจอ (กฎข้อ 8 ในแท็บ 6) แล้วเทียบกับเป้าหมายในแท็บ 5
+  </div>
+
+  <h2>ขนาดไฟล์คงที่ตลอด 20 ปี</h2>
+  <div class="card">
+    <p style="margin-top:0"><b>ไฟล์ปีปัจจุบัน</b> — 1.07 ล้านเซลล์ = <b>10.7%</b> ของเพดาน</p>
+    <div class="bar"><i style="width:10.7%;background:var(--green)"></i></div>
+    <p class="small">ปี 2569 · ปี 2570 · ปี 2571 · … · ปี 2589 — ทุกไฟล์หน้าตาแบบนี้เหมือนกันหมด ไม่มีไฟล์ไหนโตเกิน 11%</p>
+    <p style="margin-bottom:0"><b>ไฟล์เดียว 20 ปี</b> — 21.4 ล้านเซลล์ = <b>214%</b> ของเพดาน</p>
+    <div class="bar"><i style="width:100%;background:var(--red)"></i></div>
+    <p class="small" style="margin-bottom:0">เต็มตั้งแต่ปีที่ 9.4 · หลังจากนั้นเขียนอะไรไม่ได้อีกเลย</p>
+  </div>
+
+</section>
+
+<!-- ============ TAB 3 ============ -->
+<section class="pane" id="p3">
+
+  <h2>5 ชั้นความเร็ว — ข้อมูลจะถูกดักไว้ตั้งแต่ชั้นบน</h2>
+  <p>หลักคิด: <b>คำถามส่วนใหญ่ต้องตอบได้โดยไม่ต้องแตะข้อมูลดิบเลย</b> ยิ่งคำถามธรรมดา ยิ่งถูกตอบจากชั้นบนที่เร็วที่สุด
+  ต้องลงไปถึงชั้นล่างเฉพาะคำถามที่ลึกจริง ๆ</p>
+
+  <div class="layer">
+    <div class="lv"><b>ชั้น</b><span>0</span></div>
+    <div class="body">
+      <h4>Cache — จำคำตอบเดิมไว้ในหน่วยความจำ</h4>
+      <p style="margin:4px 0">ใช้ <code>CacheService</code> แบบเดียวกับที่ NOVA ใช้กับตาราง USERS อยู่แล้ว (เก็บ 300 วินาที)</p>
+      <ul style="margin:6px 0">
+        <li>ข้อมูลที่แทบไม่เปลี่ยน (ผู้ขาย 497 ราย, รหัสสินค้า, USERS, SETTINGS, REGISTRY) → เก็บ <b>6 ชั่วโมง</b></li>
+        <li>ตารางสรุป (ยอดปี, ราคาล่าสุด) → เก็บ <b>1 ชั่วโมง</b> (เพราะปิดยอดคืนละครั้งอยู่แล้ว)</li>
+        <li>ข้อมูลที่ขยับตลอด (PO ค้างรับ, คิวรออนุมัติ) → เก็บ <b>60 วินาที</b> + ล้าง cache ทันทีเมื่อมีคนบันทึก</li>
+      </ul>
+      <p class="small" style="margin-bottom:0">คนที่ 2 ที่เปิดหน้าจอเดียวกันภายในนาทีนั้น = ได้คำตอบทันที ไม่ยิงไป Google Sheets เลย</p>
+    </div>
+  </div>
+
+  <div class="layer">
+    <div class="lv"><b>ชั้น</b><span>1</span></div>
+    <div class="body">
+      <h4>ตารางสรุปที่ปิดยอดไว้ล่วงหน้า ⭐ หัวใจของเรื่องนี้</h4>
+      <p style="margin:4px 0">ตี 2 ทุกคืน <b>Time-driven trigger</b> จะวิ่งปิดยอด แล้วเขียนผลลงตารางสรุปในไฟล์กลาง (00-MASTER)</p>
+      <p style="margin:4px 0">หน้าจอ Dashboard / เปรียบเทียบปี / Performance พนักงาน / ราคากลาง → <b>อ่านตารางสรุปอย่างเดียว</b> ไม่คำนวณสด</p>
+      <div class="good" style="margin:8px 0 0">
+        นี่คือเหตุผลที่ “ดูย้อนหลัง 20 ปี” เร็วกว่า “ดู PO วันนี้” — เพราะย้อนหลังมันสรุปเสร็จแล้ว ส่วนของวันนี้ยังต้องอ่านสด
+      </div>
+    </div>
+  </div>
+
+  <div class="layer">
+    <div class="lv"><b>ชั้น</b><span>2</span></div>
+    <div class="body">
+      <h4>อ่านเฉพาะแท็บ ไม่เปิดทั้งไฟล์</h4>
+      <p style="margin:4px 0">ใช้วิธี <code>fetchTabValues_()</code> ที่ NOVA ใช้อยู่แล้ว — ยิง Sheets API ขอ<b>แท็บเดียว</b>
+      แทนการ <code>SpreadsheetApp.openById()</code> ซึ่งจะโหลดทั้งไฟล์ ทุกแท็บ ทุกสูตร ทุกฟอร์แมต</p>
+      <pre><code>// ❌ ช้า — โหลดทั้งไฟล์ 8 แท็บ เพื่อจะอ่านแท็บเดียว
+var sh = SpreadsheetApp.openById(fid).getSheetByName('PO_LINE');
+var v  = sh.getDataRange().getValues();
+
+// ✅ เร็ว — ขอเฉพาะแท็บที่ต้องใช้
+var v = fetchTabValues_(fid, 'PO_LINE');</code></pre>
+      <p class="small" style="margin-bottom:0">ไฟล์รายปีมี ~8 แท็บ → วิธีนี้ประหยัดไปประมาณ 7 ใน 8 ของงานที่ไม่จำเป็น</p>
+    </div>
+  </div>
+
+  <div class="layer">
+    <div class="lv"><b>ชั้น</b><span>3</span></div>
+    <div class="body">
+      <h4>อ่านเฉพาะช่วงแถวที่จะโชว์ (แบ่งหน้า)</h4>
+      <p style="margin:4px 0">หน้าจอโชว์ได้จริงทีละ ~50 แถว → ดึงทีละ <b>200 แถว/หน้า</b> ไม่ใช่ดึง 6,900 แถวมากองไว้</p>
+      <ul style="margin:6px 0 0">
+        <li>ค้นหา / กรอง → ทำที่<b>ตารางดัชนี</b> (แถวสั้น ๆ 6 คอลัมน์) แล้วค่อยไปหยิบแถวเต็มเฉพาะที่ตรง</li>
+        <li>ห้ามส่งข้อมูลทั้งปีไปให้เบราว์เซอร์ประมวลผลเอง — เครื่องพนักงานจะค้าง</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="layer">
+    <div class="lv"><b>ชั้น</b><span>4</span></div>
+    <div class="body">
+      <h4>เปิดไฟล์ปีเก่า — เฉพาะเมื่อมีคนกดขอจริง</h4>
+      <p style="margin:4px 0">ระบบไม่รู้จัก File ID ของปีไหนเลยในโค้ด — ถามจาก <code>REGISTRY</code> เอา
+      (เพิ่มปีใหม่ = เพิ่ม 1 แถวใน REGISTRY ไม่ต้องแก้โค้ดเลยตลอด 20 ปี)</p>
+      <pre><code>function yearFile_(yearTH){                 // 2569 → File ID
+  var reg = cacheOr_('REGISTRY_PS', 21600, function(){
+    return fetchTabValues_(CFG.MASTER,'REGISTRY');
+  });
+  for (var i=1;i&lt;reg.length;i++){
+    if (String(reg[i][0]).trim()===String(yearTH)
+     && String(reg[i][3]).toUpperCase()==='PS'
+     && String(reg[i][6]).toUpperCase()!=='N') return reg[i][4];
+  }
+  throw new Error('ยังไม่ได้ลงทะเบียนไฟล์ของปี '+yearTH+' ใน REGISTRY');
+}</code></pre>
+      <p class="small" style="margin-bottom:0">คนกดดูปี 2562 → เปิด<b>ไฟล์เดียว</b> · ไม่มีหน้าจอไหนวนเปิดหลายปีพร้อมกัน (กฎข้อ 3 แท็บ 6)</p>
+    </div>
+  </div>
+
+  <h2>เส้นทางของคำถาม — ใครหยุดที่ชั้นไหน</h2>
+  <div class="scroll">
+  <table>
+    <tr><th>หน้าจอ</th><th>หยุดที่ชั้น</th><th>อ่านจากไหน</th><th>แตะไฟล์รายปีไหม</th></tr>
+    <tr><td>Dashboard ผู้บริหาร (ยอดซื้อ/ประหยัดได้กี่ %)</td><td><span class="pill p-g">ชั้น 0–1</span></td><td>SUM_YEAR, SUM_MONTH</td><td class="ok">ไม่</td></tr>
+    <tr><td>เปรียบเทียบ 5–20 ปี</td><td><span class="pill p-g">ชั้น 0–1</span></td><td>SUM_YEAR</td><td class="ok">ไม่</td></tr>
+    <tr><td>ราคาซื้อล่าสุด / ต้นทุนเฉลี่ยกลาง (ที่ NOVA มาดึง)</td><td><span class="pill p-g">ชั้น 0–1</span></td><td>PRICE_LATEST</td><td class="ok">ไม่</td></tr>
+    <tr><td>Performance พนักงานจัดซื้อ/สโตร์</td><td><span class="pill p-g">ชั้น 0–1</span></td><td>SUM_STAFF_MONTH</td><td class="ok">ไม่</td></tr>
+    <tr><td>PO ค้างรับ (ข้ามปีได้)</td><td><span class="pill p-b">ชั้น 0–1</span></td><td>OPEN_PO (ไฟล์กลาง)</td><td class="ok">ไม่</td></tr>
+    <tr><td>สโตร์กดรับของ / จัดซื้ออนุมัติ</td><td><span class="pill p-a">ชั้น 2–3</span></td><td>ไฟล์ปีปัจจุบัน</td><td class="warn">ปีปัจจุบัน 1 ไฟล์</td></tr>
+    <tr><td>แผนจ่ายเงิน / ตั้งเบิก</td><td><span class="pill p-a">ชั้น 2–3</span></td><td>ไฟล์ปีปัจจุบัน</td><td class="warn">ปีปัจจุบัน 1 ไฟล์</td></tr>
+    <tr><td>เปิดดูรายบรรทัดของปีเก่า</td><td><span class="pill p-p">ชั้น 4</span></td><td>ไฟล์ปีนั้น</td><td class="warn">ปีนั้น 1 ไฟล์</td></tr>
+  </table>
+  </div>
+
+  <div class="good">
+    <b>สังเกต:</b> ไม่มีหน้าจอไหนเลยที่ต้องเปิดไฟล์เกิน <b>1 ปี</b> ในคราวเดียว — นี่คือสิ่งที่ทำให้ระบบไม่มีวันช้าลงตามอายุ
+  </div>
+
+</section>
+
+<!-- ============ TAB 4 ============ -->
+<section class="pane" id="p4">
+
+  <h2>ตารางสรุปทั้งหมด — อยู่ในไฟล์กลาง 00-MASTER</h2>
+  <p>ทั้งหมดนี้ระบบสร้างเอง ตี 2 ทุกคืน · คนไม่ต้องกรอกอะไร · รวมกันแล้วยัง<b>เล็กมาก</b></p>
+
+  <div class="scroll">
+  <table>
+    <tr><th>ตาราง</th><th>1 แถว = อะไร</th><th class="num">แถว (20 ปี)</th><th class="num">เซลล์</th><th>ใช้กับหน้าจอไหน</th></tr>
+    <tr>
+      <td><code>SUM_YEAR</code></td><td>1 ปี</td><td class="num">20</td><td class="num">300</td>
+      <td>Dashboard, เปรียบเทียบปี</td>
+    </tr>
+    <tr>
+      <td><code>SUM_MONTH</code></td><td>1 เดือน</td><td class="num">240</td><td class="num">3,600</td>
+      <td>กราฟรายเดือน, เทรนด์</td>
+    </tr>
+    <tr>
+      <td><code>SUM_VENDOR_YEAR</code></td><td>ผู้ขาย × ปี</td><td class="num">~9,940</td><td class="num">~119,000</td>
+      <td>จัดอันดับผู้ขาย, ต่อรองราคา</td>
+    </tr>
+    <tr>
+      <td><b><code>PRICE_LATEST</code></b> ⭐</td><td>รหัสสินค้า 1 ตัว</td><td class="num">~15,000</td><td class="num">~180,000</td>
+      <td><b>ราคาซื้อล่าสุด + ต้นทุนเฉลี่ยกลาง → ส่งให้ NOVA ใหญ่</b></td>
+    </tr>
+    <tr>
+      <td><code>PRICE_HISTORY</code></td><td>รหัสสินค้า × ปี</td><td class="num">~120,000</td><td class="num">~960,000</td>
+      <td>กราฟราคาย้อนหลัง, % ลดต้นทุน</td>
+    </tr>
+    <tr>
+      <td><code>SUM_STAFF_MONTH</code></td><td>พนักงาน × เดือน</td><td class="num">~2,400</td><td class="num">~31,000</td>
+      <td>Performance พนักงาน</td>
+    </tr>
+    <tr>
+      <td><b><code>OPEN_PO</code></b> ⭐</td><td>PO ค้างรับ 1 บรรทัด</td><td class="num">~800</td><td class="num">~19,000</td>
+      <td><b>PO ค้างรับ (ข้ามปี) — ปิดแล้วย้ายออก</b></td>
+    </tr>
+    <tr>
+      <td><code>DOC_INDEX</code></td><td>เอกสาร 1 ใบ</td><td class="num">~700,000</td><td class="num">~4,900,000</td>
+      <td>ค้นหา “เลข PO นี้อยู่ปีไหน ไฟล์ไหน”</td>
+    </tr>
+  </table>
+  </div>
+
+  <div class="amberbox">
+    <b>DOC_INDEX คือตารางเดียวที่จะโต</b> — 20 ปี ~700,000 แถว × 7 คอลัมน์ ≈ 4.9 ล้านเซลล์ ยังไม่ชนเพดาน 10 ล้าน
+    แต่ถ้าโตเกินคาด แผนสำรองคือ<b>แยก DOC_INDEX เป็นช่วง 5 ปี</b> (INDEX-2569-2573, INDEX-2574-2578 …)
+    ซึ่งทำได้ทีหลังโดยไม่กระทบตารางอื่น — เขียนไว้ในกฎข้อ 10
+  </div>
+
+  <h3>หน้าตาของ 2 ตารางสำคัญ</h3>
+
+  <div class="card">
+    <p style="margin-top:0"><b><code>PRICE_LATEST</code></b> — ตัวที่ NOVA ใหญ่จะมาดึงไปใช้ (P&amp;S Hub เป็นเจ้าของราคา NOVA เป็นผู้ใช้)</p>
+    <div class="scroll">
+    <table>
+      <tr><th>goodcode</th><th>ชื่อสินค้า</th><th>หน่วย</th><th class="num">ราคาซื้อล่าสุด</th><th>วันที่ซื้อล่าสุด</th><th>ผู้ขายล่าสุด</th><th class="num">ต้นทุนเฉลี่ยกลาง</th><th class="num">ซื้อกี่ครั้ง (12 ด.)</th><th class="num">ราคาต่ำสุด/สูงสุด</th><th>อัปเดตเมื่อ</th></tr>
+      <tr><td class="mono">8-816xxxxx</td><td>(ตัวอย่างสมมติ)</td><td>เส้น</td><td class="num">1,250.00</td><td>12/08/2569</td><td>ผู้ขาย ก</td><td class="num">1,187.40</td><td class="num">14</td><td class="num">1,120 / 1,310</td><td>10/09/69 02:04</td></tr>
+    </table>
+    </div>
+    <p class="small" style="margin-bottom:0">ตัวเลขในตารางนี้เป็นตัวอย่างสมมติ · ของจริงเป็นข้อมูลชั้นผู้บริหาร สโตร์ไม่เห็นราคา (ตัดที่ฝั่งเซิร์ฟเวอร์ด้วย <code>requireNotStore_()</code>)</p>
+  </div>
+
+  <div class="card">
+    <p style="margin-top:0"><b><code>OPEN_PO</code></b> — PO ค้างรับ อยู่ในไฟล์กลาง ไม่ผูกปี</p>
+    <ul style="margin:6px 0">
+      <li>คีย์ถาวร <code>Poid + listno</code> (พิสูจน์แล้วว่าไม่ซ้ำใน 6,914 แถว)</li>
+      <li>มีคอลัมน์ <code>year_th</code> บอกว่าต้นทางอยู่ไฟล์ปีไหน → กดดูรายละเอียดแล้วเด้งไปเปิดไฟล์นั้นได้เลย</li>
+      <li>ค้างรับ = <b>จำนวนสั่ง − รับแล้ว − ที่ตั้งเบิกบัญชีไปแล้ว</b> (ตามที่เบียร์แก้ให้)</li>
+      <li>พอรับครบ / ปิด PO → <b>ย้ายออกจากตารางนี้</b> ตารางจึงเล็กตลอดกาล (ตอนนี้ของจริง 427 บรรทัด)</li>
+    </ul>
+    <p class="small" style="margin-bottom:0">นี่คือคำตอบว่า “ค้างรับข้ามปี” จะไม่ทำให้ระบบต้องเปิดไฟล์หลายปี</p>
+  </div>
+
+  <h3>ตี 2 ทุกคืน ระบบทำอะไรบ้าง</h3>
+  <div class="card">
+    <ol style="margin:0">
+      <li><b>02:00</b> — อ่านไฟล์ปีปัจจุบัน (ปีเดียว) → คำนวณยอดใหม่ของปีนี้</li>
+      <li><b>02:0x</b> — เขียนทับ<b>เฉพาะแถวของปีปัจจุบัน</b>ในตารางสรุป (แถวปีเก่าไม่แตะ ไม่ต้องคำนวณใหม่)</li>
+      <li><b>02:0x</b> — อัปเดต <code>PRICE_LATEST</code> เฉพาะรหัสสินค้าที่มีการซื้อวันนี้</li>
+      <li><b>02:0x</b> — เก็บกวาด <code>OPEN_PO</code> (ย้ายที่ปิดแล้วออก)</li>
+      <li><b>02:0x</b> — ล้าง cache ทุกก้อน + เขียน LOG ว่าใช้เวลากี่วินาที ปิดยอดถึงแถวไหน</li>
+    </ol>
+    <div class="note" style="margin-bottom:0">
+      <b>ทำไมไม่มีวันชน 6 นาที (ลิมิตของ Apps Script)</b> — เพราะปิดยอด<b>เฉพาะปีปัจจุบัน</b> คือ ~1.07 ล้านเซลล์คงที่
+      ปีที่ 20 ทำงานเท่ากับปีที่ 1 เป๊ะ ๆ ถ้าเป็นไฟล์เดียว 20 ปี งานนี้จะโตขึ้นทุกปีจนชน 6 นาทีแล้วปิดยอดไม่สำเร็จ
+    </div>
+  </div>
+
+</section>
+
+<!-- ============ TAB 5 ============ -->
+<section class="pane" id="p5">
+
+  <h2>เป้าหมายเวลา — ตัวเลขที่เราจะยึดเป็นสัญญา</h2>
+  <p>ทุกหน้าจอจะมี<b>ตัวจับเวลาฝังไว้</b> ถ้าเกินเป้า ระบบเขียน LOG อัตโนมัติ เบียร์เปิดดูได้ว่าหน้าไหนช้า ช้าตอนไหน ใครใช้</p>
+
+  <div class="scroll">
+  <table>
+    <tr><th>หน้าจอ</th><th class="num">เป้าหมาย</th><th class="num">ยอมรับได้</th><th>อ่านอะไร</th><th>ชั้น</th></tr>
+    <tr><td>ล็อกอิน (empId + PIN)</td><td class="num ok">&lt; 1.0 วิ</td><td class="num">1.5 วิ</td><td>USERS (cache 6 ชม.)</td><td>0</td></tr>
+    <tr><td>Dashboard ผู้บริหาร</td><td class="num ok">&lt; 1.5 วิ</td><td class="num">3 วิ</td><td>SUM_YEAR + SUM_MONTH</td><td>0–1</td></tr>
+    <tr><td>PO ค้างรับ (หน้าแรก 50 แถว)</td><td class="num ok">&lt; 2.0 วิ</td><td class="num">3 วิ</td><td>OPEN_PO</td><td>0–1</td></tr>
+    <tr><td>ค้นหา PO ด้วยเลขที่</td><td class="num ok">&lt; 1.5 วิ</td><td class="num">3 วิ</td><td>DOC_INDEX → ไฟล์ปีนั้น</td><td>1→4</td></tr>
+    <tr><td>สโตร์เปิดหน้ารับของ (สแกน/เลือก PO)</td><td class="num ok">&lt; 2.0 วิ</td><td class="num">3 วิ</td><td>OPEN_PO + ไฟล์ปีปัจจุบัน</td><td>2–3</td></tr>
+    <tr><td><b>สโตร์กดบันทึกรับของ</b> (มือถือ)</td><td class="num ok">&lt; 2.0 วิ</td><td class="num">3 วิ</td><td>เขียน GRN + STOCK_MOVE</td><td>เขียน</td></tr>
+    <tr><td>จัดซื้อกดอนุมัติรับของ</td><td class="num ok">&lt; 2.0 วิ</td><td class="num">3 วิ</td><td>คิวอนุมัติ</td><td>เขียน</td></tr>
+    <tr><td>แผนจ่ายเงินรายเดือน</td><td class="num ok">&lt; 2.5 วิ</td><td class="num">4 วิ</td><td>ไฟล์ปีปัจจุบัน (กรองเดือน)</td><td>2–3</td></tr>
+    <tr><td>ราคาซื้อล่าสุด / ต้นทุนเฉลี่ยกลาง</td><td class="num ok">&lt; 1.0 วิ</td><td class="num">2 วิ</td><td>PRICE_LATEST 1 แถว</td><td>0–1</td></tr>
+    <tr><td>เปรียบเทียบย้อนหลัง 10–20 ปี</td><td class="num ok">&lt; 2.0 วิ</td><td class="num">3 วิ</td><td>SUM_YEAR 300 เซลล์</td><td>0–1</td></tr>
+    <tr><td>Performance พนักงาน</td><td class="num ok">&lt; 2.0 วิ</td><td class="num">3 วิ</td><td>SUM_STAFF_MONTH</td><td>0–1</td></tr>
+    <tr><td>เปิดรายบรรทัดของปีเก่า</td><td class="num warn">&lt; 4.0 วิ</td><td class="num">6 วิ</td><td>เปิดไฟล์ปีนั้น 1 ไฟล์</td><td>4</td></tr>
+    <tr><td>ปิดยอดตี 2 (เบื้องหลัง คนไม่รอ)</td><td class="num">&lt; 120 วิ</td><td class="num">300 วิ</td><td>ไฟล์ปีปัจจุบัน</td><td>เบื้องหลัง</td></tr>
+  </table>
+  </div>
+
+  <div class="note">
+    <b>ตัวที่ต้องเร็วที่สุดคือ “สโตร์กดบันทึกรับของ” (&lt; 2 วินาที)</b> — เพราะเป็นหน้าที่พนักงานยืนถือมือถืออยู่หน้ารถส่งของ
+    ถ้าช้าเกิน 3 วินาที เขาจะเลิกใช้แล้วกลับไปจดกระดาษ ระบบก็พังทั้งระบบ
+    ทุกอย่างในเอกสารนี้ออกแบบมาเพื่อคุ้มค่าตัวเลขนี้เป็นอันดับแรก
+  </div>
+
+  <h3>วิธีทำให้ “กดบันทึก” เร็ว</h3>
+  <div class="card">
+    <ul style="margin:0">
+      <li><b>เขียนก่อน ตอบทันที</b> — บันทึก GRN แล้วตอบกลับเลย ส่วนงานต่อเนื่อง (อัปเดต OPEN_PO, ยอดรวม, แจ้งเตือน LINE) ให้ทำเบื้องหลัง</li>
+      <li><b>เขียนเป็นก้อนเดียว</b> — <code>setValues()</code> ครั้งเดียวทั้งบล็อก ห้ามวน <code>setValue()</code> ทีละเซลล์ (ช้ากว่าหลักร้อยเท่า)</li>
+      <li><b>อัปโหลดรูปแยกจากการบันทึก</b> — กดบันทึกเสร็จก่อน รูปค่อยทยอยขึ้น พร้อมย่อรูปเหลือ ~300 KB ที่เครื่องก่อนส่ง</li>
+      <li><b>Append-only</b> — เพิ่มแถวท้ายตารางเสมอ ไม่ค้นหาแถวเดิมมาแก้ (แก้ = ออกแถวกลับรายการพร้อมเหตุผล)</li>
+    </ul>
+  </div>
+
+</section>
+
+<!-- ============ TAB 6 ============ -->
+<section class="pane" id="p6">
+
+  <h2>กฎเหล็กเรื่องความเร็ว 10 ข้อ</h2>
+  <p class="small">ทุกข้อผูกกับปัญหาจริงที่เจอมาแล้ว หรือข้อจำกัดจริงของ Google</p>
+
+  <div class="card"><b>1. ห้ามอ่านทั้งไฟล์เพื่อเอาแท็บเดียว</b><br>
+  ใช้ <code>fetchTabValues_()</code> เสมอ · <code>openById().getDataRange()</code> ใช้ได้เฉพาะตอนเขียน</div>
+
+  <div class="card"><b>2. ห้ามอ่านข้อมูลดิบเพื่อตอบคำถามสรุป</b><br>
+  ทุกตัวเลขบน Dashboard ต้องมาจากตารางสรุป · ถ้ายังไม่มีตารางสรุปสำหรับตัวเลขนั้น = สร้างตารางก่อน อย่าคำนวณสด</div>
+
+  <div class="card"><b>3. หน้าจอเดียวห้ามเปิดไฟล์เกิน 1 ปี</b><br>
+  ถ้าต้องข้ามปี แปลว่าข้อมูลนั้นต้องอยู่ในตารางกลาง (เช่น OPEN_PO, PRICE_LATEST) ไม่ใช่ไปวนเปิดหลายไฟล์</div>
+
+  <div class="card"><b>4. ห้ามฝัง File ID ในโค้ด</b><br>
+  ทุก ID มาจาก <code>REGISTRY</code> · เพิ่มปีใหม่ = เพิ่ม 1 แถว ไม่แก้โค้ด ไม่ deploy ใหม่</div>
+
+  <div class="card"><b>5. เขียนเป็นก้อน อ่านเป็นก้อน</b><br>
+  <code>setValues()</code> / <code>getValues()</code> ครั้งเดียว · ห้าม loop <code>getRange().setValue()</code></div>
+
+  <div class="card"><b>6. ทุกตารางที่มีคนค้นหา ต้องมีตารางดัชนีคู่กัน</b><br>
+  ค้นที่ดัชนีก่อน (คอลัมน์น้อย) แล้วค่อยหยิบแถวเต็ม</div>
+
+  <div class="card"><b>7. Cache ต้องมีคนสั่งล้าง</b><br>
+  ทุกฟังก์ชันที่เขียนข้อมูล ต้องล้าง cache ของตารางที่มันแตะ ไม่งั้นคนกดบันทึกแล้วไม่เห็นผล → เขากดซ้ำ → ข้อมูลซ้ำ</div>
+
+  <div class="card"><b>8. ทุกหน้าจอต้องจับเวลาตัวเอง</b><br>
+  บันทึก ms ที่ใช้ลง LOG ทุกครั้ง · ถ้าเกินเป้าในแท็บ 5 ให้ mark ไว้ · มีหน้า “หน้าไหนช้า” ให้เบียร์ดูได้ตลอด
+  <div class="small" style="margin-top:6px">ถ้าไม่วัด เราจะไม่มีวันรู้ว่าช้าตรงไหน — จะได้ยินแค่ “โปรแกรมอืด” ซึ่งแก้ไม่ได้</div></div>
+
+  <div class="card"><b>9. โค้ดแยกไฟล์ ไฟล์ละ ≤ 1,500 บรรทัด</b><br>
+  บทเรียนจาก NOVA: <code>STT-NOVA-Hub.js</code> โต 781 KB ไฟล์เดียว → แก้ทีนึงเสี่ยงพังทั้งระบบ
+  <div class="small" style="margin-top:6px">และ .BAK 299 ไฟล์ (92% ของโฟลเดอร์ 104 MB) ต้องไม่เกิดซ้ำ — ใส่ <code>*.BAK</code> ใน .gitignore ตั้งแต่วันแรก</div></div>
+
+  <div class="card"><b>10. ทุกตารางต้องมีแผน “ถ้ามันโตเกินคาด”</b><br>
+  เขียนไว้ล่วงหน้าเลยว่าจะแตกยังไง (เช่น DOC_INDEX แตกเป็นช่วง 5 ปี) · ตรวจขนาดทุกสิ้นปีตอนปิดปี</div>
+
+  <h2>สิ่งที่จะทำต่อ</h2>
+
+  <div class="scroll">
+  <table>
+    <tr><th>ชุดงาน</th><th>ทำอะไร</th><th>ใคร</th></tr>
+    <tr>
+      <td rowspan="3"><b>A. เปิดบ้าน</b></td>
+      <td>สร้างโฟลเดอร์ <code>P&amp;S HUB</code> ใน Drive + โฟลเดอร์ย่อย <code>00-MASTER</code>, <code>2569</code></td><td>เบียร์ (หรืออนุญาตให้ Candy สร้าง)</td>
+    </tr>
+    <tr><td>สร้าง Apps Script project ใหม่ → ส่ง <b>Script ID</b> ให้ Candy</td><td>เบียร์</td></tr>
+    <tr><td>เพิ่มแถวใน <code>REGISTRY</code>: ปี 2569 · source = <code>PS</code></td><td>Candy (พอได้ ID)</td></tr>
+    <tr>
+      <td rowspan="2"><b>B. ล็อกอินใช้ได้จริง</b></td>
+      <td>เขียน <code>00-config.js</code> · <code>01-auth.js</code> · <code>02-master.js</code> (ยกจาก NOVA เปลี่ยนแค่ให้อ่านคอลัมน์ E “role for P&amp;S”)</td><td>Candy</td>
+    </tr>
+    <tr><td>ให้ จัดซื้อ 3 (6204xxx…) และ แอดมินจัดซื้อ ลงทะเบียนรับ PIN</td><td>เบียร์</td></tr>
+    <tr>
+      <td rowspan="2"><b>C. ข้อมูลตั้งต้น</b></td>
+      <td>ส่งชุดข้อมูลจริง 1 รอบ (PO 22 คอลัมน์ + RR ครบ) ลงไฟล์ปี 2569</td><td>เบียร์</td>
+    </tr>
+    <tr><td>เขียนตัวปิดยอดตี 2 + สร้าง <code>SUM_YEAR</code>, <code>PRICE_LATEST</code>, <code>OPEN_PO</code> แล้ว<b>วัดเวลาจริง</b>เทียบเป้าในแท็บ 5</td><td>Candy</td></tr>
+  </table>
+  </div>
+
+  <div class="note">
+    <b>ยังค้างอยู่ 1 เรื่องจากรอบก่อน</b> — ขอให้ My Account ใส่ <b>เลขที่ PO</b> ลงในรายงานมัดจำ
+    (มัดจำ 15 ใบ ฿2,502,107.08 ยังโยงกลับ PO ไม่ได้) · ส่วนมัดจำที่ตัดไปแล้ว 102 ใบ ฿6,220,603.69 โยงได้แล้วผ่าน RR
+  </div>
+
+</section>
+
+<footer>
+  NOVA – PURCHASE &amp; STORE HUB · เอกสารออกแบบความเร็ว v1 · จัดทำโดย Candy สำหรับเบียร์<br>
+  ตัวเลขจำนวนแถว/เซลล์ทั้งหมดคำนวณจากข้อมูลจริงของ STT · ตัวเลขราคาในตัวอย่างเป็นค่าสมมติทั้งหมด
+</footer>
+
+</div>
+
+<script>
+(function(){
+  var tabs = document.querySelectorAll('.tab');
+  var panes = document.querySelectorAll('.pane');
+  tabs.forEach(function(b){
+    b.addEventListener('click', function(){
+      tabs.forEach(function(x){ x.classList.remove('on'); });
+      panes.forEach(function(x){ x.classList.remove('on'); });
+      b.classList.add('on');
+      var el = document.getElementById('p' + b.dataset.t);
+      if (el) el.classList.add('on');
+      window.scrollTo({top:0, behavior:'smooth'});
+    });
+  });
+})();
+</script>
+</body>
+</html>
