@@ -1,0 +1,424 @@
+/**
+ * NOVA – PURCHASE & STORE HUB
+ * 04-import.js — นำเข้า PO/RR จาก My Account · จับคู่ PO↔RR · สร้างตาราง PO ค้างรับ
+ *
+ * พิสูจน์กับข้อมูลจริง 15 ก.ย. 2569 (PO 7,951 · RR 7,513 บรรทัด)
+ *   จับคู่ได้ 7,375/7,375 = 100%  ·  C1 = 99.97%  ·  รับเกิน 0 บรรทัด
+ *
+ * กฎเหล็ก
+ *  - จับคู่ด้วย "รหัสสินค้า" เป็นหลักเสมอ 5 ชั้น — ไม่ใช้ List No. และไม่เดา
+ *  - ที่จับคู่ไม่ได้ → เข้าคิวให้คนตัดสิน ไม่ยัดลงมั่ว
+ *  - คีย์ถาวรของทุกบรรทัด = poid + listno
+ *  - PO ที่ยกเลิก (cancelflag=Y) เก็บไว้ แต่ไม่นับเข้าการจับคู่และค้างรับ
+ */
+
+/** ---------- ตัวช่วยแปลงค่า ---------- */
+function s_(v) {
+  if (v === null || v === undefined) return '';
+  if (typeof v === 'number') return (v === Math.floor(v)) ? String(Math.floor(v)) : String(v);
+  return String(v).trim();
+}
+function num_(v) {
+  if (v === null || v === undefined || v === '') return 0;
+  if (typeof v === 'number') return v;
+  var t = String(v).replace(/[^0-9.\-]/g, '');
+  var n = parseFloat(t);
+  return isNaN(n) ? 0 : n;
+}
+function ncd_(v) {                       // รหัสสินค้ามาตรฐาน: 8-81641001 -> 81641001
+  var t = s_(v).toUpperCase();
+  t = t.replace(/^\d-/, '').replace(/^INT-/, '');
+  return t;
+}
+function nn_(v) {                        // ชื่อสินค้ามาตรฐาน
+  return s_(v).toLowerCase()
+    .replace(/’/g, "'").replace(/[“”]/g, '"')
+    .replace(/\s+/g, '');
+}
+function cat_(codeN) {                   // หมวดสินค้า -> สโตร์ต้องกดรับไหม
+  var c = s_(codeN);
+  if (!c) return '';
+  var d = c.charAt(0);
+  return /[0-9]/.test(d) ? d : '?';
+}
+function dt_(v) {
+  if (v instanceof Date) return v;
+  var t = s_(v);
+  if (!t) return '';
+  var m = t.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+  if (m) return new Date(+m[3], +m[2] - 1, +m[1]);
+  var d = new Date(t);
+  return isNaN(d.getTime()) ? '' : d;
+}
+function days_(a, b) {
+  if (!(a instanceof Date) || !(b instanceof Date)) return '';
+  return Math.round((b.getTime() - a.getTime()) / 86400000);
+}
+function fileIdOf_(url) {
+  var t = s_(url);
+  var m = t.match(/[-\w]{25,}/);
+  if (!m) throw new Error('อ่านรหัสไฟล์จากลิงก์ไม่ได้ — วางลิงก์ Google Sheet เต็ม ๆ');
+  return m[0];
+}
+
+/** ---------- เขียนข้อมูลลงแท็บแบบเป็นก้อน (ล้างของเดิมก่อน) ---------- */
+function writeRows_(fileId, tab, cols, rows) {
+  var ss = SpreadsheetApp.openById(fileId);
+  var sh = ss.getSheetByName(tab);
+  if (!sh) throw new Error('ไม่พบแท็บ ' + tab + ' — กด "ติดตั้งโครงข้อมูล" ก่อน');
+  if (sh.getLastRow() > 1) sh.getRange(2, 1, sh.getLastRow() - 1, sh.getMaxColumns()).clearContent();
+  if (!rows.length) return 0;
+  var CH = 2000, at = 2;
+  for (var i = 0; i < rows.length; i += CH) {
+    var part = rows.slice(i, i + CH);
+    sh.getRange(at, 1, part.length, cols.length).setValues(part);
+    at += part.length;
+    SpreadsheetApp.flush();
+  }
+  return rows.length;
+}
+
+/** =========================================================
+ *  นำเข้า PO
+ *  ========================================================= */
+function psImportPO(auth, url, tabName) {
+  var role = requireRole_(auth, ['PURCHASE', 'ADMIN']);
+  var t0 = new Date().getTime();
+  var year = currentYearTH_();
+  var src = fetchTabValues_(fileIdOf_(url), tabName || 'ps_report');
+  if (!src || src.length < 2) throw new Error('อ่านข้อมูลจากไฟล์ต้นทางไม่ได้ (แท็บ ' + (tabName || 'ps_report') + ')');
+
+  var h = src[0].map(function (x) { return s_(x); });
+  function I(names) { return colIdx_(h, names); }
+  var c = {
+    ship: I(['shipdate']), date: I(['docudate']), docu: I(['docuno']), poid: I(['poid']),
+    st: I(['docustatus']), hold: I(['onhold']), cancel: I(['cancelflag']), ln: I(['listno']),
+    gname: I(['goodname']), qty: I(['goodqty2']), price: I(['goodprice2']),
+    dformula: I(['gooddiscformula']), damnt: I(['gooddiscamnt']), amnt: I(['goodamnt']),
+    vcode: I(['vendorcode']), vname: I(['vendorname']), gcode: I(['goodcode']),
+    unit: I(['goodunitname']), job: I(['jobcode']), jname: I(['jobname']),
+    inve: I(['invecode']), loca: I(['locacode']), pr: I(['prdocuno'])
+  };
+  if (c.poid < 0 || c.ln < 0 || c.gcode < 0)
+    throw new Error('ไฟล์ต้นทางขาดคอลัมน์จำเป็น (poid / listno / goodcode) — หัวตารางที่เจอ: ' + h.join(' | '));
+
+  var now = new Date(), out = [], skipped = [], seen = {};
+  for (var i = 1; i < src.length; i++) {
+    var r = src[i];
+    var poid = s_(r[c.poid]), ln = s_(r[c.ln]), docu = s_(r[c.docu]);
+    // แถวเสีย: ไม่มีคีย์ หรือเลขที่เอกสารไม่ใช่รูปแบบ PO
+    if (!poid || !ln || !docu || !/^POR/i.test(docu)) {
+      if (r.join('').trim()) skipped.push({ row: i + 1, why: 'แถวเสีย/ข้อมูลเลื่อนคอลัมน์', docu: docu, poid: poid });
+      continue;
+    }
+    var key = poid + '|' + ln;
+    if (seen[key]) { skipped.push({ row: i + 1, why: 'คีย์ซ้ำ', docu: docu, poid: poid }); continue; }
+    seen[key] = 1;
+    var codeN = ncd_(r[c.gcode]);
+    out.push([
+      year, poid, ln, docu, dt_(r[c.date]), dt_(r[c.ship]),
+      s_(r[c.st]), s_(r[c.hold]), s_(r[c.cancel]).toUpperCase(),
+      s_(r[c.gcode]), codeN, s_(r[c.gname]),
+      num_(r[c.qty]), num_(r[c.price]), s_(r[c.dformula]), num_(r[c.damnt]), num_(r[c.amnt]),
+      s_(r[c.vcode]), s_(r[c.vname]), s_(r[c.unit]),
+      s_(r[c.job]), s_(r[c.jname]), s_(r[c.inve]), s_(r[c.loca]),
+      c.pr >= 0 ? s_(r[c.pr]) : '', cat_(codeN), now
+    ]);
+  }
+
+  var fid = yearFile_(year, 'YEAR');
+  var n = writeRows_(fid, 'PO_LINE', SCHEMA.YEAR.PO_LINE, out);
+  var ms = new Date().getTime() - t0;
+  logImport_(fid, auth, 'PO', fileIdOf_(url), src.length - 1, n, skipped.length, ms);
+  cacheDrop_(['PS_OPENPO']);
+  return { kind: 'PO', read: src.length - 1, written: n, skipped: skipped.length,
+           skippedRows: skipped.slice(0, 20), ms: ms };
+}
+
+/** =========================================================
+ *  นำเข้า RR  (ต่อท้ายไฟล์ RR-ALL — ของปีเดิมถูกแทนที่ ปีอื่นคงไว้)
+ *  ========================================================= */
+function psImportRR(auth, url, tabName) {
+  requireRole_(auth, ['PURCHASE', 'ADMIN']);
+  var t0 = new Date().getTime();
+  var year = currentYearTH_();
+  var src = fetchTabValues_(fileIdOf_(url), tabName || 'RR');
+  if (!src || src.length < 2) throw new Error('อ่านข้อมูลจากไฟล์ต้นทางไม่ได้ (แท็บ ' + (tabName || 'RR') + ')');
+
+  var h = src[0].map(function (x) { return s_(x); });
+  function I(n) { return colIdx_(h, n); }
+  var c = {
+    date: I(['docudate']), docu: I(['docuno']), pono: I(['pono']), ln: I(['listno']),
+    gcode: I(['goodcode']), gname: I(['goodname']), qty: I(['goodqty2']), price: I(['goodprice2']),
+    dformula: I(['gooddiscformula']), damnt: I(['gooddiscamnt']), amnt: I(['goodamnt']),
+    vcode: I(['vendorcode']), vname: I(['vendorname']), job: I(['jobcode']), jname: I(['jobname']),
+    unit: I(['goodunitname']), inv: I(['invno']), adv: I(['advnamnt']), net: I(['netamnt'])
+  };
+  if (c.docu < 0 || c.pono < 0 || c.gcode < 0)
+    throw new Error('ไฟล์ต้นทางขาดคอลัมน์จำเป็น (docuno / pono / goodcode)');
+
+  var now = new Date(), fresh = [], skipped = [];
+  for (var i = 1; i < src.length; i++) {
+    var r = src[i];
+    var docu = s_(r[c.docu]), pono = s_(r[c.pono]);
+    if (!docu || !pono) { if (r.join('').trim()) skipped.push({ row: i + 1, why: 'ไม่มีเลขที่ใบรับ หรือเลข PO' }); continue; }
+    var codeN = ncd_(r[c.gcode]);
+    fresh.push([
+      year, docu, dt_(r[c.date]), pono, s_(r[c.ln]),
+      s_(r[c.gcode]), codeN, s_(r[c.gname]),
+      num_(r[c.qty]), num_(r[c.price]), s_(r[c.dformula]), num_(r[c.damnt]), num_(r[c.amnt]),
+      s_(r[c.vcode]), s_(r[c.vname]), s_(r[c.job]), s_(r[c.jname]), s_(r[c.unit]),
+      c.inv >= 0 ? s_(r[c.inv]) : '', c.adv >= 0 ? num_(r[c.adv]) : 0,
+      c.net >= 0 ? num_(r[c.net]) : 0, now
+    ]);
+  }
+
+  // เก็บของปีอื่นไว้ แทนที่เฉพาะปีนี้ (ห้ามลบประวัติ — Carry Forward ต้องใช้)
+  var rrId = yearFile_('ALL', 'RRALL');
+  var old = fetchTabValues_(rrId, 'RR_ALL') || [];
+  var keep = [];
+  for (var k = 1; k < old.length; k++) {
+    if (s_(old[k][0]) !== String(year)) keep.push(old[k]);
+  }
+  var all = keep.concat(fresh);
+  var n = writeRows_(rrId, 'RR_ALL', SCHEMA.RRALL.RR_ALL, all);
+  var ms = new Date().getTime() - t0;
+  logImport_(yearFile_(year, 'YEAR'), auth, 'RR', fileIdOf_(url), src.length - 1, fresh.length, skipped.length, ms);
+  cacheDrop_(['PS_OPENPO']);
+  return { kind: 'RR', read: src.length - 1, written: fresh.length, kept: keep.length,
+           total: n, skipped: skipped.length, skippedRows: skipped.slice(0, 20), ms: ms };
+}
+
+
+/** ---------------------------------------------------------
+ *  เครื่องจับคู่ (แยกออกมาให้บริสุทธิ์ = ทดสอบได้โดยไม่ต้องต่อ Google Sheets)
+ *  poList : [{docu,poid,ln,code,job,name,price,qty,recv}]  ← จะถูกแก้ค่า recv ในตัว
+ *  rrList : [{docu,date,pono,ln,code,job,name,price,qty}]
+ *  ------------------------------------------------------- */
+function psMatchEngine_(poList, rrList) {
+  var TIERS = [
+    ['C1', function (x) { return x.code + '|' + x.job + '|' + x.name + '|' + x.price.toFixed(4); }],
+    ['C2', function (x) { return x.code + '|' + x.job + '|' + x.name; }],
+    ['C3', function (x) { return x.code + '|' + x.name + '|' + x.price.toFixed(4); }],
+    ['C4', function (x) { return x.code + '|' + x.job; }],
+    ['C5', function (x) { return x.code; }]
+  ];
+
+  var byDoc = {};
+  for (var i = 0; i < poList.length; i++) {
+    poList[i].recv = 0;
+    (byDoc[poList[i].docu] = byDoc[poList[i].docu] || []).push(poList[i]);
+  }
+
+  var work = rrList.slice().sort(function (a, b) {
+    var da = (a.date instanceof Date) ? a.date.getTime() : 0;
+    var db = (b.date instanceof Date) ? b.date.getTime() : 0;
+    if (da !== db) return da - db;
+    if (a.docu !== b.docu) return a.docu < b.docu ? -1 : 1;
+    return num_(a.ln) - num_(b.ln);
+  });
+
+  var links = [], tiers = {}, noPO = 0, unmatched = 0, over = 0;
+  for (var m = 0; m < work.length; m++) {
+    var rr = work[m], plist = byDoc[rr.pono];
+    if (!plist) { noPO++; continue; }
+    var hit = false;
+    for (var t = 0; t < TIERS.length && !hit; t++) {
+      var nameT = TIERS[t][0], fn = TIERS[t][1], key = fn(rr);
+      var cands = [];
+      for (var z = 0; z < plist.length; z++) if (fn(plist[z]) === key) cands.push(plist[z]);
+      if (nameT === 'C5' && cands.length !== 1) continue;
+      if (!cands.length) continue;
+      cands.sort(function (a, b) { return num_(a.ln) - num_(b.ln); });
+      var left = rr.qty;
+      for (var y = 0; y < cands.length && left > 1e-9; y++) {
+        var p = cands[y], room = p.qty - p.recv;
+        if (room <= 1e-9) continue;
+        var take = Math.min(room, left);
+        p.recv += take; left -= take;
+        links.push([rr.docu, rr.ln, rr.pono, p.poid, p.ln, take, nameT]);
+      }
+      if (left < rr.qty) {
+        hit = true;
+        tiers[nameT] = (tiers[nameT] || 0) + 1;
+        if (left > 1e-9) over++;              // รับมากกว่าที่ PO สั่ง
+      }
+    }
+    if (!hit) unmatched++;
+  }
+  return { links: links, tiers: tiers, noPO: noPO, unmatched: unmatched, over: over };
+}
+
+/** =========================================================
+ *  จับคู่ PO↔RR แล้วสร้างตาราง PO ค้างรับ
+ *  ========================================================= */
+function psRebuild(auth) {
+  requireRole_(auth, ['PURCHASE', 'ADMIN']);
+  var t0 = new Date().getTime();
+  var year = currentYearTH_();
+  var yid = yearFile_(year, 'YEAR');
+  var rid = yearFile_('ALL', 'RRALL');
+
+  var pv = fetchTabValues_(yid, 'PO_LINE') || [];
+  var rv = fetchTabValues_(rid, 'RR_ALL') || [];
+  if (pv.length < 2) throw new Error('ยังไม่มีข้อมูล PO — นำเข้า PO ก่อน');
+  if (rv.length < 2) throw new Error('ยังไม่มีข้อมูล RR — นำเข้า RR ก่อน');
+
+  var P = SCHEMA.YEAR.PO_LINE, R = SCHEMA.RRALL.RR_ALL;
+  function pi(n) { return P.indexOf(n); }
+  function ri(n) { return R.indexOf(n); }
+
+  // ---- จัดกลุ่ม PO ตามเลขที่เอกสาร (เฉพาะที่ไม่ยกเลิก) ----
+  var poByDoc = {}, poRows = [];
+  for (var i = 1; i < pv.length; i++) {
+    var r = pv[i];
+    if (s_(r[pi('cancelflag')]).toUpperCase() === 'Y') continue;
+    var o = { docu: s_(r[pi('docuno')]), poid: s_(r[pi('poid')]), ln: s_(r[pi('listno')]),
+              code: s_(r[pi('goodcode_n')]), job: s_(r[pi('jobcode')]),
+              name: nn_(r[pi('goodname')]), price: num_(r[pi('goodprice2')]),
+              qty: num_(r[pi('goodqty2')]), amnt: num_(r[pi('goodamnt')]),
+              recv: 0, raw: r };
+    poRows.push(o);
+    (poByDoc[o.docu] = poByDoc[o.docu] || []).push(o);
+  }
+
+  // ---- จับคู่ RR ----
+  var rrList = [];
+  for (var j = 1; j < rv.length; j++) {
+    var q = rv[j];
+    rrList.push({ docu: s_(q[ri('docuno')]), date: q[ri('docudate')], pono: s_(q[ri('pono')]),
+                  ln: s_(q[ri('listno')]), code: s_(q[ri('goodcode_n')]),
+                  job: s_(q[ri('jobcode')]), name: nn_(q[ri('goodname')]),
+                  price: num_(q[ri('goodprice2')]), qty: num_(q[ri('goodqty2')]) });
+  }
+  var M = psMatchEngine_(poRows, rrList);
+  var links = M.links, tierN = M.tiers, noPO = M.noPO, unmatched = M.unmatched, now = new Date();
+  for (var li = 0; li < links.length; li++) links[li].push(now);
+
+  writeRows_(yid, 'MATCH_LINK', SCHEMA.YEAR.MATCH_LINK, links);
+
+  // ---- สร้างตาราง PO ค้างรับ ----
+  var today = new Date(); today.setHours(0, 0, 0, 0);
+  var open = [], openVal = 0;
+  for (var k = 0; k < poRows.length; k++) {
+    var p2 = poRows[k], remain = p2.qty - p2.recv;
+    if (remain <= 1e-6) continue;
+    // มูลค่าคิดแบบเฉลี่ยตามยอดเงินหลังหักส่วนลด (ไม่ใช่ จำนวน x ราคา)
+    var amntRemain = p2.qty > 0 ? p2.amnt * remain / p2.qty : 0;
+    openVal += amntRemain;
+    var d = p2.raw[pi('docudate')];
+    open.push([
+      p2.poid, p2.ln, p2.docu, year, d, p2.raw[pi('shipdate')],
+      p2.code, s_(p2.raw[pi('goodname')]), s_(p2.raw[pi('goodunitname')]),
+      s_(p2.raw[pi('vendorcode')]), s_(p2.raw[pi('vendorname')]), p2.job,
+      p2.qty, p2.recv, remain, p2.price, amntRemain,
+      s_(p2.raw[pi('cat')]), days_(d, today),
+      p2.recv > 0 ? 'รับบางส่วน' : 'ยังไม่รับ', now
+    ]);
+  }
+  open.sort(function (a, b) { return b[16] - a[16]; });        // มูลค่าค้างมาก -> น้อย
+  writeRows_(CFG.MASTER, 'PS_OPEN_PO', SCHEMA.MASTER.PS_OPEN_PO, open);
+  cacheDrop_(['PS_OPENPO']);
+
+  var matched = 0;
+  for (var tn in tierN) matched += tierN[tn];
+  return {
+    year: year, poLines: poRows.length, rrLines: rrList.length,
+    matched: matched, tiers: tierN, noPO: noPO, unmatched: unmatched, over: M.over,
+    matchPct: rrList.length ? (matched / (rrList.length - noPO) * 100) : 0,
+    openLines: open.length, openDocs: countDocs_(open), openValue: openVal,
+    ms: new Date().getTime() - t0
+  };
+}
+
+function countDocs_(rows) {
+  var o = {}, n = 0;
+  for (var i = 0; i < rows.length; i++) if (!o[rows[i][2]]) { o[rows[i][2]] = 1; n++; }
+  return n;
+}
+
+function logImport_(fileId, auth, kind, srcId, read, written, skipped, ms) {
+  try {
+    var sh = SpreadsheetApp.openById(fileId).getSheetByName('IMPORT_LOG');
+    if (!sh) return;
+    var me = roleOf_(auth);
+    sh.appendRow([Utilities.getUuid().slice(0, 8), new Date(), me.name || me.label,
+                  kind, srcId, read, written, skipped, ms, 'OK', '']);
+  } catch (e) {}
+}
+
+/** =========================================================
+ *  หน้า PO ค้างรับ อ่านผ่านตัวนี้
+ *  ========================================================= */
+function getOpenPO(auth, opt) {
+  requireRole_(auth, ['PURCHASE', 'ADMIN', 'EXEC', 'STORE']);
+  var canPrice = PRICE_ROLES.indexOf(roleOf_(auth).role) >= 0;
+  opt = opt || {};
+  var rows = cacheOr_('PS_OPENPO', TTL.HOT, function () {
+    var v = fetchTabValues_(CFG.MASTER, 'PS_OPEN_PO') || [];
+    return v.slice(1);
+  });
+
+  var C = SCHEMA.MASTER.PS_OPEN_PO;
+  function ci(n) { return C.indexOf(n); }
+  var q = s_(opt.q).toLowerCase();
+  var age = s_(opt.age);
+
+  var list = [], sum = { lines: 0, value: 0 }, bucket = {};
+  var BK = [['0-7', 0, 7], ['8-30', 8, 30], ['31-60', 31, 60], ['61-90', 61, 90], ['90+', 91, 999999]];
+
+  for (var i = 0; i < rows.length; i++) {
+    var r = rows[i];
+    if (!s_(r[ci('poid')])) continue;
+    var a = num_(r[ci('age_days')]), val = num_(r[ci('amnt_remain')]);
+    for (var b = 0; b < BK.length; b++) {
+      if (a >= BK[b][1] && a <= BK[b][2]) {
+        bucket[BK[b][0]] = bucket[BK[b][0]] || { n: 0, v: 0 };
+        bucket[BK[b][0]].n++; bucket[BK[b][0]].v += val; break;
+      }
+    }
+    sum.lines++; sum.value += val;
+    if (age) {
+      var ok = false;
+      for (var b2 = 0; b2 < BK.length; b2++) if (BK[b2][0] === age && a >= BK[b2][1] && a <= BK[b2][2]) ok = true;
+      if (!ok) continue;
+    }
+    if (q) {
+      var hay = (s_(r[ci('docuno')]) + ' ' + s_(r[ci('goodcode_n')]) + ' ' + s_(r[ci('goodname')]) + ' ' +
+                 s_(r[ci('vendorname')]) + ' ' + s_(r[ci('jobcode')])).toLowerCase();
+      if (hay.indexOf(q) < 0) continue;
+    }
+    list.push({
+      po: s_(r[ci('docuno')]), poid: s_(r[ci('poid')]), ln: s_(r[ci('listno')]),
+      date: fmtD_(r[ci('docudate')]), ship: fmtD_(r[ci('shipdate')]),
+      code: s_(r[ci('goodcode_n')]), name: s_(r[ci('goodname')]), unit: s_(r[ci('unit')]),
+      vendor: s_(r[ci('vendorname')]), job: s_(r[ci('jobcode')]),
+      ordered: num_(r[ci('ordered')]), received: num_(r[ci('received')]), remain: num_(r[ci('remain')]),
+      price: canPrice ? num_(r[ci('price')]) : null,
+      value: canPrice ? val : null,
+      cat: s_(r[ci('cat')]), age: a, status: s_(r[ci('status')])
+    });
+  }
+
+  var page = Math.max(1, num_(opt.page) || 1), size = 50;
+  return {
+    total: list.length, page: page, pages: Math.ceil(list.length / size) || 1,
+    rows: list.slice((page - 1) * size, page * size),
+    sum: { lines: sum.lines, value: canPrice ? sum.value : null,
+           docs: (function () { var o = {}, n = 0; for (var i2 = 0; i2 < list.length; i2++) if (!o[list[i2].po]) { o[list[i2].po] = 1; n++; } return n; })() },
+    buckets: BK.map(function (b) {
+      var x = bucket[b[0]] || { n: 0, v: 0 };
+      return { key: b[0], n: x.n, v: canPrice ? x.v : null };
+    }),
+    canPrice: canPrice
+  };
+}
+
+function fmtD_(v) {
+  if (!(v instanceof Date)) { var d = dt_(v); if (!(d instanceof Date)) return s_(v); v = d; }
+  var p = function (n) { return (n < 10 ? '0' : '') + n; };
+  return p(v.getDate()) + '/' + p(v.getMonth() + 1) + '/' + (v.getFullYear() + 543);
+}
+
+/* สำหรับชุดทดสอบใน node เท่านั้น — Apps Script ไม่มี module จึงข้ามบรรทัดนี้ */
+if (typeof module !== 'undefined') module.exports = { psMatchEngine_: psMatchEngine_, ncd_: ncd_, nn_: nn_, num_: num_, s_: s_, cat_: cat_ };

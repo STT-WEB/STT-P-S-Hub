@@ -99,6 +99,38 @@
     <div id="tiles"></div>
   </div>
 
+
+  <!-- ========== PO ค้างรับ ========== -->
+  <div id="viewOpenPO" class="hide">
+    <div class="page-head">
+      <p class="eyebrow">จัดซื้อ</p>
+      <h1>PO ค้างรับ</h1>
+      <p>ของที่สั่งแล้วยังไม่เข้า — รวมของที่สั่งข้ามปีมาแล้วด้วย</p>
+    </div>
+    <div class="card card-pad-sm" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+      <div class="field" style="flex:1 1 260px;margin-top:0">
+        <label for="opQ">ค้นหา — เลขที่ PO · รหัสสินค้า · ชื่อสินค้า · ผู้ขาย · จ๊อบ</label>
+        <input type="text" id="opQ" placeholder="พิมพ์แล้วกด Enter" onkeydown="if(event.key==='Enter')opSearch()">
+      </div>
+      <button class="btn" style="width:auto;padding-inline:24px;margin-top:0" onclick="opSearch()">ค้นหา</button>
+      <button class="btn ghost" style="width:auto;padding-inline:20px;margin-top:0" onclick="backToMenu()">กลับเมนู</button>
+    </div>
+    <div id="opBody"></div>
+  </div>
+
+  <!-- ========== นำเข้าข้อมูล ========== -->
+  <div id="viewImport" class="hide">
+    <div class="page-head">
+      <p class="eyebrow">จัดซื้อ</p>
+      <h1>นำเข้าข้อมูล</h1>
+      <p>ดึง PO และ RR จาก My Account เข้าระบบ แล้วจับคู่ให้อัตโนมัติ</p>
+    </div>
+    <div id="imBody"></div>
+    <div class="card card-pad-sm">
+      <button class="btn ghost" style="width:auto;padding-inline:20px" onclick="backToMenu()">กลับเมนู</button>
+    </div>
+  </div>
+
   <!-- ========== ตรวจระบบ (ผู้ดูแลระบบ) ========== -->
   <div id="viewDiag" class="hide">
     <div class="page-head">
@@ -115,5 +147,7 @@
 </div>
 
 <?!= include('js-core') ?>
+<?!= include('ui-openpo') ?>
+<?!= include('ui-import') ?>
 </body>
 </html>

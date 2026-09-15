@@ -72,6 +72,14 @@ function esc(s){
 }
 
 /* ================= เข้าหน้าหลัก ================= */
+var VIEWS = ['viewLogin','viewReg','viewMenu','viewDiag','viewOpenPO','viewImport'];
+function setView(id){
+  VIEWS.forEach(function(v){ var el=$(v); if(el) el.classList.add('hide'); });
+  var t=$(id); if(t) t.classList.remove('hide');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function backToMenu(){ setView('viewMenu'); }
+
 function enterApp(){
   hide('viewLogin'); hide('viewReg');
   $('whoText').textContent = ME.label + ' · ' + ME.roleLabel;
@@ -79,15 +87,15 @@ function enterApp(){
   show('who'); show('btnOut');
   if(ME.role === 'ADMIN') show('btnDiag');
   renderMenu();
-  show('viewMenu');
+  setView('viewMenu');
 }
 
 function logout(){
   AUTH = ''; ME = null;
-  hide('viewMenu'); hide('viewDiag'); hide('who'); hide('btnOut'); hide('btnDiag');
+  setView('viewLogin');
+  hide('who'); hide('btnOut'); hide('btnDiag');
   $('empId').value = ''; $('pin').value = '';
   clearMsg('loginMsg');
-  show('viewLogin');
 }
 
 /* ================= เมนู ================= */
@@ -100,7 +108,8 @@ var GROUPS = [
 ];
 
 var MODULES = [
-  { id:'p2', g:'buy',   i:'📥', t:'PO ค้างรับ',          d:'ติดตามของที่ยังไม่เข้า รับข้ามปีได้',        roles:['PURCHASE','ADMIN','EXEC'],           phase:1 },
+  { id:'p2', g:'buy',   i:'📥', t:'PO ค้างรับ',          d:'ติดตามของที่ยังไม่เข้า รับข้ามปีได้',        roles:['PURCHASE','ADMIN','EXEC','STORE'],   phase:1, go:'openOpenPO' },
+  { id:'p1', g:'buy',   i:'⬆️', t:'นำเข้าข้อมูล',        d:'ดึง PO/RR จาก My Account แล้วจับคู่',        roles:['PURCHASE','ADMIN'],                  phase:1, go:'openImport' },
   { id:'p3', g:'buy',   i:'💳', t:'แผนการจ่ายเงิน',       d:'วางบิล · ตั้งเบิก · ตัดยอดมัดจำ',           roles:['PURCHASE','ADMIN','EXEC'],           phase:4 },
   { id:'p4', g:'buy',   i:'📊', t:'สรุปการสั่งซื้อ',       d:'รายเดือน · ผู้ขาย · หมวด · จ๊อบ',           roles:['PURCHASE','ADMIN','EXEC'],           phase:6 },
   { id:'p7', g:'buy',   i:'🎯', t:'Dashboard KPI',        d:'ลดต้นทุน · ผู้ขายใหม่ · Performance',       roles:['ADMIN','EXEC','PURCHASE'],           phase:6 },
@@ -135,26 +144,31 @@ function renderMenu(){
     grid.className = 'tiles';
     mine.forEach(function(m){
       var d = document.createElement('div');
-      d.className = 'tile soon';
+      d.className = 'tile ' + (m.go ? 'live' : 'soon');
       d.style.setProperty('--tc', g.c);
       d.style.setProperty('--tt', g.t);
       d.innerHTML =
         '<div class="ico">' + m.i + '</div>' +
         '<b>' + esc(m.t) + '</b>' +
         '<span class="d">' + esc(m.d) + '</span>' +
-        '<div class="foot"><span class="badge b-soon">เฟส ' + m.phase + '</span></div>';
+        '<div class="foot">' + (m.go
+          ? '<span class="badge b-live">พร้อมใช้งาน</span>'
+          : '<span class="badge b-soon">เฟส ' + m.phase + '</span>') + '</div>';
+      if(m.go) d.onclick = (function(fn){ return function(){ window[fn](); }; })(m.go);
       grid.appendChild(d);
     });
     box.appendChild(grid);
   });
 
+  var live = MODULES.filter(function(m){ return m.go && m.roles.indexOf(ME.role) >= 0; }).length;
   $('menuNote').textContent =
-    'บทบาทของคุณเห็น ' + total + ' โมดูล · ขณะนี้เป็นโครงระบบ โมดูลจะทยอยเปิดตามเฟสที่วางไว้';
+    'บทบาทของคุณเห็น ' + total + ' โมดูล · เปิดใช้งานแล้ว ' + live +
+    ' · ที่เหลือจะทยอยเปิดตามเฟสที่วางไว้';
 }
 
 /* ================= ตรวจระบบ (ADMIN) ================= */
 function openDiag(){
-  hide('viewMenu'); show('viewDiag');
+  setView('viewDiag');
   $('diagBody').innerHTML = '<p class="small">กำลังตรวจ...</p>';
   google.script.run
     .withSuccessHandler(function(r){
@@ -186,7 +200,7 @@ function stat(v, l, color){
   return '<div class="stat"><div class="v" style="color:' + color + '">' + esc(v) +
          '</div><div class="l">' + esc(l) + '</div></div>';
 }
-function closeDiag(){ hide('viewDiag'); show('viewMenu'); }
+function closeDiag(){ setView('viewMenu'); }
 
 /* ================= Enter = ส่งฟอร์ม ================= */
 document.addEventListener('keydown', function(e){

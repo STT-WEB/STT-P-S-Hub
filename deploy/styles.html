@@ -186,6 +186,30 @@ td.nw{white-space:nowrap}
 .stat .v{font-family:"Inter",monospace;font-size:22px;font-weight:700;line-height:1.2}
 .stat .l{font-size:12px;color:var(--text-3);margin-top:2px}
 
+
+/* ===== หน้าจอใหม่ (PO ค้างรับ / นำเข้าข้อมูล) ===== */
+.agegrid{display:grid;gap:10px;grid-template-columns:1fr 1fr}
+@media(min-width:760px){.agegrid{grid-template-columns:repeat(5,1fr)}}
+.agebtn{display:flex;flex-direction:column;align-items:flex-start;gap:2px;background:#fff;
+  border:1.5px solid var(--line);border-radius:var(--r);padding:11px 13px;cursor:pointer;
+  font:inherit;text-align:start;transition:var(--fast)}
+.agebtn:hover{border-color:#C6CDD6;box-shadow:var(--sh-1)}
+.agebtn.on{border-color:var(--brand);background:var(--brand-tint);box-shadow:0 0 0 3px rgba(228,24,36,.10)}
+.agebtn b{font-size:13.5px;font-weight:600}
+.agebtn .n{font-size:12px;color:var(--text-3)}
+.agebtn .v{font-family:"Inter",ui-monospace,monospace;font-size:14px;font-weight:700;margin-top:2px}
+.dotc{width:9px;height:9px;border-radius:50%;display:inline-block;margin-bottom:3px}
+.bar2{height:11px;border-radius:6px;background:#E8EBEF;overflow:hidden;display:flex;margin:12px 0 2px}
+.bar2 i{display:block;height:100%}
+.pager{display:flex;align-items:center;justify-content:center;gap:16px;margin-top:16px}
+.sub{font-size:12px;color:var(--text-3);font-weight:400;margin-top:1px}
+.num{font-family:"Inter",ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums}
+td.num{text-align:end}
+.btnrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.row2{display:flex;gap:14px;flex-wrap:wrap}
+.row2 > .field{flex:1 1 200px;min-width:0}
+.b-warn2{background:var(--warn-t);color:var(--warn)}
+
 .hide{display:none!important}
 .small{font-size:13px;color:var(--text-3)}
 .center{text-align:center}

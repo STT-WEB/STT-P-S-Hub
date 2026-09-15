@@ -11,6 +11,9 @@ deploy/.deployid
 *.tmp
 *.orig
 
+# ข้อมูลจริงสำหรับชุดทดสอบ (ใหญ่ + เป็นข้อมูลบริษัท)
+_tests/real-data.json
+
 # Node
 node_modules/
 

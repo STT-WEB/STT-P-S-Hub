@@ -1,0 +1,131 @@
+<script>
+/* ============ หน้า PO ค้างรับ (P2) ============ */
+var OP = { page:1, age:'', q:'' };
+
+function openOpenPO(){
+  setView('viewOpenPO');
+  OP.page = 1;
+  loadOpenPO();
+}
+
+function opFilter(age){
+  OP.age = (OP.age === age) ? '' : age;
+  OP.page = 1;
+  loadOpenPO();
+}
+function opSearch(){ OP.q = $('opQ').value.trim(); OP.page = 1; loadOpenPO(); }
+function opPage(d){ OP.page += d; loadOpenPO(); }
+
+function loadOpenPO(){
+  $('opBody').innerHTML = '<p class="small">กำลังโหลด...</p>';
+  var t0 = new Date().getTime();
+  google.script.run
+    .withSuccessHandler(function(r){ renderOpenPO(r, new Date().getTime()-t0); })
+    .withFailureHandler(function(e){
+      $('opBody').innerHTML = '<div class="msg err" style="display:block">โหลดไม่สำเร็จ: ' +
+        esc(e.message) + '</div>';
+    })
+    .getOpenPO(AUTH, { page: OP.page, age: OP.age, q: OP.q });
+}
+
+function money(n){
+  if(n === null || n === undefined) return '—';
+  return Number(n).toLocaleString('en-US',{minimumFractionDigits:2, maximumFractionDigits:2});
+}
+function qty(n){
+  return Number(n||0).toLocaleString('en-US',{maximumFractionDigits:2});
+}
+
+var AGEC = { '0-7':'var(--ok)', '8-30':'#6AB04C', '31-60':'#D8A21A', '61-90':'#E08A2E', '90+':'var(--bad)' };
+var AGEL = { '0-7':'0–7 วัน', '8-30':'8–30 วัน', '31-60':'31–60 วัน', '61-90':'61–90 วัน', '90+':'เกิน 90 วัน' };
+
+function renderOpenPO(r, ms){
+  var h = '';
+
+  /* --- สรุปด้านบน --- */
+  h += '<div class="statrow">' +
+       stat(Number(r.sum.lines).toLocaleString(), 'บรรทัดค้างรับ', 'var(--text)') +
+       stat(Number(r.sum.docs).toLocaleString(), 'ใบ PO', 'var(--text)') +
+       stat(r.canPrice ? money(r.sum.value) : 'ซ่อน', r.canPrice ? 'มูลค่ารวม (บาท)' : 'สโตร์ไม่เห็นราคา',
+            r.canPrice ? 'var(--brand)' : 'var(--text-3)') +
+       stat(ms + ' ms', 'เวลาโหลด', 'var(--text-2)') +
+       '</div>';
+
+  /* --- แถบอายุ กดกรองได้ --- */
+  var tot = 0;
+  r.buckets.forEach(function(b){ tot += b.n; });
+  h += '<div class="secthead"><h3>กรองตามอายุ</h3><div class="line"></div>' +
+       (OP.age ? '<button class="tbtn" style="background:var(--bad);border-color:var(--bad)" onclick="opFilter(\'' +
+        OP.age + '\')">ล้างตัวกรอง</button>' : '') + '</div>';
+  h += '<div class="agegrid">';
+  r.buckets.forEach(function(b){
+    var on = (OP.age === b.key);
+    h += '<button class="agebtn' + (on ? ' on' : '') + '" onclick="opFilter(\'' + b.key + '\')">' +
+         '<span class="dotc" style="background:' + AGEC[b.key] + '"></span>' +
+         '<b>' + esc(AGEL[b.key]) + '</b>' +
+         '<span class="n">' + Number(b.n).toLocaleString() + ' บรรทัด</span>' +
+         (r.canPrice ? '<span class="v">' + money(b.v) + '</span>' : '') +
+         '</button>';
+  });
+  h += '</div>';
+
+  /* --- แถบสัดส่วน --- */
+  if(r.canPrice){
+    var sumv = 0; r.buckets.forEach(function(b){ sumv += (b.v||0); });
+    if(sumv > 0){
+      h += '<div class="bar2">';
+      r.buckets.forEach(function(b){
+        var p = (b.v||0)/sumv*100;
+        if(p > 0) h += '<i style="width:' + p.toFixed(2) + '%;background:' + AGEC[b.key] +
+                       '" title="' + AGEL[b.key] + ' ' + p.toFixed(1) + '%"></i>';
+      });
+      h += '</div><p class="small">แถบนี้คือสัดส่วน<b>มูลค่า</b> ไม่ใช่จำนวนบรรทัด — ของเก่ามักน้อยบรรทัดแต่เงินก้อนใหญ่</p>';
+    }
+  }
+
+  /* --- ตาราง --- */
+  h += '<div class="secthead"><h3>รายการ</h3><div class="line"></div>' +
+       '<span class="small">หน้า ' + r.page + ' / ' + r.pages + ' · ' +
+       Number(r.total).toLocaleString() + ' บรรทัด</span></div>';
+
+  if(!r.rows.length){
+    h += '<div class="card" style="text-align:center;color:var(--text-3)">ไม่พบรายการที่ตรงกับเงื่อนไข</div>';
+  } else {
+    h += '<div class="tblwrap"><table><thead><tr>' +
+         '<th>เลขที่ PO</th><th>สินค้า</th><th>ผู้ขาย</th>' +
+         '<th style="text-align:end">สั่ง</th><th style="text-align:end">รับแล้ว</th>' +
+         '<th style="text-align:end">ค้าง</th>' +
+         (r.canPrice ? '<th style="text-align:end">มูลค่าค้าง</th>' : '') +
+         '<th style="text-align:end">อายุ</th><th>สถานะ</th>' +
+         '</tr></thead><tbody>';
+    r.rows.forEach(function(x){
+      var ac = x.age > 90 ? 'var(--bad)' : (x.age > 60 ? 'var(--warn)' : 'var(--text-2)');
+      h += '<tr>' +
+        '<td class="nw"><b>' + esc(x.po) + '</b><div class="sub">บรรทัด ' + esc(x.ln) +
+          ' · ' + esc(x.date) + '</div></td>' +
+        '<td>' + esc(x.name) + '<div class="sub mono">' + esc(x.code) +
+          (x.job ? ' · จ๊อบ ' + esc(x.job) : '') + '</div></td>' +
+        '<td>' + esc(x.vendor) + '</td>' +
+        '<td class="num nw">' + qty(x.ordered) + ' <span class="sub">' + esc(x.unit) + '</span></td>' +
+        '<td class="num nw">' + (x.received > 0 ? qty(x.received) : '<span class="muted">—</span>') + '</td>' +
+        '<td class="num nw"><b>' + qty(x.remain) + '</b></td>' +
+        (r.canPrice ? '<td class="num nw">' + money(x.value) + '</td>' : '') +
+        '<td class="num nw" style="color:' + ac + ';font-weight:600">' + x.age + ' วัน</td>' +
+        '<td class="nw"><span class="badge ' + (x.received > 0 ? 'b-warn2' : 'b-sys') + '">' +
+          esc(x.status) + '</span></td>' +
+        '</tr>';
+    });
+    h += '</tbody></table></div>';
+
+    if(r.pages > 1){
+      h += '<div class="pager">' +
+        '<button class="btn ghost" style="width:auto" ' + (r.page<=1?'disabled':'') +
+          ' onclick="opPage(-1)">ก่อนหน้า</button>' +
+        '<span class="small">หน้า ' + r.page + ' / ' + r.pages + '</span>' +
+        '<button class="btn ghost" style="width:auto" ' + (r.page>=r.pages?'disabled':'') +
+          ' onclick="opPage(1)">ถัดไป</button></div>';
+    }
+  }
+  $('opBody').innerHTML = h;
+}
+</script>

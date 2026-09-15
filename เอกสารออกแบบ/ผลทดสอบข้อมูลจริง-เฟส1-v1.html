@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ผลทดสอบข้อมูลจริง เฟส 1</title>
+<style>
+:root{
+  --brand:#E41824; --brand-600:#CC1420; --brand-tint:#FEECEE;
+  --ink:#12151A; --ink-2:#1B2028;
+  --bg:#F4F5F7; --surface:#fff; --surface-2:#FAFBFC;
+  --line:#E4E7EC; --line-2:#EFF1F4;
+  --text:#12151A; --text-2:#475062; --text-3:#79828F;
+  --buy:#1D6FD1; --buy-t:#EAF2FD; --store:#0E7C86; --store-t:#E4F5F6;
+  --cost:#6B3FBF; --cost-t:#F1EBFD;
+  --ok:#0E8A52; --ok-t:#E6F6EE; --warn:#B5710A; --warn-t:#FFF6E5;
+  --bad:#C0182B; --bad-t:#FDECEE;
+  --r:12px; --r-lg:16px;
+  --sh:0 1px 2px rgba(16,20,28,.06),0 1px 3px rgba(16,20,28,.04);
+  --sh2:0 2px 6px rgba(16,20,28,.07),0 8px 24px rgba(16,20,28,.06);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);
+  font-family:"Sarabun","Leelawadee UI","Tahoma",system-ui,sans-serif;font-size:15.5px;line-height:1.72}
+.num{font-family:"Inter",ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums}
+.wrap{max-width:1120px;margin:0 auto;padding:0 18px 80px}
+header{background:linear-gradient(103deg,var(--ink),var(--ink-2));color:#fff;padding:30px 0 26px}
+header::after{content:"";display:block;height:3px;margin-top:26px;
+  background:linear-gradient(90deg,var(--brand) 0%,var(--brand) 34%,rgba(228,24,36,0) 100%)}
+header .wrap{padding-bottom:0}
+.eyebrow{display:inline-block;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);
+  padding:3px 12px;border-radius:99px;font-size:12.5px;margin-bottom:11px}
+h1{margin:0 0 6px;font-size:27px;line-height:1.35;letter-spacing:-.3px}
+header p{margin:0;opacity:.88;font-size:14.5px}
+.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:var(--sh)}
+.tabs .wrap{display:flex;gap:2px;overflow-x:auto;padding-top:7px;padding-bottom:0}
+.tab{flex:0 0 auto;border:0;background:transparent;font:inherit;font-size:14.5px;color:var(--text-3);
+  padding:11px 15px 12px;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;transition:.15s}
+.tab:hover{color:var(--text)}
+.tab.on{color:var(--brand);border-bottom-color:var(--brand);font-weight:600}
+.pane{display:none;padding-top:26px}
+.pane.on{display:block}
+h2{font-size:20px;margin:32px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--line);letter-spacing:-.2px}
+h2:first-child{margin-top:0}
+h3{font-size:16.5px;margin:24px 0 8px}
+p{margin:10px 0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);
+  padding:20px 22px;margin:14px 0;box-shadow:var(--sh)}
+.card.t{padding:14px 17px}
+ul,ol{margin:10px 0;padding-inline-start:23px} li{margin:6px 0}
+table{width:100%;border-collapse:collapse;font-size:14.3px;background:#fff}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);margin:13px 0}
+th,td{padding:9px 12px;text-align:start;vertical-align:top;border-bottom:1px solid var(--line-2)}
+th{background:var(--surface-2);font-weight:600;font-size:12.5px;letter-spacing:.3px;
+  text-transform:uppercase;color:var(--text-3);white-space:nowrap}
+tbody tr:last-child td{border-bottom:0}
+td.n,th.n{text-align:end;font-family:"Inter",ui-monospace,Consolas,monospace;
+  font-variant-numeric:tabular-nums;white-space:nowrap}
+td.nw,th.nw{white-space:nowrap}
+tr.tot td{background:var(--surface-2);font-weight:700}
+.ok{color:var(--ok);font-weight:600} .bad{color:var(--bad);font-weight:600} .warn{color:var(--warn);font-weight:600}
+.pill{display:inline-block;padding:2px 9px;border-radius:7px;font-size:12px;font-weight:700;white-space:nowrap}
+.p-ok{background:var(--ok-t);color:var(--ok)} .p-bad{background:var(--bad-t);color:var(--bad)}
+.p-warn{background:var(--warn-t);color:var(--warn)} .p-buy{background:var(--buy-t);color:var(--buy)}
+.p-store{background:var(--store-t);color:var(--store)} .p-cost{background:var(--cost-t);color:var(--cost)}
+.note{border-inline-start:3px solid var(--buy);background:var(--buy-t);padding:13px 16px;border-radius:0 var(--r) var(--r) 0;margin:14px 0}
+.good{border-inline-start:3px solid var(--ok);background:var(--ok-t);padding:13px 16px;border-radius:0 var(--r) var(--r) 0;margin:14px 0}
+.bad-b{border-inline-start:3px solid var(--bad);background:var(--bad-t);padding:13px 16px;border-radius:0 var(--r) var(--r) 0;margin:14px 0}
+.amber{border-inline-start:3px solid var(--warn);background:var(--warn-t);padding:13px 16px;border-radius:0 var(--r) var(--r) 0;margin:14px 0}
+code{font-family:"Inter",ui-monospace,Consolas,monospace;font-size:13.2px;background:#EEF1F4;padding:1px 6px;border-radius:5px}
+pre{background:var(--ink);color:#DBE6F5;padding:15px 17px;border-radius:var(--r);overflow-x:auto;
+  font-family:ui-monospace,Consolas,monospace;font-size:13px;line-height:1.65;margin:12px 0;white-space:pre}
+.grid{display:grid;gap:13px}
+@media(min-width:700px){.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:var(--r-lg);padding:16px 18px;box-shadow:var(--sh)}
+.kpi .v{font-family:"Inter",ui-monospace,Consolas,monospace;font-size:25px;font-weight:700;line-height:1.15;letter-spacing:-.5px}
+.kpi .l{font-size:12.5px;color:var(--text-3);margin-top:5px;line-height:1.45}
+.bar{height:9px;border-radius:5px;background:#E8EBEF;overflow:hidden;margin-top:7px;display:flex}
+.bar i{display:block;height:100%}
+.small{font-size:13px;color:var(--text-3)}
+footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);color:var(--text-3);font-size:13px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="eyebrow">NOVA – P&amp;S HUB · เฟส 1 · ผลทดสอบกับข้อมูลจริง</div>
+    <h1>จับคู่ PO ↔ RR ได้ 100% — และอธิบายทุกบรรทัดที่ต่างจาก My Account ได้หมด</h1>
+    <p>ข้อมูลจริง 7 ม.ค. – 15 ก.ย. 2569 · PO 7,951 บรรทัด · RR 7,513 บรรทัด</p>
+  </div>
+</header>
+
+<div class="tabs">
+  <div class="wrap">
+    <button class="tab on" data-t="1">1 · ผลการจับคู่</button>
+    <button class="tab" data-t="2">2 · ยามตรวจข้อมูล</button>
+    <button class="tab" data-t="3">3 · PO ค้างรับ</button>
+    <button class="tab" data-t="4">4 · ที่ต้องแก้</button>
+    <button class="tab" data-t="5">5 · ของแถมที่ได้มา</button>
+    <button class="tab" data-t="6">6 · ขั้นต่อไป</button>
+  </div>
+</div>
+
+<div class="wrap">
+
+<!-- ===================== TAB 1 ===================== -->
+<section class="pane on" id="p1">
+
+  <div class="grid g4">
+    <div class="kpi"><div class="v ok">100%</div><div class="l">จับคู่ RR กับ PO สำเร็จ<br>7,375 / 7,375 บรรทัดที่มี PO ในไฟล์</div></div>
+    <div class="kpi"><div class="v ok">100%</div><div class="l">คีย์ <code>Poid+listno</code> ไม่ซ้ำ<br>7,951 / 7,951 บรรทัด</div></div>
+    <div class="kpi"><div class="v ok">0</div><div class="l">รับเกินจำนวนที่สั่ง<br>ไม่พบเลยแม้แต่บรรทัดเดียว</div></div>
+    <div class="kpi"><div class="v ok">0</div><div class="l">จับคู่ไม่ได้<br>ทั้งที่ PO อยู่ในไฟล์</div></div>
+  </div>
+
+  <h2>ข้อมูลที่ได้มา</h2>
+  <div class="tw">
+  <table>
+    <tr><th>รายการ</th><th class="n">จำนวน</th><th>หมายเหตุ</th></tr>
+    <tr><td>ช่วงข้อมูล</td><td class="n">9 เดือน</td><td>7 ม.ค. – 15 ก.ย. 2569</td></tr>
+    <tr><td>PO ทั้งหมด</td><td class="n">7,951</td><td>บรรทัด · 2,274 ใบ · 23 คอลัมน์</td></tr>
+    <tr><td class="nw">— แถวเสีย</td><td class="n bad">1</td><td>แถวที่ 179 — ข้อมูลเลื่อนคอลัมน์ (ดูแท็บ 4)</td></tr>
+    <tr><td class="nw">— ยกเลิก</td><td class="n">72</td><td>฿799,837.55 · ตัดออกจากการคำนวณทั้งหมด</td></tr>
+    <tr><td class="nw">— ใช้งานจริง</td><td class="n ok">7,878</td><td>ฐานที่ใช้คำนวณทุกอย่าง</td></tr>
+    <tr><td>RR ทั้งหมด</td><td class="n">7,513</td><td>บรรทัด · 2,409 ใบรับ · 36 คอลัมน์</td></tr>
+    <tr><td class="nw">— มีเลข PO กำกับ</td><td class="n ok">7,513</td><td><b>ครบ 100%</b> — ไม่มีใบไหนลอย</td></tr>
+    <tr class="tot"><td>ยอดสั่งซื้อรวม</td><td class="n">76,874,965.09</td><td>บาท (ก่อน VAT)</td></tr>
+  </table>
+  </div>
+
+  <h2>เครื่องจับคู่ทำงานยังไง</h2>
+  <p>จับคู่ภายใน <b>เลขที่ PO เดียวกัน</b> ก่อน แล้วไล่เทียบ <b>5 ชั้น</b> จากเข้มไปหลวม — ชั้นไหนเจอก่อนใช้ชั้นนั้น</p>
+  <div class="tw">
+  <table>
+    <tr><th>ชั้น</th><th>เทียบอะไร</th><th class="n">ผลจริง</th><th class="n">%</th></tr>
+    <tr><td class="nw"><b>C1</b></td><td>รหัสสินค้า + จ๊อบ + ชื่อ + ราคา</td><td class="n ok">7,373</td><td class="n">99.97%</td></tr>
+    <tr><td class="nw"><b>C2</b></td><td>รหัสสินค้า + จ๊อบ + ชื่อ</td><td class="n">0</td><td class="n">—</td></tr>
+    <tr><td class="nw"><b>C3</b></td><td>รหัสสินค้า + ชื่อ + ราคา</td><td class="n">1</td><td class="n">0.01%</td></tr>
+    <tr><td class="nw"><b>C4</b></td><td>รหัสสินค้า + จ๊อบ</td><td class="n">1</td><td class="n">0.01%</td></tr>
+    <tr><td class="nw"><b>C5</b></td><td>รหัสสินค้าอย่างเดียว — ใช้ได้เฉพาะเมื่อมีตัวเลือกเดียว</td><td class="n">0</td><td class="n">—</td></tr>
+    <tr class="tot"><td colspan="2">รวม</td><td class="n">7,375</td><td class="n">100%</td></tr>
+  </table>
+  </div>
+  <div class="good">
+    <b>ผลที่ได้บอกอะไร</b> — 99.97% ลงตัวตั้งแต่ชั้นแรกที่เข้มที่สุด (ตรงครบทั้ง 4 อย่าง)
+    แปลว่าข้อมูลจาก My Account สะอาดกว่าที่คิดมาก · ส่วนอีก 2 บรรทัดที่ต้องผ่อนเกณฑ์ลงมา
+    ก็ยังจับคู่ได้ถูก เพราะยังบังคับให้รหัสสินค้าตรงกันเสมอ ไม่เคยเดา
+  </div>
+
+  <h2>138 บรรทัดที่จับคู่ไม่ได้ — ไม่ใช่ความผิดพลาด</h2>
+  <div class="card">
+    <p style="margin-top:0">RR 138 บรรทัดอ้างถึง PO ที่ขึ้นต้นด้วย <code>POR-68/…</code> ซึ่ง<b>ไม่มีในไฟล์นี้</b>
+    เพราะไฟล์นี้เป็น PO ปี 2569 เท่านั้น</p>
+    <div class="grid g3">
+      <div class="kpi" style="box-shadow:none"><div class="v" style="color:var(--warn)">138</div><div class="l">บรรทัด</div></div>
+      <div class="kpi" style="box-shadow:none"><div class="v" style="color:var(--warn)">61</div><div class="l">ใบ PO ปี 2568</div></div>
+      <div class="kpi" style="box-shadow:none"><div class="v" style="color:var(--warn)">4,593,786</div><div class="l">บาท</div></div>
+    </div>
+    <div class="amber" style="margin-bottom:0">
+      <b>นี่คือ "รับข้ามปี" ที่เบียร์บอกไว้ — วัดได้จริงแล้ว ฿4.59 ล้าน ใน 9 เดือน</b><br>
+      ตอกย้ำว่าการออกแบบให้ตาราง <code>OPEN_PO</code> อยู่ในไฟล์กลาง ไม่ผูกปี เป็นสิ่งที่ถูกต้อง
+      ถ้าออกแบบให้ผูกปี ของ ฿4.59 ล้านนี้จะหายไปจากระบบทันทีที่ขึ้นปีใหม่
+    </div>
+  </div>
+
+</section>
+
+<!-- ===================== TAB 2 ===================== -->
+<section class="pane" id="p2">
+
+  <h2>เทียบผลของเรา กับสถานะ <code>docustatus</code> ของ My Account</h2>
+  <p>นี่คือ <b>ยามตรวจข้อมูล (X1)</b> ทำงานจริง — ไม่เชื่อตัวเอง ต้องเอาไปกระทบยอดกับต้นฉบับเสมอ</p>
+
+  <div class="tw">
+  <table>
+    <tr><th>My Account ว่า ↓ / เราคำนวณได้ →</th><th class="n">รับครบ</th><th class="n">รับบางส่วน</th><th class="n">ยังไม่รับ</th></tr>
+    <tr><td class="nw"><b>รับครบ (Y)</b></td><td class="n ok">7,141</td><td class="n">0</td><td class="n">0</td></tr>
+    <tr><td class="nw"><b>รับบางส่วน (P)</b></td><td class="n warn">120</td><td class="n ok">17</td><td class="n warn">28</td></tr>
+    <tr><td class="nw"><b>ยังไม่รับ (N)</b></td><td class="n">0</td><td class="n">0</td><td class="n ok">572</td></tr>
+  </table>
+  </div>
+  <p>ตรงกัน <b class="ok">7,730 / 7,878 = 98.12%</b> · ไม่ตรง <b class="warn">148 บรรทัด</b> —
+  และ<b>ทั้ง 148 บรรทัดอยู่ในแถวเดียวกันหมด</b> คือแถว "รับบางส่วน (P)" ไม่มีสักบรรทัดที่ตกในทิศทางอื่น</p>
+
+  <div class="note">
+    <b>รูปแบบแบบนี้ไม่ใช่ความผิดพลาดแบบสุ่ม</b> — ถ้าเราคำนวณผิดจริง ความผิดจะกระจายไปทุกช่อง
+    แต่นี่กระจุกอยู่ช่องเดียว แปลว่ามี<b>กฎบางอย่าง</b>ที่เรายังไม่รู้ ผมเลยไปพิสูจน์ต่อ
+  </div>
+
+  <h2>พิสูจน์แล้ว: <code>docustatus</code> เป็นสถานะของ "ทั้งใบ" ไม่ใช่ "รายบรรทัด"</h2>
+  <div class="card">
+    <div class="tw" style="margin-top:0">
+    <table>
+      <tr><th>ข้อพิสูจน์</th><th class="n">ผล</th></tr>
+      <tr><td>ใบ PO ที่ทุกบรรทัดในใบมี <code>docustatus</code> เหมือนกันหมด</td><td class="n ok">2,235 / 2,235 = 100%</td></tr>
+      <tr><td>ใบ PO ที่มี <code>docustatus</code> ปนกันในใบเดียว</td><td class="n ok">0</td></tr>
+      <tr><td>ใบที่ถูกประทับ P ทั้งใบ แล้ว "ทั้งใบรับมาบางส่วน" จริง</td><td class="n ok">28 / 28 = 100%</td></tr>
+    </table>
+    </div>
+    <p><b>ตัวอย่างที่เห็นชัดที่สุด — <code>POR-69/0190</code></b> มี 4 บรรทัด รับมาแล้ว 3 บรรทัด เหลือ 1 บรรทัด</p>
+    <pre>My Account ประทับ P ลงทั้ง 4 บรรทัด   (ถูกในระดับ "ใบ" — ใบนี้รับมาบางส่วนจริง)
+เราคำนวณรายบรรทัดได้:
+   ln1  สั่ง 1  รับ 1  →  รับครบ
+   ln2  สั่ง 1  รับ 1  →  รับครบ
+   ln3  สั่ง 1  รับ 1  →  รับครบ
+   ln4  สั่ง 1  รับ 0  →  ยังไม่รับ   ← ตัวที่ต้องตามของ</pre>
+    <div class="good" style="margin-bottom:0">
+      <b>สรุป — 148 บรรทัดที่ "ไม่ตรง" อธิบายได้ครบ 100% และไม่ใช่ความผิดของเรา</b><br>
+      My Account ถูกในระดับใบ · เราถูกในระดับบรรทัด · <b>แต่จัดซื้อต้องไปตามของเป็นรายบรรทัด ไม่ใช่รายใบ</b>
+      ถ้าใช้ <code>docustatus</code> ตรง ๆ จัดซื้อจะเห็นว่า 148 บรรทัดนี้ "ต้องตาม" ทั้งที่จริงมีแค่ 28 บรรทัดที่ต้องตาม
+      — <b>ตามของเกินจริง 120 บรรทัด</b>
+    </div>
+  </div>
+
+  <div class="amber">
+    <b>เรื่องนี้ยืนยันสิ่งที่เบียร์พูดไว้ตั้งแต่ต้น</b> — <i>"docustatus ตัวจริง (Y/P/N) ไม่มีผลอะไรเลย"</i>
+    เบียร์พูดถูก แต่ด้วยเหตุผลที่ลึกกว่าที่คิด: มันไม่ใช่แค่ "เด็กดึงทุกวันเลยเป็น N หมด"
+    แต่มัน<b>ละเอียดไม่พอโดยโครงสร้าง</b> — ต่อให้ดึงตอนไหนก็ใช้แทนการคำนวณรายบรรทัดไม่ได้
+  </div>
+
+  <h2>กระทบยอดเงินระดับใบ</h2>
+  <p>ตรวจว่า <code>ยอดสั่ง = ยอดรับ + ยอดค้าง</code> ทุกใบหรือไม่</p>
+  <div class="tw">
+  <table>
+    <tr><th>ผล</th><th class="n">จำนวนใบ</th><th>สาเหตุ</th></tr>
+    <tr><td>ลงตัวพอดี</td><td class="n ok">2,216 / 2,235</td><td>—</td></tr>
+    <tr><td>ไม่ลงตัว</td><td class="n warn">19</td><td>40 ใบมีส่วนลด + 2 บรรทัดราคาเป็น 0 (ดูแท็บ 4)</td></tr>
+  </table>
+  </div>
+  <p class="small">แก้แล้วด้วยการคิดมูลค่าค้างรับแบบ<b>เฉลี่ยตามยอดเงินหลังหักส่วนลด</b> แทนการเอาจำนวน × ราคา — ดูแท็บ 3</p>
+
+</section>
+
+<!-- ===================== TAB 3 ===================== -->
+<section class="pane" id="p3">
+
+  <h2>PO ค้างรับ ณ 15 ก.ย. 2569</h2>
+  <div class="grid g4">
+    <div class="kpi"><div class="v" style="color:var(--brand)">28,432,883</div><div class="l">บาท ค้างรับ<br>= 37.0% ของยอดสั่งทั้งปี</div></div>
+    <div class="kpi"><div class="v">617</div><div class="l">บรรทัด<br>= 7.8% ของบรรทัดทั้งหมด</div></div>
+    <div class="kpi"><div class="v">184</div><div class="l">ใบ PO</div></div>
+    <div class="kpi"><div class="v ok">7,261</div><div class="l">บรรทัดรับครบแล้ว<br>= 92.2%</div></div>
+  </div>
+
+  <h3>ค้างรับแบ่งเป็น 2 แบบ</h3>
+  <div class="grid g2">
+    <div class="card t" style="margin:0"><b>ยังไม่รับเลยสักชิ้น</b><br><span class="num" style="font-size:20px;font-weight:700">600</span> บรรทัด</div>
+    <div class="card t" style="margin:0"><b>รับมาแล้วบางส่วน</b><br><span class="num" style="font-size:20px;font-weight:700">17</span> บรรทัด <span class="small">— ตัวที่ต้องตามต่อให้ครบ</span></div>
+  </div>
+
+  <h2>⚠️ ค้างรับตามอายุ — จุดที่ต้องดูก่อนอย่างอื่น</h2>
+  <div class="tw">
+  <table>
+    <tr><th>อายุนับจากวันสั่ง</th><th class="n">บรรทัด</th><th class="n">มูลค่า (บาท)</th><th class="n">% ของค้างรับ</th></tr>
+    <tr><td>0–7 วัน</td><td class="n">326</td><td class="n">5,407,686.13</td><td class="n">19.0%</td></tr>
+    <tr><td>8–30 วัน</td><td class="n">153</td><td class="n">2,313,459.75</td><td class="n">8.1%</td></tr>
+    <tr><td>31–60 วัน</td><td class="n">41</td><td class="n">653,875.33</td><td class="n">2.3%</td></tr>
+    <tr><td>61–90 วัน</td><td class="n">19</td><td class="n">2,278,539.17</td><td class="n">8.0%</td></tr>
+    <tr><td class="bad"><b>เกิน 90 วัน</b></td><td class="n bad">78</td><td class="n bad">17,779,322.61</td><td class="n bad">62.5%</td></tr>
+    <tr class="tot"><td>รวม</td><td class="n">617</td><td class="n">28,432,882.99</td><td class="n">100%</td></tr>
+  </table>
+  </div>
+  <div class="bar">
+    <i style="width:19.0%;background:#0E8A52"></i><i style="width:8.1%;background:#6AB04C"></i>
+    <i style="width:2.3%;background:#F0C040"></i><i style="width:8.0%;background:#E08A2E"></i>
+    <i style="width:62.5%;background:#C0182B"></i>
+  </div>
+  <p class="small">เขียว = ใหม่ · แดง = เกิน 90 วัน</p>
+
+  <div class="bad-b">
+    <b>78 บรรทัด คิดเป็น 12.6% ของจำนวน แต่กินมูลค่าถึง 62.5% (฿17.78 ล้าน)</b><br>
+    นี่คือสิ่งที่หน้าจอ PO ค้างรับต้องดันขึ้นมาให้เห็นเป็นอันดับแรก ไม่ใช่เรียงตามวันที่เฉย ๆ
+    — ของเก่าที่เงินก้อนใหญ่ค้างอยู่ คือของที่ต้องโทรตามวันนี้
+  </div>
+
+  <h2>8 ใบที่ค้างรับมูลค่าสูงสุด</h2>
+  <div class="tw">
+  <table>
+    <tr><th>เลขที่ PO</th><th class="n">บรรทัด</th><th class="n">มูลค่า</th><th class="nw">วันสั่ง</th><th>ผู้ขาย</th></tr>
+    <tr><td class="nw">POR-69/2189</td><td class="n">6</td><td class="n">2,197,600.00</td><td class="nw">11/09/2569</td><td>เอ็นไวโรพลาซ เอ็นจิเนียริ่ง</td></tr>
+    <tr><td class="nw">POR.INT-69/0007</td><td class="n">1</td><td class="n">1,986,092.00</td><td class="nw bad">06/03/2569</td><td>YANGZHOU CIMC TONGHUA</td></tr>
+    <tr><td class="nw">POR.INT-69/0008</td><td class="n">1</td><td class="n">1,986,092.00</td><td class="nw bad">06/03/2569</td><td>YANGZHOU CIMC TONGHUA</td></tr>
+    <tr><td class="nw">POR.INT-69/0009</td><td class="n">1</td><td class="n">1,986,092.00</td><td class="nw bad">06/03/2569</td><td>YANGZHOU CIMC TONGHUA</td></tr>
+    <tr><td class="nw">POR.INT-69/0010</td><td class="n">1</td><td class="n">1,986,092.00</td><td class="nw bad">06/03/2569</td><td>YANGZHOU CIMC TONGHUA</td></tr>
+    <tr><td class="nw">POR-69/2186</td><td class="n">1</td><td class="n">1,700,000.00</td><td class="nw">11/09/2569</td><td>สุธี ดิชเฮด แอนด์ เมทเทิลฟอร์ม</td></tr>
+    <tr><td class="nw">POR.INT-69/0002</td><td class="n">1</td><td class="n">1,541,920.00</td><td class="nw bad">03/02/2569</td><td>YANGZHOU CIMC TONGHUA</td></tr>
+    <tr><td class="nw">POR.INT-69/0003</td><td class="n">1</td><td class="n">1,541,920.00</td><td class="nw bad">03/02/2569</td><td>YANGZHOU CIMC TONGHUA</td></tr>
+  </table>
+  </div>
+  <div class="amber">
+    <b>6 ใน 8 ใบเป็นของนำเข้าจากจีนเจ้าเดียวกัน</b> (YANGZHOU CIMC TONGHUA) สั่งตั้งแต่ ก.พ.–มี.ค.
+    รวม <b>฿11.03 ล้าน</b> ยังไม่เข้า — <b>ต้องถามเบียร์ว่าของพวกนี้มาถึงแล้วแต่ยังไม่ได้คีย์ หรือยังไม่มาจริง</b>
+    ถ้ามาแล้วแต่ไม่ได้คีย์ ตัวเลขค้างรับจะเกินจริงไป ฿11 ล้าน · ถ้ายังไม่มาจริง ก็ต้องตาม
+    <br><span class="small">นี่คือเหตุผลที่โมดูล P10 (PO ต่างประเทศ) ต้องมีสถานะ "ลงเรือ / ถึงท่า / ผ่านศุลกากร / ถึงโรงงาน"</span>
+  </div>
+
+  <h2>มูลค่าค้างรับ: คิดแบบไหนถึงถูก</h2>
+  <div class="card">
+    <div class="tw" style="margin-top:0">
+    <table>
+      <tr><th>วิธีคิด</th><th class="n">ได้เท่าไหร่</th><th>ถูกไหม</th></tr>
+      <tr><td>จำนวนค้าง × ราคาต่อหน่วย</td><td class="n">28,915,019.82</td><td class="bad">เกินจริง — ลืมหักส่วนลด</td></tr>
+      <tr><td><b>เฉลี่ยตามยอดเงินหลังหักส่วนลด</b></td><td class="n ok">28,432,882.99</td><td class="ok">ถูก</td></tr>
+      <tr class="tot"><td>ต่างกัน</td><td class="n">482,136.83</td><td>= ส่วนลดของของที่ยังไม่มา</td></tr>
+    </table>
+    </div>
+    <p style="margin-bottom:0" class="small">ตรวจซ้ำแล้ว: ส่วนลดรวมในบรรทัดที่ยังค้างอยู่ = ฿482,400.83 ตรงกับผลต่างพอดี
+    (ต่างกัน ฿264 = บรรทัดราคา 0 ที่ต้องให้คนตรวจ) · ในข้อมูลมีส่วนลดแค่ 42 บรรทัด (0.53%) รวม ฿482,409.60
+    แต่ถ้าไม่หัก ตัวเลขค้างรับจะเกินจริงเกือบครึ่งล้าน</p>
+  </div>
+
+</section>
+
+<!-- ===================== TAB 4 ===================== -->
+<section class="pane" id="p4">
+
+  <h2>ปัญหาข้อมูลที่เจอ — 5 เรื่อง</h2>
+  <p class="small">ทั้งหมดเป็นของที่ต้องแก้ที่ต้นทาง หรือให้คนตัดสิน ระบบจะไม่เดาให้เอง</p>
+
+  <div class="card">
+    <h3 style="margin-top:0"><span class="pill p-bad">1</span> แถวที่ 179 เสีย — และเสียซ้ำที่เดิม</h3>
+    <pre>DocuNo   = 81691002      ← ควรเป็น POR-69/xxxx แต่กลับเป็นรหัสสินค้า
+Poid     = "JOB"         ← ควรเป็นตัวเลข
+docustatus = 8           ← ควรเป็น Y / P / N
+คอลัมน์อื่น ๆ ว่างหมด</pre>
+    <p><b>ข้อมูลเลื่อนคอลัมน์ตอน export</b> — น่าจะเกิดจากชื่อสินค้าหรือชื่อจ๊อบมีตัวขึ้นบรรทัดใหม่ปนอยู่
+    ทำให้ 1 แถวถูกตัดเป็น 2</p>
+    <div class="amber" style="margin-bottom:0">
+      <b>เรื่องที่น่าสนใจ</b> — ในข้อมูลชุดก่อนที่เบียร์ส่งมา <b>ก็เสียที่แถว 179 เหมือนกัน</b>
+      แปลว่าไม่ใช่ความบังเอิญ แต่เป็นบั๊กของการ export ที่เกิดซ้ำ ·
+      ระบบจะ<b>ตรวจเจอและตัดออกให้อัตโนมัติ</b> พร้อมรายงานว่าตัดแถวไหนทิ้งไปบ้าง ไม่ปล่อยให้ไหลเข้าไปทำตัวเลขเพี้ยน
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0"><span class="pill p-warn">2</span> 2 บรรทัดที่ราคา = 0 แต่มียอดเงิน</h3>
+    <div class="tw" style="margin-top:0">
+    <table>
+      <tr><th>PO</th><th>สินค้า</th><th class="n">จำนวน</th><th class="n">ราคา</th><th class="n">ยอดเงิน</th></tr>
+      <tr><td class="nw">POR-69/2169 ln2</td><td>ค่าอะไหล่ Union-Seal Ring Silicon</td><td class="n">1</td><td class="n bad">0.00</td><td class="n">55.00</td></tr>
+      <tr><td class="nw">POR-69/2217 ln2</td><td>O-Ring for API Valve "CIVACON"</td><td class="n">1</td><td class="n bad">0.00</td><td class="n">264.00</td></tr>
+    </table>
+    </div>
+    <p style="margin-bottom:0">มียอดเงินแต่ไม่มีราคาต่อหน่วย → คำนวณต้นทุนต่อหน่วยไม่ได้
+    <b>ระบบจะส่งเข้าคิวให้จัดซื้อเติมราคา ไม่เดาให้</b></p>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0"><span class="pill p-warn">3</span> คอลัมน์ <code>PRDocuNo</code> ว่างทั้งหมด</h3>
+    <p style="margin-bottom:0">มีหัวคอลัมน์แต่<b>ไม่มีข้อมูลเลยสักบรรทัด</b> (0 / 7,878) ·
+    ถ้าคอลัมน์นี้มีเลข PR จริง จะเชื่อม PO กลับไปหาใบขอซื้อได้ ซึ่งมีประโยชน์มากกับโมดูล P6
+    — <b>รบกวนเบียร์เช็คว่า My Account ดึงคอลัมน์นี้ออกมาได้ไหม</b></p>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0"><span class="pill p-warn">4</span> 167 บรรทัดไม่มีเลขจ๊อบ</h3>
+    <p style="margin-bottom:0">2.1% ของบรรทัดทั้งหมด · ยังจับคู่ได้ปกติ (เพราะเกณฑ์หลักคือรหัสสินค้า)
+    แต่จะเอาไปคิดต้นทุนเข้าจ๊อบไม่ได้ · ส่วนใหญ่น่าจะเป็นของใช้โรงงานทั่วไป —
+    <b>ถ้าใช่ก็ไม่ต้องแก้ แค่ยืนยันให้ผมรู้</b></p>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0"><span class="pill p-warn">5</span> 1 บรรทัดไม่มีรหัสสินค้า</h3>
+    <p style="margin-bottom:0">มูลค่า ฿17,970.00 · จัดหมวดไม่ได้ → ไม่รู้ว่าสโตร์ต้องกดรับหรือข้าม ·
+    <b>ระบบจะส่งเข้าคิวให้คนตัดสิน</b></p>
+  </div>
+
+  <div class="good">
+    <b>ภาพรวมคุณภาพข้อมูล: ดีมาก</b> — ปัญหารวมกัน <b>171 บรรทัดจาก 7,951 = 2.2%</b>
+    และเกือบทั้งหมดเป็นเรื่องข้อมูลไม่ครบ ไม่ใช่ข้อมูลผิด ·
+    ที่สำคัญคือ <b>ไม่มีสักบรรทัดที่ทำให้การจับคู่ผิด</b>
+  </div>
+
+</section>
+
+<!-- ===================== TAB 5 ===================== -->
+<section class="pane" id="p5">
+
+  <h2>ของแถมที่ได้จากข้อมูลชุดนี้</h2>
+  <p>ผมวัดเพิ่มให้ เพราะข้อมูลมีอยู่แล้ว ไม่ต้องขอใหม่ — ใช้ต่อได้ในเฟสหลัง</p>
+
+  <h3><span class="pill p-buy">สำหรับ P9 วางแผนซื้อ</span> เวลาส่งของจริงของผู้ขายแต่ละราย</h3>
+  <p>นับจาก <b>วันสั่ง → วันที่ของถึงจริง</b> จาก 7,331 ครั้งที่รับของ</p>
+  <div class="grid g3">
+    <div class="kpi"><div class="v">9.3</div><div class="l">วัน — เฉลี่ยทั้งหมด</div></div>
+    <div class="kpi"><div class="v">5</div><div class="l">วัน — ค่ากลาง (ครึ่งหนึ่งมาถึงภายใน 5 วัน)</div></div>
+    <div class="kpi"><div class="v">254</div><div class="l">ผู้ขายที่มีธุรกรรมในปีนี้</div></div>
+  </div>
+  <div class="tw">
+  <table>
+    <tr><th>ผู้ขาย</th><th class="n">เฉลี่ย (วัน)</th><th class="n">จำนวนครั้ง</th></tr>
+    <tr><td colspan="3" style="background:var(--bad-t);font-weight:700;color:var(--bad)">ช้าที่สุด 5 อันดับ</td></tr>
+    <tr><td>โฟลว์แล็บ แอนด์ เซอร์วิส</td><td class="n bad">129.0</td><td class="n">25</td></tr>
+    <tr><td>เอ็มทีอี</td><td class="n bad">46.5</td><td class="n">27</td></tr>
+    <tr><td>ไพร์ม โปรดักส์ วิศวกรรม</td><td class="n warn">33.9</td><td class="n">110</td></tr>
+    <tr><td>โปรเฟสชันนอล เทสติ้ง</td><td class="n warn">30.6</td><td class="n">27</td></tr>
+    <tr><td>สุพรีม แฟบริเคชั่น แอนด์ เซอร์วิส</td><td class="n warn">28.1</td><td class="n">97</td></tr>
+    <tr><td colspan="3" style="background:var(--ok-t);font-weight:700;color:var(--ok)">เร็วที่สุด 5 อันดับ</td></tr>
+    <tr><td>ศูนย์วิจัยโลหะวิทยา แอลพีเอ็น</td><td class="n ok">0.0</td><td class="n">15</td></tr>
+    <tr><td>คุณ กรรณิกา คำฟั่น</td><td class="n ok">0.1</td><td class="n">38</td></tr>
+    <tr><td>เอ็มทีเอช คอร์ปอเรชั่น</td><td class="n ok">0.2</td><td class="n">110</td></tr>
+    <tr><td>ดวงแก้ว สลักภัณฑ์</td><td class="n ok">0.2</td><td class="n">44</td></tr>
+    <tr><td>คุณ พนมศักดิ์ บุญจันทร์</td><td class="n ok">1.3</td><td class="n">27</td></tr>
+  </table>
+  </div>
+  <p class="small">นับเฉพาะผู้ขายที่มีอย่างน้อย 15 ครั้ง · ตัวเลข 0.0–0.2 วัน แปลว่า<b>คีย์ PO วันเดียวกับที่ของมาถึง</b>
+  ซึ่งปกติสำหรับผู้รับเหมาและงานบริการ — ไม่ใช่ข้อมูลผิด</p>
+
+  <h3><span class="pill p-store">สำหรับ S1 สโตร์รับของ</span> หมวดสินค้า — ใครต้องกดรับบ้าง</h3>
+  <div class="tw">
+  <table>
+    <tr><th>หมวด</th><th class="n">บรรทัด</th><th class="n">มูลค่า (บาท)</th><th>สโตร์</th></tr>
+    <tr><td>1 · เหล็ก/แผ่น</td><td class="n">576</td><td class="n">29,895,809.88</td><td class="ok">กดรับ</td></tr>
+    <tr><td>2</td><td class="n">1,296</td><td class="n">3,223,610.48</td><td class="ok">กดรับ</td></tr>
+    <tr><td>3</td><td class="n">2,438</td><td class="n">21,078,886.38</td><td class="ok">กดรับ</td></tr>
+    <tr><td>4</td><td class="n">647</td><td class="n">1,353,640.22</td><td class="ok">กดรับ</td></tr>
+    <tr><td>5</td><td class="n">692</td><td class="n">2,511,861.29</td><td class="ok">กดรับ</td></tr>
+    <tr><td>6</td><td class="n">395</td><td class="n">401,758.12</td><td class="ok">กดรับ</td></tr>
+    <tr><td>7</td><td class="n">164</td><td class="n">1,297,905.00</td><td class="ok">กดรับ</td></tr>
+    <tr><td>8 · งานโรงงาน/บริการ</td><td class="n">1,539</td><td class="n warn">16,648,414.92</td><td class="warn">ข้าม</td></tr>
+    <tr><td>9 · ของใช้สำนักงาน</td><td class="n">130</td><td class="n">445,108.80</td><td class="warn">ข้าม</td></tr>
+    <tr><td>ไม่มีรหัส</td><td class="n">1</td><td class="n">17,970.00</td><td class="bad">ให้คนตัดสิน</td></tr>
+    <tr class="tot"><td>รวม</td><td class="n">7,878</td><td class="n">76,874,965.09</td><td></td></tr>
+  </table>
+  </div>
+  <div class="note">
+    <b>สโตร์ต้องกดรับ 6,208 บรรทัด (78.8%) คิดเป็น ฿59.76 ล้าน (77.7%)</b><br>
+    ส่วนหมวด 8–9 ที่ข้าม = 1,669 บรรทัด ฿17.09 ล้าน (22.2%) —
+    ย้ำอีกครั้งว่า <b>"ไม่กดรับ" ไม่ได้แปลว่า "ไม่คิดต้นทุน"</b> เงินก้อนนี้ยังเข้าระบบต้นทุนตามปกติ
+  </div>
+
+  <h3><span class="pill p-store">สำหรับ S2 รหัสคลัง</span> รหัสที่ใช้อยู่จริงในข้อมูล</h3>
+  <div class="grid g2">
+    <div class="card t" style="margin:0"><b><code>LocaCode</code></b> — 12 ค่า<br>
+      <code>1 2 3 4 5 6 7 8 9 10</code> · <code>JP</code> · <code>OF</code></div>
+    <div class="card t" style="margin:0"><b><code>InveCode</code></b> — 12 ค่า<br>
+      <code>1 2 3 4 5 6 7 8 9 10</code> · <code>22</code> · <code>88</code></div>
+  </div>
+  <p><b>นี่คือรายการที่เบียร์ต้องชี้ว่าอันไหน → คลังใหม่ตัวไหน</b> (WH-01 คลังใหญ่ / WH-02 Stock Store / WH-03 Stock Service)
+  มีแค่ 12 ค่า ใช้เวลาไม่นาน · <code>JP</code> น่าจะหมายถึงญี่ปุ่น และ <code>OF</code> น่าจะหมายถึงออฟฟิศ — รบกวนยืนยัน</p>
+
+  <h3><span class="pill p-cost">สำหรับ C1 ต้นทุน</span> ขนาดข้อมูลจริง</h3>
+  <div class="tw">
+  <table>
+    <tr><th>รายการ</th><th class="n">9 เดือนที่มี</th><th class="n">ประมาณทั้งปี</th><th>เทียบกับที่เคยประเมินไว้</th></tr>
+    <tr><td>PO บรรทัด</td><td class="n">7,951</td><td class="n">10,601</td><td class="warn">สูงกว่าที่ประเมิน (6,900) 54%</td></tr>
+    <tr><td>RR บรรทัด</td><td class="n">7,513</td><td class="n">10,017</td><td class="warn">สูงกว่าที่ประเมิน (6,660) 50%</td></tr>
+    <tr><td>รหัสสินค้าไม่ซ้ำ</td><td class="n">1,906</td><td class="n">~2,200</td><td>—</td></tr>
+    <tr><td>จ๊อบไม่ซ้ำ</td><td class="n">447</td><td class="n">~600</td><td>—</td></tr>
+  </table>
+  </div>
+  <div class="amber">
+    <b>ต้องปรับตัวเลขวางแผนขนาดไฟล์</b> — ข้อมูลจริงเยอะกว่าที่ผมประเมินไว้ราว 50%
+    ผมคำนวณใหม่แล้ว: ไฟล์รายปีจะอยู่ที่ราว <b>20% ของเพดาน</b> (เดิมประเมิน 15.6%) และ
+    <code>RR-ALL</code> 20 ปีจะอยู่ที่ราว <b>52%</b> (เดิม 34.6%) — <b>ยังไม่ตัน แต่เหลือที่ว่างน้อยลง</b>
+    ผมจะเฝ้าตัวเลขนี้ทุกสิ้นปีตามกฎข้อ 10
+  </div>
+
+</section>
+
+<!-- ===================== TAB 6 ===================== -->
+<section class="pane" id="p6">
+
+  <h2>สรุปว่าพิสูจน์อะไรได้บ้าง</h2>
+  <div class="tw">
+  <table>
+    <tr><th>สิ่งที่เคยออกแบบไว้</th><th>ข้อมูลจริงบอกว่า</th></tr>
+    <tr><td>คีย์ถาวร = <code>Poid + listno</code></td><td class="ok">ไม่ซ้ำ 7,951/7,951 = 100% ✓</td></tr>
+    <tr><td>จับคู่ด้วยรหัสสินค้า 5 ชั้น ไม่ใช้ List No.</td><td class="ok">จับคู่ได้ 100% · 99.97% ลงตัวตั้งแต่ชั้นแรก ✓</td></tr>
+    <tr><td>ห้ามเชื่อ <code>docustatus</code></td><td class="ok">พิสูจน์แล้วว่าเป็นสถานะระดับใบ ใช้แทนรายบรรทัดไม่ได้ ✓</td></tr>
+    <tr><td><code>OPEN_PO</code> ต้องอยู่ไฟล์กลาง ไม่ผูกปี</td><td class="ok">รับข้ามปีมีจริง 138 บรรทัด ฿4.59 ล้าน ✓</td></tr>
+    <tr><td>ที่จับคู่ไม่ได้ต้องเข้าคิวให้คนตัดสิน ห้ามเดา</td><td class="ok">ไม่ต้องเดาเลยสักบรรทัด ✓</td></tr>
+    <tr><td>หมวด 1–7 สโตร์กดรับ · 8–9 ข้าม</td><td class="ok">ใช้ได้ 7,877/7,878 · เหลือ 1 บรรทัดให้คนตัดสิน ✓</td></tr>
+    <tr><td>ประเมินขนาดไฟล์</td><td class="warn">ต่ำไป 50% — ปรับใหม่แล้ว ยังไม่ตัน</td></tr>
+  </table>
+  </div>
+
+  <h2>ต้องถามเบียร์ 4 ข้อ</h2>
+  <div class="card">
+    <h3 style="margin-top:0"><span class="pill p-bad">สำคัญ</span> 1. ของจีน ฿11.03 ล้าน มาถึงแล้วหรือยัง</h3>
+    <p style="margin-bottom:0">6 ใบจาก YANGZHOU CIMC TONGHUA สั่ง ก.พ.–มี.ค. ยังไม่มี RR เลย
+    <b>ถ้าของมาแล้วแต่ยังไม่ได้คีย์ ตัวเลขค้างรับจะเกินจริง ฿11 ล้าน</b></p>
+  </div>
+  <div class="card">
+    <h3 style="margin-top:0">2. รหัสคลัง 12 ค่า แต่ละอันคือคลังไหน</h3>
+    <p style="margin-bottom:0"><code>LocaCode</code>: 1–10, JP, OF · <code>InveCode</code>: 1–10, 22, 88 → map เข้า WH-01/02/03</p>
+  </div>
+  <div class="card">
+    <h3 style="margin-top:0">3. <code>PRDocuNo</code> ดึงข้อมูลจริงออกมาได้ไหม</h3>
+    <p style="margin-bottom:0">ตอนนี้ว่างทั้ง 7,878 บรรทัด — ถ้าดึงได้จะเชื่อม PO กลับไปหาใบ PR ได้</p>
+  </div>
+  <div class="card">
+    <h3 style="margin-top:0">4. 167 บรรทัดไม่มีเลขจ๊อบ — ปกติไหม</h3>
+    <p style="margin-bottom:0">ถ้าเป็นของใช้โรงงานทั่วไปก็ไม่ต้องแก้ แค่ยืนยัน</p>
+  </div>
+
+  <h2>ผมทำต่อได้เลย</h2>
+  <div class="tw">
+  <table>
+    <tr><th class="n">ลำดับ</th><th>งาน</th><th>ได้อะไร</th><th>ต้องรอไหม</th></tr>
+    <tr><td class="n">1</td><td><code>03-setup.js</code> — ปุ่มสร้างโครงข้อมูล</td><td>ไฟล์ปี 2569 + RR-ALL + ตารางกลาง + ลงทะเบียน REGISTRY</td><td class="ok">ไม่ต้องรอ</td></tr>
+    <tr><td class="n">2</td><td><code>04-import.js</code> — นำเข้า + จับคู่ (P1)</td><td>เอาไฟล์ที่เบียร์ส่งมาเข้าระบบจริง พร้อมยามตรวจข้อมูล</td><td class="ok">ไม่ต้องรอ</td></tr>
+    <tr><td class="n">3</td><td><code>ui-openpo.html</code> — หน้า PO ค้างรับ (P2)</td><td>หน้าจอจริงที่จัดซื้อใช้ได้ เรียงตามอายุ+มูลค่า</td><td class="ok">ไม่ต้องรอ</td></tr>
+  </table>
+  </div>
+  <div class="good">
+    <b>3 อย่างนี้ทำต่อเนื่องได้เลย ไม่ต้องรออะไรจากเบียร์</b> — คำถาม 4 ข้อข้างบนเอาไว้ตอบทีหลังได้
+    เพราะไม่บล็อกการเขียนโค้ด (ยกเว้นข้อ 1 ที่จะทำให้ตัวเลขบนหน้าจอถูกต้องขึ้น)
+    <br><b>สั่งได้เลยว่าให้เริ่มข้อ 1 ไหมครับ</b>
+  </div>
+
+</section>
+
+<footer>
+  NOVA – PURCHASE &amp; STORE HUB · ผลทดสอบข้อมูลจริง เฟส 1 · 15 ก.ย. 2569 · จัดทำโดย Candy สำหรับเบียร์<br>
+  คำนวณจากไฟล์ <b>PO Report 2026</b> ของเบียร์ทั้งหมด ไม่มีตัวเลขสมมติแม้แต่ตัวเดียว
+</footer>
+
+</div>
+
+<script>
+(function(){
+  var tabs=document.querySelectorAll('.tab'), panes=document.querySelectorAll('.pane');
+  tabs.forEach(function(b){
+    b.addEventListener('click',function(){
+      tabs.forEach(function(x){x.classList.remove('on')});
+      panes.forEach(function(x){x.classList.remove('on')});
+      b.classList.add('on');
+      var el=document.getElementById('p'+b.dataset.t);
+      if(el) el.classList.add('on');
+      window.scrollTo({top:0,behavior:'smooth'});
+    });
+  });
+})();
+</script>
+</body>
+</html>

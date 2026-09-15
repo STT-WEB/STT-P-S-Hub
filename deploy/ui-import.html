@@ -1,0 +1,138 @@
+<script>
+/* ============ หน้านำเข้าข้อมูล + ติดตั้งโครงข้อมูล (P1) ============ */
+function openImport(){ setView('viewImport'); $('imBody').innerHTML = imForm(); }
+
+function imForm(){
+  return '' +
+  '<div class="card">' +
+    '<h3 style="margin-top:0">ขั้นที่ 1 · ติดตั้งโครงข้อมูล</h3>' +
+    '<p class="small">สร้างไฟล์รายปี · ไฟล์ต้นทุน RR-ALL · ตารางกลาง แล้วลงทะเบียนใน REGISTRY<br>' +
+    'กดซ้ำได้ ไม่สร้างทับของเดิม</p>' +
+    '<button class="btn" id="btnSetup" style="width:auto;padding-inline:26px" onclick="doSetup()">ติดตั้งโครงข้อมูล</button>' +
+  '</div>' +
+  '<div class="card">' +
+    '<h3 style="margin-top:0">ขั้นที่ 2 · นำเข้าข้อมูลจาก My Account</h3>' +
+    '<div class="field"><label for="imUrl">ลิงก์ Google Sheet ที่ดึงมาจาก My Account</label>' +
+      '<input type="text" id="imUrl" placeholder="https://docs.google.com/spreadsheets/d/..."></div>' +
+    '<div class="row2">' +
+      '<div class="field"><label for="imTabPO">ชื่อแท็บ PO</label>' +
+        '<input type="text" id="imTabPO" value="ps_report"></div>' +
+      '<div class="field"><label for="imTabRR">ชื่อแท็บ RR</label>' +
+        '<input type="text" id="imTabRR" value="RR"></div>' +
+    '</div>' +
+    '<div class="btnrow">' +
+      '<button class="btn" id="btnPO" style="width:auto;padding-inline:22px" onclick="doImport(\'PO\')">นำเข้า PO</button>' +
+      '<button class="btn" id="btnRR" style="width:auto;padding-inline:22px" onclick="doImport(\'RR\')">นำเข้า RR</button>' +
+    '</div>' +
+  '</div>' +
+  '<div class="card">' +
+    '<h3 style="margin-top:0">ขั้นที่ 3 · จับคู่ PO ↔ RR แล้วสร้างตารางค้างรับ</h3>' +
+    '<p class="small">จับคู่ด้วยรหัสสินค้า 5 ชั้น (C1–C5) · ไม่ใช้ List No. · ที่จับคู่ไม่ได้จะรายงานให้ ไม่เดา</p>' +
+    '<button class="btn" id="btnRb" style="width:auto;padding-inline:26px" onclick="doRebuild()">จับคู่ + สร้างตารางค้างรับ</button>' +
+  '</div>' +
+  '<div id="imOut"></div>';
+}
+
+function imBusy(id, on, label){ busy(id, on, label); }
+
+function doSetup(){
+  imBusy('btnSetup', true, 'กำลังติดตั้ง...');
+  $('imOut').innerHTML = '';
+  google.script.run
+    .withSuccessHandler(function(r){
+      imBusy('btnSetup', false, 'ติดตั้งโครงข้อมูล');
+      var h = '<div class="card"><h3 style="margin-top:0">ผลการติดตั้ง — ปี ' + esc(r.year) + '</h3>' +
+              '<div class="statrow">' +
+                stat(r.passed + ' / ' + r.steps.length, 'สำเร็จ', r.failed ? 'var(--bad)' : 'var(--ok)') +
+                stat(r.totalMs + ' ms', 'เวลารวม', 'var(--text)') +
+              '</div><div class="tblwrap"><table><thead><tr><th>ขั้นตอน</th><th>ผล</th><th>เวลา</th><th>รายละเอียด</th></tr></thead><tbody>';
+      r.steps.forEach(function(s){
+        h += '<tr><td>' + esc(s.name) + '</td>' +
+             '<td class="nw ' + (s.ok?'ok-t':'bad-t') + '">' + (s.ok?'สำเร็จ':'ไม่สำเร็จ') + '</td>' +
+             '<td class="nw num muted">' + s.ms + ' ms</td>' +
+             '<td>' + esc(s.ok ? s.detail : s.error) + '</td></tr>';
+      });
+      h += '</tbody></table></div></div>';
+      $('imOut').innerHTML = h;
+    })
+    .withFailureHandler(function(e){
+      imBusy('btnSetup', false, 'ติดตั้งโครงข้อมูล');
+      $('imOut').innerHTML = '<div class="msg err" style="display:block">' + esc(e.message) + '</div>';
+    })
+    .psSetup(AUTH);
+}
+
+function doImport(kind){
+  var url = $('imUrl').value.trim();
+  if(!url){ $('imOut').innerHTML = '<div class="msg err" style="display:block">กรุณาวางลิงก์ไฟล์ก่อน</div>'; return; }
+  var btn = kind === 'PO' ? 'btnPO' : 'btnRR';
+  var tab = kind === 'PO' ? $('imTabPO').value.trim() : $('imTabRR').value.trim();
+  imBusy(btn, true, 'กำลังนำเข้า...');
+  $('imOut').innerHTML = '';
+  var h1 = function(r){
+    imBusy(btn, false, 'นำเข้า ' + kind);
+    var h = '<div class="card"><h3 style="margin-top:0">นำเข้า ' + esc(r.kind) + ' เรียบร้อย</h3>' +
+      '<div class="statrow">' +
+        stat(Number(r.read).toLocaleString(), 'อ่านมา (บรรทัด)', 'var(--text)') +
+        stat(Number(r.written).toLocaleString(), 'บันทึกได้', 'var(--ok)') +
+        stat(Number(r.skipped).toLocaleString(), 'ข้าม', r.skipped ? 'var(--warn)' : 'var(--text-3)') +
+        stat(r.ms + ' ms', 'เวลา', 'var(--text-2)') +
+      '</div>';
+    if(r.kept !== undefined)
+      h += '<p class="small">เก็บข้อมูลปีอื่นไว้ ' + Number(r.kept).toLocaleString() +
+           ' บรรทัด · รวมในไฟล์ต้นทุนตอนนี้ ' + Number(r.total).toLocaleString() + ' บรรทัด</p>';
+    if(r.skippedRows && r.skippedRows.length){
+      h += '<h3>แถวที่ข้าม</h3><div class="tblwrap"><table><thead><tr><th>แถวที่</th><th>เหตุผล</th><th>ข้อมูลที่เห็น</th></tr></thead><tbody>';
+      r.skippedRows.forEach(function(x){
+        h += '<tr><td class="num nw">' + x.row + '</td><td class="nw">' + esc(x.why) + '</td><td class="mono">' +
+             esc((x.docu||'') + ' ' + (x.poid||'')) + '</td></tr>';
+      });
+      h += '</tbody></table></div>';
+    }
+    h += '</div>';
+    $('imOut').innerHTML = h;
+  };
+  var h2 = function(e){
+    imBusy(btn, false, 'นำเข้า ' + kind);
+    $('imOut').innerHTML = '<div class="msg err" style="display:block">' + esc(e.message) + '</div>';
+  };
+  if(kind === 'PO') google.script.run.withSuccessHandler(h1).withFailureHandler(h2).psImportPO(AUTH, url, tab);
+  else              google.script.run.withSuccessHandler(h1).withFailureHandler(h2).psImportRR(AUTH, url, tab);
+}
+
+function doRebuild(){
+  imBusy('btnRb', true, 'กำลังจับคู่...');
+  $('imOut').innerHTML = '';
+  google.script.run
+    .withSuccessHandler(function(r){
+      imBusy('btnRb', false, 'จับคู่ + สร้างตารางค้างรับ');
+      var h = '<div class="card"><h3 style="margin-top:0">ผลการจับคู่ — ปี ' + esc(r.year) + '</h3>' +
+        '<div class="statrow">' +
+          stat(r.matchPct.toFixed(2) + '%', 'จับคู่สำเร็จ', r.unmatched ? 'var(--warn)' : 'var(--ok)') +
+          stat(Number(r.openLines).toLocaleString(), 'บรรทัดค้างรับ', 'var(--brand)') +
+          stat(money(r.openValue), 'มูลค่าค้างรับ (บาท)', 'var(--brand)') +
+          stat(r.ms + ' ms', 'เวลา', 'var(--text-2)') +
+        '</div>' +
+        '<div class="tblwrap"><table><thead><tr><th>รายการ</th><th style="text-align:end">จำนวน</th></tr></thead><tbody>' +
+        '<tr><td>PO ที่ใช้งาน (ไม่รวมยกเลิก)</td><td class="num">' + Number(r.poLines).toLocaleString() + '</td></tr>' +
+        '<tr><td>RR ทั้งหมด</td><td class="num">' + Number(r.rrLines).toLocaleString() + '</td></tr>';
+      ['C1','C2','C3','C4','C5'].forEach(function(t){
+        if(r.tiers[t]) h += '<tr><td>จับคู่ชั้น ' + t + '</td><td class="num ok-t">' +
+                            Number(r.tiers[t]).toLocaleString() + '</td></tr>';
+      });
+      h += '<tr><td>อ้าง PO ปีอื่น (รับข้ามปี)</td><td class="num">' + Number(r.noPO).toLocaleString() + '</td></tr>' +
+           '<tr><td>จับคู่ไม่ได้ ทั้งที่ PO อยู่ในระบบ</td><td class="num ' +
+             (r.unmatched ? 'bad-t' : 'ok-t') + '">' + Number(r.unmatched).toLocaleString() + '</td></tr>' +
+           '<tr><td>ใบ PO ที่ยังค้างรับ</td><td class="num">' + Number(r.openDocs).toLocaleString() + '</td></tr>' +
+           '</tbody></table></div>' +
+        '<div class="mt"><button class="btn" style="width:auto;padding-inline:26px" onclick="openOpenPO()">' +
+        'ไปดูหน้า PO ค้างรับ</button></div></div>';
+      $('imOut').innerHTML = h;
+    })
+    .withFailureHandler(function(e){
+      imBusy('btnRb', false, 'จับคู่ + สร้างตารางค้างรับ');
+      $('imOut').innerHTML = '<div class="msg err" style="display:block">' + esc(e.message) + '</div>';
+    })
+    .psRebuild(AUTH);
+}
+</script>
