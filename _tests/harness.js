@@ -27,10 +27,91 @@ function build(opts) {
   const sandbox = {
     module: { exports: {} }, console, Date, Math, String, Number, Boolean, Array, Object,
     isNaN, parseFloat, parseInt, JSON, RegExp, Error,
-    Utilities: { formatDate: (d, tz, f) => d.toISOString().slice(0, 10) },
+    Utilities: { formatDate: (d, tz, f) => d.toISOString().slice(0, 16).replace('T', ' ') },
     Session: { getActiveUser: () => ({ getEmail: () => '' }) },
-    SpreadsheetApp: { flush() {} }
+    SpreadsheetApp: null          // ใส่ทีหลัง (ต้องใช้ store)
   };
+  /* ---- Google Sheet จำลองเท่าที่โค้ดจริงเรียกใช้ ---- */
+  const noop = () => fake;
+  const fake = {};
+  function makeSheet(name, bag) {
+    const grid = [];
+    const sh = {
+      _name: name, _grid: grid,
+      getName: () => name,
+      getSheetId: () => 1,
+      getLastRow: () => grid.length,
+      getMaxRows: () => Math.max(grid.length, 1000),
+      getMaxColumns: () => 60,
+      getFilter: () => null,
+      clear() { grid.length = 0; return sh; },
+      clearNotes() { return sh; },
+      clearConditionalFormatRules() { return sh; },
+      deleteColumns() { return sh; },
+      insertColumnsAfter() { return sh; },
+      setFrozenRows() { return sh; },
+      setFrozenColumns() { return sh; },
+      setColumnWidth() { return sh; },
+      setConditionalFormatRules() { return sh; },
+      appendRow(r) { grid.push(r); return sh; },
+      getDataRange: () => sh.getRange(1, 1, grid.length || 1, 60),
+      getRange(row, col, nr, nc) {
+        nr = nr || 1; nc = nc || 1;
+        const rg = {
+          setValues(v) {
+            for (let i = 0; i < v.length; i++) {
+              const r = row - 1 + i;
+              while (grid.length <= r) grid.push([]);
+              for (let j = 0; j < v[i].length; j++) grid[r][col - 1 + j] = v[i][j];
+            }
+            bag[name] = grid;
+            return rg;
+          },
+          getValues() {
+            const o = [];
+            for (let i = 0; i < nr; i++) o.push((grid[row - 1 + i] || []).slice(col - 1, col - 1 + nc));
+            return o;
+          },
+          setValue(v) { return rg.setValues([[v]]); },
+          setFontWeight: () => rg, setBackground: () => rg, setFontColor: () => rg,
+          setFontSize: () => rg, setNumberFormat: () => rg, setNotes: () => rg,
+          setWrap: () => rg, setVerticalAlignment: () => rg, createFilter: () => rg,
+          clearContent: () => rg
+        };
+        return rg;
+      }
+    };
+    return sh;
+  }
+  function makeSS(id, bag) {
+    const sheets = {};
+    return {
+      getId: () => id,
+      getUrl: () => 'https://docs.google.com/spreadsheets/d/' + id + '/edit',
+      getSheets: () => Object.keys(sheets).map(k => sheets[k]),
+      getSheetByName(n) { return sheets[n] || (bag[n] ? (sheets[n] = adopt(n, bag)) : null); },
+      insertSheet(n) { bag[n] = []; return (sheets[n] = makeSheet(n, bag)); }
+    };
+    function adopt(n, b) { const s = makeSheet(n, b); b[n].forEach(r => s._grid.push(r)); return s; }
+  }
+  const files = {};
+  sandbox.SpreadsheetApp = {
+    flush() {},
+    openById(id) {
+      const bag = store[id] || (store[id] = {});
+      return files[id] || (files[id] = makeSS(id, bag));
+    },
+    newConditionalFormatRule() {
+      const b = { whenFormulaSatisfied: () => b, setBackground: () => b, setFontColor: () => b,
+                  setRanges: () => b, setStrikethrough: () => b, build: () => ({}) };
+      return b;
+    }
+  };
+  sandbox.DriveApp = {
+    getFolderById: () => ({ getFilesByName: () => ({ hasNext: () => false }) }),
+    getFileById: () => ({ moveTo() {} })
+  };
+
   vm.createContext(sandbox);
 
   // โค้ดตัวจริง
@@ -39,6 +120,8 @@ function build(opts) {
   vm.runInContext(D('04-import.js'), sandbox, { filename: '04-import.js' });
   vm.runInContext(D('05-edit.js'), sandbox, { filename: '05-edit.js' });
   vm.runInContext(D('06-rrdb.js'), sandbox, { filename: '06-rrdb.js' });
+  vm.runInContext(D('07-guide.js'), sandbox, { filename: '07-guide.js' });
+  vm.runInContext(D('08-report.js'), sandbox, { filename: '08-report.js' });
 
   // ---- ตัวแทนบริการของ Apps Script ----
   const stub = `

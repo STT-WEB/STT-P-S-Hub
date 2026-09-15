@@ -362,7 +362,13 @@ function psRebuild(auth) {
     return a[2] < b[2] ? -1 : (a[2] > b[2] ? 1 : num_(a[1]) - num_(b[1]));
   });
   writeRows_(CFG.MASTER, 'PS_PO_INDEX', SCHEMA.MASTER.PS_PO_INDEX, idx);
-  cacheDrop_(['PS_OPENPO', 'PS_POIDX']);
+  cacheDrop_(['PS_OPENPO', 'PS_POIDX', 'PS_RRALL', 'PS_RRLINK', 'PS_PODOCS']);
+
+  // เขียนแท็บรายงานที่คนอ่านเองได้ (เบียร์สั่ง: เปิดชีตแล้วต้องเห็นเหมือนในโปรแกรม)
+  // ห้ามให้รายงานพังแล้วลากการคำนวณพังไปด้วย จึงกันไว้ด้วย try
+  var rpt = null, rptErr = '';
+  try { rpt = psBuildReports(null); }
+  catch (eR) { rptErr = String(eR && eR.message ? eR.message : eR); }
 
   var matched = 0;
   for (var tn in tierN) matched += tierN[tn];
@@ -373,6 +379,7 @@ function psRebuild(auth) {
     indexLines: idx.length,
     openLines: openLines, openDocs: countOpenDocs_(idx), openValue: openVal,
     closed: nClosed, manualRecv: nManual, billedTotal: billedTotal,
+    report: rpt, reportError: rptErr,
     ms: new Date().getTime() - t0
   };
 }

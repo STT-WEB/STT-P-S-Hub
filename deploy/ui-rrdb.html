@@ -253,9 +253,10 @@ function openDbLinks(){
 }
 
 function renderDbLinks(r){
-  var h = '<div class="msg ok" style="display:block">ทุกแท็บตรึงหัวตารางและใส่ตัวกรองไว้แล้ว ' +
-          'หัวคอลัมน์ทุกช่องมีคำอธิบายไทยกำกับ (เอาเมาส์ชี้ที่หัวคอลัมน์) ' +
-          'และในไฟล์ STT-DB-MASTER มีแท็บ <b>คู่มือฐานข้อมูล</b> อธิบายครบทุกตาราง</div>';
+  var h = '<div class="msg ok" style="display:block">เริ่มที่กลุ่มแรก — <b>แท็บรายงาน</b> ' +
+          'หัวตารางเป็นภาษาไทย มีค้างรับ/รับครบรายบรรทัด ใส่สีตามสถานะ อ่านได้เลยไม่ต้องแปล<br>' +
+          'ส่วนกลุ่มอื่นเป็นตารางดิบที่โปรแกรมใช้ — ตรึงหัว ใส่ตัวกรองไว้แล้ว ' +
+          'และเอาเมาส์ชี้ที่หัวคอลัมน์จะขึ้นคำอธิบายภาษาไทย</div>';
   r.files.forEach(function(f){
     h += '<div class="card"><div class="secthead" style="margin-top:0">' +
          '<h3>' + esc(f.name) + '</h3><div class="line"></div>' +
@@ -276,6 +277,14 @@ function renderDbLinks(r){
     }
     h += '</div>';
   });
+  if(ME.role === 'PURCHASE' || ME.role === 'ADMIN'){
+    h += '<div class="card"><div class="secthead" style="margin-top:0"><h3>สร้างแท็บรายงานใหม่</h3>' +
+         '<div class="line"></div></div>' +
+         '<p class="small">เขียนแท็บ สรุปภาพรวม · รายงาน PO · รายงานการรับเข้า ใหม่ทั้งหมด ' +
+         'ให้ตรงกับตัวเลขในโปรแกรมตอนนี้ (ปกติระบบทำให้เองทุกครั้งที่กด "คำนวณค้างรับใหม่")</p>' +
+         '<button class="btn" id="dlRpt" onclick="dbReports()">สร้างแท็บรายงานใหม่</button>' +
+         '<div id="dlRptMsg"></div></div>';
+  }
   if(ME.role === 'ADMIN'){
     h += '<div class="card"><div class="secthead" style="margin-top:0"><h3>จัดหน้าตาฐานข้อมูล</h3>' +
          '<div class="line"></div></div>' +
@@ -285,6 +294,22 @@ function renderDbLinks(r){
          '<div id="dlMsg"></div></div>';
   }
   $('dlBody').innerHTML = h;
+}
+
+function dbReports(){
+  busy('dlRpt', true, 'กำลังเขียนรายงาน...');
+  google.script.run
+    .withSuccessHandler(function(r){
+      busy('dlRpt', false, 'สร้างแท็บรายงานใหม่');
+      $('dlRptMsg').innerHTML = '<div class="msg ok" style="display:block">เขียนเรียบร้อย · ' +
+        'รายงาน PO ' + Number(r.poRows).toLocaleString() + ' บรรทัด · ' +
+        'รายงานการรับเข้า ' + Number(r.rrRows).toLocaleString() + ' บรรทัด · ' + r.ms + ' ms</div>';
+    })
+    .withFailureHandler(function(e){
+      busy('dlRpt', false, 'สร้างแท็บรายงานใหม่');
+      $('dlRptMsg').innerHTML = '<div class="msg err" style="display:block">' + esc(e.message) + '</div>';
+    })
+    .psBuildReports(AUTH);
 }
 
 function dbBeautify(){

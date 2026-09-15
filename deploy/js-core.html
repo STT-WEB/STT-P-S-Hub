@@ -125,7 +125,7 @@ var MODULES = [
   { id:'s2', g:'store', i:'🗂️', t:'Stock Card',           d:'ยอดคงเหลือ 3 คลัง แบบทันที',               roles:['STORE','PURCHASE','ADMIN','EXEC'],   phase:3 },
   { id:'s3', g:'store', i:'🧮', t:'นับสต๊อกประจำเดือน',   d:'ปิดงวด · ออกใบขอซื้อให้จัดซื้อ',           roles:['STORE','ADMIN'],                     phase:4 },
   { id:'s4', g:'store', i:'🧾', t:'มูลค่าสต๊อก + ABC',     d:'ส่งบัญชีเป็น Google Sheet',                roles:['STORE','ADMIN','EXEC'],              phase:5 },
-  { id:'x1', g:'sys',   i:'🔗', t:'เปิดฐานข้อมูลตรง',      d:'ลิงก์ไฟล์ดิบ — ใช้ตอนหน้าเว็บมีปัญหา',      roles:['PURCHASE','ADMIN','EXEC','STORE'],   phase:1, go:'openDbLinks' }
+  { id:'x1', g:'sys',   i:'🔗', t:'เปิดชีตดูเอง',          d:'แท็บรายงานภาษาไทย — เปิดแล้วเห็นเหมือนในโปรแกรม', roles:['PURCHASE','ADMIN','EXEC','STORE'], phase:1, go:'openDbLinks' }
 ];
 
 function renderMenu(){

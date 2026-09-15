@@ -167,6 +167,13 @@ function psWriteGuide_(jobs) {
     rows.push([jobs[j].name, url, '', '']);
   }
   rows.push(['', '', '', '']);
+  rows.push(['อยากดูแบบอ่านง่าย เปิด 3 แท็บนี้ในไฟล์นี้ได้เลย — หน้าตาเหมือนในโปรแกรม', '', '', '']);
+  rows.push(['สรุปภาพรวม', 'การ์ดตัวเลขชุดเดียวกับหน้าแรกของโปรแกรม', '', '']);
+  rows.push([RPT.PO, 'ใบสั่งซื้อทุกบรรทัด หัวตารางภาษาไทย มีค้างรับ/รับครบรายบรรทัด ใส่สีตามสถานะ', '', '']);
+  rows.push([RPT.RR, 'ใบรับของทุกบรรทัด พร้อมสถานะการจับคู่กับ PO', '', '']);
+  rows.push(['ทั้ง 3 แท็บสร้างใหม่อัตโนมัติทุกครั้งที่กด "คำนวณค้างรับใหม่" — ห้ามพิมพ์แก้ในนี้ เพราะจะโดนทับ',
+             '', '', '']);
+  rows.push(['', '', '', '']);
   rows.push(['ตารางทั้งหมด', '', '', '']);
   var hdrRow = rows.length + 1;                  // แถวหัวตารางของบล็อกรายละเอียด
   rows.push(['ไฟล์', 'แท็บ', 'คอลัมน์', 'คำอธิบาย']);
@@ -185,6 +192,7 @@ function psWriteGuide_(jobs) {
   sh.getRange(1, 1).setFontSize(15).setFontWeight('bold');
   sh.getRange(4, 1).setFontWeight('bold');
   sh.getRange(5, 1, 1, 2).setFontWeight('bold').setBackground('#12151A').setFontColor('#FFFFFF');
+  sh.getRange(5 + jobs.length + 2, 1).setFontWeight('bold');    // หัวข้อ "อยากดูแบบอ่านง่าย..."
   sh.getRange(hdrRow, 1, 1, 4).setFontWeight('bold')
     .setBackground('#12151A').setFontColor('#FFFFFF');
   sh.setColumnWidth(1, 170); sh.setColumnWidth(2, 190);
@@ -199,15 +207,19 @@ function getDbLinks(auth) {
   requireRole_(auth, ['PURCHASE', 'ADMIN', 'EXEC', 'STORE']);
   var year = currentYearTH_();
   var want = [
-    { key: 'MASTER', name: 'STT-DB-MASTER', what: 'ตารางกลาง PS_PO_INDEX · PS_PO_EDIT · คู่มือฐานข้อมูล',
+    { key: 'REPORT', name: 'STT-DB-MASTER — แท็บรายงาน (อ่านง่าย ภาษาไทย)',
+      what: 'เปิดแล้วเห็นเหมือนในโปรแกรม มีค้างรับ/รับครบรายบรรทัด ใส่สีตามสถานะ',
+      id: CFG.MASTER, tabs: ['สรุปภาพรวม', 'รายงาน PO', 'รายงานการรับเข้า'] },
+    { key: 'MASTER', name: 'STT-DB-MASTER — ตารางที่โปรแกรมใช้',
+      what: 'ตารางดิบที่หน้าเว็บอ่าน + คู่มืออธิบายทุกคอลัมน์',
       id: CFG.MASTER, tabs: ['PS_PO_INDEX', 'PS_PO_EDIT', 'คู่มือฐานข้อมูล'] },
     { key: 'YEAR', name: 'STT-PS-' + year, what: 'ข้อมูลดิบ PO ปีนี้ · ผลการจับคู่ · ประวัติการนำเข้า/แก้ไข',
       id: '', tabs: ['PO_LINE', 'MATCH_LINK', 'IMPORT_LOG', 'LOG'] },
     { key: 'RRALL', name: 'STT-PS-RR-ALL', what: 'ใบรับของทุกปี — ข้อมูลการรับเข้าทั้งหมดอยู่ที่นี่',
       id: '', tabs: ['RR_ALL'] }
   ];
-  try { want[1].id = yearFile_(year, 'YEAR'); } catch (_) {}
-  try { want[2].id = yearFile_('ALL', 'RRALL'); } catch (_) {}
+  try { want[2].id = yearFile_(year, 'YEAR'); } catch (_) {}
+  try { want[3].id = yearFile_('ALL', 'RRALL'); } catch (_) {}
 
   var out = [];
   for (var i = 0; i < want.length; i++) {

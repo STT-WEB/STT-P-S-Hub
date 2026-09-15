@@ -166,5 +166,62 @@ var oneS = HS.sandbox.getRrOfPo({}, 'POR-69/2158');
 ok('สโตร์: กล่องใบรับของ PO ก็ไม่มีราคา',
    oneS.amnt === null && oneS.rows.every(function (x) { return x.amnt === null; }));
 
+/* ---------- 10. แท็บรายงานในชีตต้องตรงกับหน้าเว็บทุกตัว ---------- */
+console.log('\n— แท็บรายงานในชีต (เปิดชีตต้องเห็นเหมือนโปรแกรม) —');
+var M = H.store.MASTER;
+ok('มีแท็บ สรุปภาพรวม',       !!M['สรุปภาพรวม']);
+ok('มีแท็บ รายงาน PO',        !!M['รายงาน PO']);
+ok('มีแท็บ รายงานการรับเข้า', !!M['รายงานการรับเข้า']);
+
+var rp = M['รายงาน PO'], rpH = rp[0], rpB = rp.slice(1);
+eq('รายงาน PO มีครบทุกบรรทัด', rpB.length, all.all.lines);
+ok('หัวตารางเป็นภาษาไทย', /[ก-๙]/.test(rpH.join('')), rpH.slice(0, 4).join(' · '));
+ok('มีคอลัมน์ "ค้างรับ" และ "รับแล้ว"',
+   rpH.indexOf('ค้างรับ') >= 0 && rpH.indexOf('รับแล้ว') >= 0);
+
+var cOrd = rpH.indexOf('จำนวนที่สั่ง'), cGot = rpH.indexOf('รับแล้ว'),
+    cRem = rpH.indexOf('ค้างรับ'), cSt = rpH.indexOf('สถานะ'),
+    cAmn = rpH.indexOf('ยอดสั่ง (บาท)'), cOpn = rpH.indexOf('ค้างรับ (บาท)');
+ok('ทุกบรรทัด: สั่ง − รับแล้ว = ค้างรับ',
+   rpB.every(function (r) { return Math.abs((r[cOrd] - r[cGot]) - r[cRem]) < 1e-6 || r[cOrd] < r[cGot]; }));
+
+var sumAmn = 0, sumOpen = 0, nOpenRpt = 0, nDoneRpt = 0, nCanRpt = 0;
+for (var z = 0; z < rpB.length; z++) {
+  sumAmn += rpB[z][cAmn]; sumOpen += rpB[z][cOpn];
+  var stx = String(rpB[z][cSt]);
+  if (/ยกเลิก/.test(stx)) nCanRpt++;
+  else if (/ยังไม่รับ|รับบางส่วน/.test(stx)) nOpenRpt++;
+  else if (/รับครบ/.test(stx)) nDoneRpt++;
+}
+near('ยอดสั่งรวมในชีต = ในโปรแกรม',  sumAmn,  all.all.amnt, 0.05);
+near('ค้างรับรวมในชีต = ในโปรแกรม', sumOpen, all.all.openVal, 0.05);
+eq('จำนวนบรรทัดค้างรับในชีต = ในโปรแกรม', nOpenRpt, all.all.open);
+eq('จำนวนบรรทัดรับครบในชีต = ในโปรแกรม',  nDoneRpt, all.all.done);
+eq('จำนวนบรรทัดยกเลิกในชีต = ในโปรแกรม',  nCanRpt,  all.all.cancelled);
+
+var rrp = M['รายงานการรับเข้า'], rrH = rrp[0], rrB = rrp.slice(1);
+eq('รายงานการรับเข้ามีครบทุกบรรทัด', rrB.length, rr.all.lines);
+var cQ = rrH.indexOf('จำนวนเงิน'), cM = rrH.indexOf('สถานะจับคู่');
+var rrSum = 0, rrOk = 0;
+for (var y = 0; y < rrB.length; y++) { rrSum += rrB[y][cQ]; if (/ตรงกับ PO/.test(String(rrB[y][cM]))) rrOk++; }
+near('ยอดรับเข้ารวมในชีต = ในโปรแกรม', rrSum, rr.all.amnt, 0.05);
+eq('จับคู่ได้ในชีต = ในโปรแกรม', rrOk, rr.all.ok);
+
+// แท็บสรุปต้องเป็นตัวเลขชุดเดียวกัน และต้องตรวจตัวเองว่า "ตรง"
+var sm = M['สรุปภาพรวม'];
+function smVal(label) {
+  for (var i = 0; i < sm.length; i++) if (String(sm[i][0]) === label) return sm[i][1];
+  return null;
+}
+eq('สรุป: บรรทัดทั้งหมด', smVal('บรรทัดทั้งหมด'), all.all.lines);
+eq('สรุป: ค้างรับ',        smVal('ค้างรับ'), all.all.open);
+eq('สรุป: ใบ PO ทั้งหมด',  smVal('ใบ PO ทั้งหมด'), all.all.docs);
+eq('สรุป: บรรทัดรับเข้า',  smVal('บรรทัดรับเข้าทั้งหมด'), rr.all.lines);
+eq('สรุป: จับคู่กับ PO ได้', smVal('จับคู่กับ PO ได้'), rr.all.ok);
+eq('สรุปตรวจตัวเอง (ฝั่ง PO)',
+   smVal('ค้างรับ + รับครบ + ปิด + ยกเลิก ต้องเท่าบรรทัดทั้งหมด'), 'ตรง');
+eq('สรุปตรวจตัวเอง (ฝั่งรับเข้า)',
+   smVal('สถานะการรับเข้า 4 กลุ่มรวมกันต้องเท่าบรรทัดรับเข้า'), 'ตรง');
+
 console.log('\n' + (fail ? '✗ ไม่ผ่าน ' + fail + ' ข้อ' : '✓ ผ่านหมด') + ' (' + pass + '/' + (pass + fail) + ')\n');
 process.exit(fail ? 1 : 0);
