@@ -3,81 +3,112 @@
 <head>
   <base target="_top">
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>NOVA – Purchase &amp; Store Hub</title>
   <?!= include('styles') ?>
 </head>
 <body>
 
+<!-- ========== แถบบน ========== -->
 <div class="topbar">
-  <div class="brand">
-    NOVA – PURCHASE &amp; STORE HUB
-    <small>จัดซื้อ · คลังสินค้า · สุธี แท็งเกอร์ แอนด์ สเปเชียลทรัค</small>
+  <div class="inner">
+    <div class="brandmark">
+      <img src="data:image/png;base64,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" alt="SUTEE">
+      <div class="brandtext">
+        <div class="n">PURCHASE &amp; STORE HUB</div>
+        <div class="s">Sutee Tankers and Special Trucks</div>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <span class="chip hide" id="who"><span class="dot"></span><span id="whoText"></span></span>
+    <button class="tbtn hide" id="btnDiag" onclick="openDiag()">ตรวจระบบ</button>
+    <button class="tbtn danger hide" id="btnOut" onclick="logout()">ออกจากระบบ</button>
+    <!-- ป้ายเวอร์ชัน = หลักฐานเดียวที่พิสูจน์ว่าโค้ดขึ้นจริง (ค่ามาจาก 00-config.js) -->
+    <span class="ver" id="ver"><?= PS_VERSION ?></span>
   </div>
-  <div class="sp"></div>
-  <span class="who hide" id="who"></span>
-  <button class="tbtn hide" id="btnDiag" onclick="openDiag()">ตรวจระบบ</button>
-  <button class="tbtn hide" id="btnOut" onclick="logout()">ออกจากระบบ</button>
-  <!-- ป้ายเวอร์ชัน = หลักฐานเดียวที่พิสูจน์ว่าโค้ดขึ้นจริง (ดึงจาก 00-config.js) -->
-  <span class="ver" id="ver"><?= PS_VERSION ?></span>
 </div>
 
 <div class="wrap">
 
-  <!-- ============ เข้าสู่ระบบ ============ -->
+  <!-- ========== เข้าสู่ระบบ ========== -->
   <div id="viewLogin">
-    <div class="card" style="max-width:440px;margin:40px auto">
-      <h2>เข้าสู่ระบบ</h2>
-      <p class="small" style="margin:0 0 6px">ใช้รหัสพนักงานและ PIN 6 หลักเดียวกับระบบ NOVA</p>
-
-      <label for="empId">รหัสพนักงาน</label>
-      <input type="tel" id="empId" inputmode="numeric" autocomplete="off" placeholder="เช่น 6204004">
-
-      <label for="pin">PIN 6 หลัก</label>
-      <input type="password" id="pin" inputmode="numeric" autocomplete="off" placeholder="••••••">
-
-      <button class="btn" id="btnLogin" onclick="doLogin()">เข้าสู่ระบบ</button>
-      <button class="btn ghost" onclick="showReg()">ยังไม่มี PIN — ลงทะเบียนครั้งแรก</button>
-
-      <div class="msg" id="loginMsg"></div>
+    <div class="authwrap">
+      <div class="authcard">
+        <div class="top">
+          <img src="data:image/png;base64,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" alt="">
+          <h2>เข้าสู่ระบบ</h2>
+          <p>ระบบจัดซื้อจัดจ้างและคลังสินค้า</p>
+        </div>
+        <div class="body">
+          <div class="field">
+            <label for="empId">รหัสพนักงาน</label>
+            <input type="tel" id="empId" inputmode="numeric" autocomplete="off" placeholder="เช่น 6204004">
+          </div>
+          <div class="field">
+            <label for="pin">รหัส PIN 6 หลัก</label>
+            <input type="password" id="pin" class="pinput" inputmode="numeric"
+                   autocomplete="off" maxlength="6" placeholder="••••••">
+          </div>
+          <div class="mt">
+            <button class="btn" id="btnLogin" onclick="doLogin()">เข้าสู่ระบบ</button>
+            <button class="btn ghost" onclick="showReg()">ยังไม่มี PIN — ลงทะเบียนครั้งแรก</button>
+          </div>
+          <div class="msg" id="loginMsg"></div>
+        </div>
+        <div class="foot">ใช้รหัสพนักงานและ PIN เดียวกับระบบ NOVA</div>
+      </div>
     </div>
   </div>
 
-  <!-- ============ ลงทะเบียนรับ PIN ============ -->
+  <!-- ========== ลงทะเบียนรับ PIN ========== -->
   <div id="viewReg" class="hide">
-    <div class="card" style="max-width:440px;margin:40px auto">
-      <h2>ลงทะเบียนรับ PIN</h2>
-      <p class="small" style="margin:0 0 6px">
-        ใช้ได้เฉพาะคนที่ผู้ดูแลระบบกำหนดสิทธิ์ P&amp;S ไว้แล้ว · ลงทะเบียนได้ครั้งเดียว
-      </p>
-
-      <label for="regEmp">รหัสพนักงาน</label>
-      <input type="tel" id="regEmp" inputmode="numeric" autocomplete="off">
-
-      <label for="regName">ชื่อ (ตามที่ลงทะเบียนไว้)</label>
-      <input type="text" id="regName" autocomplete="off">
-
-      <button class="btn" id="btnReg" onclick="doRegister()">ขอรหัส PIN</button>
-      <button class="btn ghost" onclick="backToLogin()">กลับหน้าเข้าสู่ระบบ</button>
-
-      <div class="msg" id="regMsg"></div>
+    <div class="authwrap">
+      <div class="authcard">
+        <div class="top">
+          <img src="data:image/png;base64,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" alt="">
+          <h2>ลงทะเบียนรับ PIN</h2>
+          <p>ลงทะเบียนได้ครั้งเดียวต่อ 1 รหัสพนักงาน</p>
+        </div>
+        <div class="body">
+          <div class="field">
+            <label for="regEmp">รหัสพนักงาน</label>
+            <input type="tel" id="regEmp" inputmode="numeric" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="regName">ชื่อ (ตามที่ลงทะเบียนไว้)</label>
+            <input type="text" id="regName" autocomplete="off">
+          </div>
+          <div class="mt">
+            <button class="btn" id="btnReg" onclick="doRegister()">ขอรหัส PIN</button>
+            <button class="btn ghost" onclick="backToLogin()">กลับหน้าเข้าสู่ระบบ</button>
+          </div>
+          <div class="msg" id="regMsg"></div>
+        </div>
+        <div class="foot">ใช้ได้เฉพาะคนที่ผู้ดูแลระบบกำหนดสิทธิ์ไว้แล้ว</div>
+      </div>
     </div>
   </div>
 
-  <!-- ============ เมนูหลัก ============ -->
+  <!-- ========== เมนูหลัก ========== -->
   <div id="viewMenu" class="hide">
-    <div class="card">
-      <h2>เมนูหลัก</h2>
-      <p class="small" id="menuNote" style="margin:0 0 14px"></p>
-      <div class="tiles" id="tiles"></div>
+    <div class="page-head">
+      <p class="eyebrow">เมนูหลัก</p>
+      <h1 id="hello">ยินดีต้อนรับ</h1>
+      <p id="menuNote"></p>
     </div>
+    <div id="tiles"></div>
   </div>
 
-  <!-- ============ ตรวจระบบ (ADMIN) ============ -->
+  <!-- ========== ตรวจระบบ (ผู้ดูแลระบบ) ========== -->
   <div id="viewDiag" class="hide">
+    <div class="page-head">
+      <p class="eyebrow">เครื่องมือผู้ดูแลระบบ</p>
+      <h1>ตรวจระบบ</h1>
+      <p>วัดจากของจริงทุกรายการ พร้อมเวลาที่ใช้เป็นมิลลิวินาที</p>
+    </div>
     <div class="card">
-      <h2>ตรวจระบบ</h2>
       <div id="diagBody"></div>
-      <button class="btn ghost" onclick="closeDiag()">กลับเมนู</button>
+      <div class="mt"><button class="btn ghost" onclick="closeDiag()">กลับเมนูหลัก</button></div>
     </div>
   </div>
 
