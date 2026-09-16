@@ -24,7 +24,7 @@ function RR_IDX_() {
 
 function rrAllRows_() {
   return cacheOr_('PS_RRALL', TTL.HOT, function () {
-    var v = fetchTabValues_(yearFile_('ALL', 'RRALL'), 'RR_ALL') || [];
+    var v = fetchTabValues_(psAllFile_(), 'RR_ALL') || [];
     return v.slice(1);
   });
 }
@@ -32,7 +32,7 @@ function rrAllRows_() {
 /** แผนที่บรรทัด RR ที่จับคู่กับ PO ได้แล้ว (ของปีปัจจุบัน) : 'ใบรับ|บรรทัด' -> ชั้นที่จับคู่ */
 function rrLinkMap_() {
   return cacheOr_('PS_RRLINK', TTL.HOT, function () {
-    var v = fetchTabValues_(yearFile_(currentYearTH_(), 'YEAR'), 'MATCH_LINK') || [];
+    var v = fetchTabValues_(psYearFile_(), TAB.LINK) || [];
     var m = {};
     for (var i = 1; i < v.length; i++) {
       var r = v[i], k = s_(r[0]) + '|' + s_(r[1]);

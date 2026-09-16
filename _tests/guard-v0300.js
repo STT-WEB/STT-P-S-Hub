@@ -8,9 +8,13 @@ const fs = require('fs'), path = require('path'), vm = require('vm');
 const ROOT = path.join(__dirname, '..');
 
 // โหลดโค้ดตัวจริง (ไม่ก๊อปมาเขียนใหม่ — ป้องกันเทสกับของจริงไม่ตรงกัน)
+const setupSrc = fs.readFileSync(path.join(ROOT, 'deploy', '03-setup.js'), 'utf8');
 const src = fs.readFileSync(path.join(ROOT, 'deploy', '04-import.js'), 'utf8');
-const sandbox = { module: { exports: {} }, Date, Math, String, Number, isNaN, parseFloat, JSON, Utilities: null };
+const sandbox = { module: { exports: {} }, Date, Math, String, Number, isNaN, parseFloat, JSON,
+                  Object, Array, RegExp, Error, Utilities: null };
 vm.createContext(sandbox);
+// 03-setup.js ถือนิยามคอลัมน์กลาง (PO_COLS / idxOf_) ที่ 04-import ใช้ตอนโหลด
+vm.runInContext(setupSrc, sandbox, { filename: '03-setup.js' });
 vm.runInContext(src, sandbox, { filename: '04-import.js' });
 const { psMatchEngine_, ncd_, nn_, num_, cat_ } = sandbox.module.exports;
 

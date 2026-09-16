@@ -1,34 +1,26 @@
 <script>
-/* ============ หน้านำเข้าข้อมูล + ติดตั้งโครงข้อมูล (P1) ============ */
+/* ============ หน้าอัปเดตข้อมูล (P1) ============
+   ไฟล์เดียวต่อปี — ระบบอ่านแท็บ ps_report / RR จากไฟล์ของเบียร์โดยตรง
+   ขั้นที่ 1 ทำครั้งเดียวตอนเริ่มปี · ขั้นที่ 2 กดทุกวันหลังวางข้อมูลใหม่           */
 function openImport(){ setView('viewImport'); $('imBody').innerHTML = imForm(); }
 
 function imForm(){
   return '' +
   '<div class="card">' +
-    '<h3 style="margin-top:0">ขั้นที่ 1 · ติดตั้งโครงข้อมูล</h3>' +
-    '<p class="small">สร้างไฟล์รายปี · ไฟล์ต้นทุน RR-ALL · ตารางกลาง แล้วลงทะเบียนใน REGISTRY<br>' +
-    'กดซ้ำได้ ไม่สร้างทับของเดิม</p>' +
-    '<button class="btn" id="btnSetup" style="width:auto;padding-inline:26px" onclick="doSetup()">ติดตั้งโครงข้อมูล</button>' +
-  '</div>' +
-  '<div class="card">' +
-    '<h3 style="margin-top:0">ขั้นที่ 2 · นำเข้าข้อมูลจาก My Account</h3>' +
-    '<div class="field"><label for="imUrl">ลิงก์ Google Sheet ที่ดึงมาจาก My Account</label>' +
+    '<h3 style="margin-top:0">ขั้นที่ 1 · ติดตั้งครั้งเดียวตอนเริ่มปี</h3>' +
+    '<p class="small">วางลิงก์ไฟล์ <b>PO Report ของปีนี้</b> (ไฟล์ที่มีแท็บ ps_report กับ RR)<br>' +
+    'ระบบจะ <b>เพิ่มแท็บของตัวเองเข้าไปในไฟล์เดียวกัน</b> ไม่ก๊อปข้อมูลออกไปไหน และไม่แตะ 2 แท็บนั้นเลย<br>' +
+    'กดซ้ำได้ ไม่ทับของเดิม · ปีหน้าค่อยวางลิงก์ไฟล์ปีใหม่</p>' +
+    '<div class="field"><label for="imUrl">ลิงก์ไฟล์ PO Report ของปีนี้</label>' +
       '<input type="text" id="imUrl" placeholder="https://docs.google.com/spreadsheets/d/..."></div>' +
-    '<div class="row2">' +
-      '<div class="field"><label for="imTabPO">ชื่อแท็บ PO</label>' +
-        '<input type="text" id="imTabPO" value="ps_report"></div>' +
-      '<div class="field"><label for="imTabRR">ชื่อแท็บ RR</label>' +
-        '<input type="text" id="imTabRR" value="RR"></div>' +
-    '</div>' +
-    '<div class="btnrow">' +
-      '<button class="btn" id="btnPO" style="width:auto;padding-inline:22px" onclick="doImport(\'PO\')">นำเข้า PO</button>' +
-      '<button class="btn" id="btnRR" style="width:auto;padding-inline:22px" onclick="doImport(\'RR\')">นำเข้า RR</button>' +
-    '</div>' +
+    '<button class="btn" id="btnSetup" style="width:auto;padding-inline:26px" onclick="doSetup()">ติดตั้งลงในไฟล์นี้</button>' +
   '</div>' +
   '<div class="card">' +
-    '<h3 style="margin-top:0">ขั้นที่ 3 · จับคู่ PO ↔ RR แล้วสร้างตารางค้างรับ</h3>' +
-    '<p class="small">จับคู่ด้วยรหัสสินค้า 5 ชั้น (C1–C5) · ไม่ใช้ List No. · ที่จับคู่ไม่ได้จะรายงานให้ ไม่เดา</p>' +
-    '<button class="btn" id="btnRb" style="width:auto;padding-inline:26px" onclick="doRebuild()">จับคู่ + สร้างตารางค้างรับ</button>' +
+    '<h3 style="margin-top:0">ขั้นที่ 2 · อัปเดตข้อมูล (กดทุกวันหลังวางข้อมูลใหม่)</h3>' +
+    '<p class="small">อ่าน ps_report กับ RR ที่วางไว้ → จับคู่ด้วยรหัสสินค้า 5 ชั้น (C1–C5) → ' +
+    'เขียนแท็บ รายงาน PO · รายงานการรับเข้า · สรุปภาพรวม ใหม่ทั้งหมด<br>' +
+    '<b>สิ่งที่จัดซื้อกรอกไว้ไม่หาย</b> เพราะอยู่คนละแท็บ (ช่องที่จัดซื้อกรอก) และผูกด้วยรหัสบรรทัด</p>' +
+    '<button class="btn" id="btnRb" style="width:auto;padding-inline:26px" onclick="doRebuild()">อัปเดตข้อมูลตอนนี้</button>' +
   '</div>' +
   '<div id="imOut"></div>';
 }
@@ -36,11 +28,12 @@ function imForm(){
 function imBusy(id, on, label){ busy(id, on, label); }
 
 function doSetup(){
+  var url = $('imUrl').value.trim();
   imBusy('btnSetup', true, 'กำลังติดตั้ง...');
   $('imOut').innerHTML = '';
   google.script.run
     .withSuccessHandler(function(r){
-      imBusy('btnSetup', false, 'ติดตั้งโครงข้อมูล');
+      imBusy('btnSetup', false, 'ติดตั้งลงในไฟล์นี้');
       var h = '<div class="card"><h3 style="margin-top:0">ผลการติดตั้ง — ปี ' + esc(r.year) + '</h3>' +
               '<div class="statrow">' +
                 stat(r.passed + ' / ' + r.steps.length, 'สำเร็จ', r.failed ? 'var(--bad)' : 'var(--ok)') +
@@ -56,66 +49,31 @@ function doSetup(){
       $('imOut').innerHTML = h;
     })
     .withFailureHandler(function(e){
-      imBusy('btnSetup', false, 'ติดตั้งโครงข้อมูล');
+      imBusy('btnSetup', false, 'ติดตั้งลงในไฟล์นี้');
       $('imOut').innerHTML = '<div class="msg err" style="display:block">' + esc(e.message) + '</div>';
     })
-    .psSetup(AUTH);
-}
-
-function doImport(kind){
-  var url = $('imUrl').value.trim();
-  if(!url){ $('imOut').innerHTML = '<div class="msg err" style="display:block">กรุณาวางลิงก์ไฟล์ก่อน</div>'; return; }
-  var btn = kind === 'PO' ? 'btnPO' : 'btnRR';
-  var tab = kind === 'PO' ? $('imTabPO').value.trim() : $('imTabRR').value.trim();
-  imBusy(btn, true, 'กำลังนำเข้า...');
-  $('imOut').innerHTML = '';
-  var h1 = function(r){
-    imBusy(btn, false, 'นำเข้า ' + kind);
-    var h = '<div class="card"><h3 style="margin-top:0">นำเข้า ' + esc(r.kind) + ' เรียบร้อย</h3>' +
-      '<div class="statrow">' +
-        stat(Number(r.read).toLocaleString(), 'อ่านมา (บรรทัด)', 'var(--text)') +
-        stat(Number(r.written).toLocaleString(), 'บันทึกได้', 'var(--ok)') +
-        stat(Number(r.skipped).toLocaleString(), 'ข้าม', r.skipped ? 'var(--warn)' : 'var(--text-3)') +
-        stat(r.ms + ' ms', 'เวลา', 'var(--text-2)') +
-      '</div>';
-    if(r.kept !== undefined)
-      h += '<p class="small">เก็บข้อมูลปีอื่นไว้ ' + Number(r.kept).toLocaleString() +
-           ' บรรทัด · รวมในไฟล์ต้นทุนตอนนี้ ' + Number(r.total).toLocaleString() + ' บรรทัด</p>';
-    if(r.skippedRows && r.skippedRows.length){
-      h += '<h3>แถวที่ข้าม</h3><div class="tblwrap"><table><thead><tr><th>แถวที่</th><th>เหตุผล</th><th>ข้อมูลที่เห็น</th></tr></thead><tbody>';
-      r.skippedRows.forEach(function(x){
-        h += '<tr><td class="num nw">' + x.row + '</td><td class="nw">' + esc(x.why) + '</td><td class="mono">' +
-             esc((x.docu||'') + ' ' + (x.poid||'')) + '</td></tr>';
-      });
-      h += '</tbody></table></div>';
-    }
-    h += '</div>';
-    $('imOut').innerHTML = h;
-  };
-  var h2 = function(e){
-    imBusy(btn, false, 'นำเข้า ' + kind);
-    $('imOut').innerHTML = '<div class="msg err" style="display:block">' + esc(e.message) + '</div>';
-  };
-  if(kind === 'PO') google.script.run.withSuccessHandler(h1).withFailureHandler(h2).psImportPO(AUTH, url, tab);
-  else              google.script.run.withSuccessHandler(h1).withFailureHandler(h2).psImportRR(AUTH, url, tab);
+    .psSetup(AUTH, url);
 }
 
 function doRebuild(){
-  imBusy('btnRb', true, 'กำลังจับคู่...');
+  imBusy('btnRb', true, 'กำลังอัปเดต...');
   $('imOut').innerHTML = '';
   google.script.run
     .withSuccessHandler(function(r){
-      imBusy('btnRb', false, 'จับคู่ + สร้างตารางค้างรับ');
-      var h = '<div class="card"><h3 style="margin-top:0">ผลการจับคู่ — ปี ' + esc(r.year) + '</h3>' +
+      imBusy('btnRb', false, 'อัปเดตข้อมูลตอนนี้');
+      var h = '<div class="card"><h3 style="margin-top:0">อัปเดตเรียบร้อย — ปี ' + esc(r.year) + '</h3>' +
         '<div class="statrow">' +
           stat(r.matchPct.toFixed(2) + '%', 'จับคู่สำเร็จ', r.unmatched ? 'var(--warn)' : 'var(--ok)') +
           stat(Number(r.openLines).toLocaleString(), 'บรรทัดค้างรับ', 'var(--brand)') +
           stat(money(r.openValue), 'มูลค่าค้างรับ (บาท)', 'var(--brand)') +
-          stat(r.ms + ' ms', 'เวลา', 'var(--text-2)') +
+          stat((r.ms/1000).toFixed(1) + ' วิ', 'เวลา', 'var(--text-2)') +
         '</div>' +
         '<div class="tblwrap"><table><thead><tr><th>รายการ</th><th style="text-align:end">จำนวน</th></tr></thead><tbody>' +
-        '<tr><td>PO ที่ใช้งาน (ไม่รวมยกเลิก)</td><td class="num">' + Number(r.poLines).toLocaleString() + '</td></tr>' +
-        '<tr><td>RR ทั้งหมด</td><td class="num">' + Number(r.rrLines).toLocaleString() + '</td></tr>';
+        '<tr><td>อ่านจากแท็บ ps_report</td><td class="num">' + Number(r.poRead).toLocaleString() +
+          (r.poSkipped ? ' <span class="muted">(ข้าม ' + r.poSkipped + ')</span>' : '') + '</td></tr>' +
+        '<tr><td>อ่านจากแท็บ RR</td><td class="num">' + Number(r.rrRead).toLocaleString() +
+          (r.rrSkipped ? ' <span class="muted">(ข้าม ' + r.rrSkipped + ')</span>' : '') + '</td></tr>' +
+        '<tr><td>PO ที่ใช้งาน (ไม่รวมยกเลิก)</td><td class="num">' + Number(r.poLines).toLocaleString() + '</td></tr>';
       ['C1','C2','C3','C4','C5'].forEach(function(t){
         if(r.tiers[t]) h += '<tr><td>จับคู่ชั้น ' + t + '</td><td class="num ok-t">' +
                             Number(r.tiers[t]).toLocaleString() + '</td></tr>';
@@ -123,14 +81,24 @@ function doRebuild(){
       h += '<tr><td>อ้าง PO ปีอื่น (รับข้ามปี)</td><td class="num">' + Number(r.noPO).toLocaleString() + '</td></tr>' +
            '<tr><td>จับคู่ไม่ได้ ทั้งที่ PO อยู่ในระบบ</td><td class="num ' +
              (r.unmatched ? 'bad-t' : 'ok-t') + '">' + Number(r.unmatched).toLocaleString() + '</td></tr>' +
+           '<tr><td>รับเกินที่สั่ง</td><td class="num ' + (r.over ? 'bad-t' : 'ok-t') + '">' +
+             Number(r.over).toLocaleString() + '</td></tr>' +
+           '<tr><td>เขียนลงแท็บ รายงาน PO</td><td class="num">' + Number(r.indexLines).toLocaleString() + '</td></tr>' +
            '<tr><td>ใบ PO ที่ยังค้างรับ</td><td class="num">' + Number(r.openDocs).toLocaleString() + '</td></tr>' +
-           '</tbody></table></div>' +
-        '<div class="mt"><button class="btn" style="width:auto;padding-inline:26px" onclick="openOpenPO()">' +
-        'ไปดูหน้า PO ค้างรับ</button></div></div>';
+           '<tr><td>เก็บใบรับลงไฟล์สะสมข้ามปี</td><td class="num">' +
+             (r.rrAll ? Number(r.rrAll.fresh).toLocaleString() : '—') + '</td></tr>' +
+           '</tbody></table></div>';
+      if(r.reportError)
+        h += '<div class="msg warn" style="display:block">ตัวเลขคำนวณเสร็จแล้ว แต่เขียนแท็บรายงานไม่สำเร็จ: ' +
+             esc(r.reportError) + '</div>';
+      h += '<div class="btnrow mt">' +
+        '<button class="btn" style="width:auto;padding-inline:24px" onclick="openPoDb()">ไปหน้าฐานข้อมูล PO</button>' +
+        '<button class="btn ghost" style="width:auto;padding-inline:24px" onclick="openDbLinks()">เปิดชีตดูเอง</button>' +
+        '</div></div>';
       $('imOut').innerHTML = h;
     })
     .withFailureHandler(function(e){
-      imBusy('btnRb', false, 'จับคู่ + สร้างตารางค้างรับ');
+      imBusy('btnRb', false, 'อัปเดตข้อมูลตอนนี้');
       $('imOut').innerHTML = '<div class="msg err" style="display:block">' + esc(e.message) + '</div>';
     })
     .psRebuild(AUTH);

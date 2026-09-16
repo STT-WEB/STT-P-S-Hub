@@ -150,3 +150,13 @@ function currentYearTH_() {
   if (y) return String(y).trim();
   return String(new Date().getFullYear() + 543);
 }
+
+/**
+ * ---------- ไฟล์ของ P&S อยู่ไหน ----------
+ * กติกา 16 ก.ย. 2569: ห้ามสร้าง/เขียนแท็บใหม่ใน STT-DB-MASTER
+ *   psYearFile_()  -> STT-PS-<ปีปัจจุบัน>  ทุกอย่างของ PO และการรับเข้าของปีนั้น
+ *   psAllFile_()   -> STT-PS-RR-ALL        เฉพาะของที่ข้ามปีจริง ๆ
+ * เขียนเป็นฟังก์ชันไว้ที่เดียว เวลาย้ายไฟล์จะได้แก้จุดเดียว
+ */
+function psYearFile_() { return yearFile_(currentYearTH_(), 'YEAR'); }
+function psAllFile_()  { return yearFile_('ALL', 'RRALL'); }

@@ -281,9 +281,19 @@ function renderDbLinks(r){
     h += '<div class="card"><div class="secthead" style="margin-top:0"><h3>สร้างแท็บรายงานใหม่</h3>' +
          '<div class="line"></div></div>' +
          '<p class="small">เขียนแท็บ สรุปภาพรวม · รายงาน PO · รายงานการรับเข้า ใหม่ทั้งหมด ' +
-         'ให้ตรงกับตัวเลขในโปรแกรมตอนนี้ (ปกติระบบทำให้เองทุกครั้งที่กด "คำนวณค้างรับใหม่")</p>' +
+         'ให้ตรงกับตัวเลขในโปรแกรมตอนนี้ (ปกติระบบทำให้เองทุกครั้งที่กด "อัปเดตข้อมูล")</p>' +
          '<button class="btn" id="dlRpt" onclick="dbReports()">สร้างแท็บรายงานใหม่</button>' +
          '<div id="dlRptMsg"></div></div>';
+  }
+  if(ME.role === 'ADMIN'){
+    h += '<div class="card" style="border-color:var(--brand-line);background:#FFFCFC">' +
+         '<div class="secthead" style="margin-top:0"><h3>ล้างแท็บที่เผลอสร้างไว้ใน STT-DB-MASTER</h3>' +
+         '<div class="line"></div></div>' +
+         '<p class="small">รุ่นก่อนหน้าเผลอสร้างแท็บของ P&amp;S ไว้ในไฟล์ของ NOVA ใหญ่ ' +
+         'ตอนนี้ย้ายมาอยู่ไฟล์รายปีหมดแล้ว กดปุ่มนี้เพื่อดูว่ามีอะไรค้างอยู่ แล้วค่อยลบ<br>' +
+         '<b>แท็บ USERS / SETTINGS / REGISTRY ของ NOVA ถูกกันไว้ ไม่มีทางโดนลบ</b></p>' +
+         '<button class="btn ghost" id="dlScan" onclick="mScan()">ดูว่ามีอะไรค้างอยู่</button>' +
+         '<div id="dlMScan"></div></div>';
   }
   if(ME.role === 'ADMIN'){
     h += '<div class="card"><div class="secthead" style="margin-top:0"><h3>จัดหน้าตาฐานข้อมูล</h3>' +
@@ -294,6 +304,49 @@ function renderDbLinks(r){
          '<div id="dlMsg"></div></div>';
   }
   $('dlBody').innerHTML = h;
+}
+
+/* ---- ล้างแท็บที่เผลอสร้างไว้ใน MASTER (2 จังหวะ: ดูก่อน แล้วค่อยลบ) ---- */
+function mScan(){
+  busy('dlScan', true, 'กำลังตรวจ...');
+  google.script.run
+    .withSuccessHandler(function(r){
+      busy('dlScan', false, 'ดูว่ามีอะไรค้างอยู่');
+      var h = '';
+      if(!r.stray.length){
+        h = '<div class="msg ok" style="display:block">สะอาดแล้ว — ไม่มีแท็บของ P&amp;S ค้างอยู่ใน MASTER</div>';
+      } else {
+        h = '<div class="msg warn" style="display:block"><b>เจอ ' + r.stray.length + ' แท็บที่ต้องเอาออก</b><br>' +
+            r.stray.map(function(x){ return esc(x.name) + ' (' + Number(x.rows).toLocaleString() + ' แถว)'; }).join(' · ') +
+            '</div>';
+        h += '<p class="small">แท็บที่จะเก็บไว้ไม่แตะ: ' +
+             r.keep.map(function(x){ return esc(x.name) + (x.protected ? ' 🔒' : ''); }).join(' · ') + '</p>';
+        h += '<button class="btn" id="dlDel" style="background:var(--bad);border-color:var(--bad)" ' +
+             'onclick="mClean()">ลบ ' + r.stray.length + ' แท็บนี้ออกจาก MASTER</button>';
+      }
+      $('dlMScan').innerHTML = h;
+    })
+    .withFailureHandler(function(e){
+      busy('dlScan', false, 'ดูว่ามีอะไรค้างอยู่');
+      $('dlMScan').innerHTML = '<div class="msg err" style="display:block">' + esc(e.message) + '</div>';
+    })
+    .scanMaster(AUTH);
+}
+
+function mClean(){
+  busy('dlDel', true, 'กำลังลบ...');
+  google.script.run
+    .withSuccessHandler(function(r){
+      $('dlMScan').innerHTML = '<div class="msg ok" style="display:block">ลบแล้ว ' +
+        r.deleted.length + ' แท็บ — ' + r.deleted.map(esc).join(' · ') +
+        (r.failed && r.failed.length ? '<br>ลบไม่ได้: ' + esc(r.failed.join(' · ')) : '') +
+        '<br>MASTER เหลือแต่แท็บของ NOVA ตามเดิม</div>';
+    })
+    .withFailureHandler(function(e){
+      busy('dlDel', false, 'ลบออกจาก MASTER');
+      $('dlMScan').innerHTML = '<div class="msg err" style="display:block">' + esc(e.message) + '</div>';
+    })
+    .cleanMaster(AUTH, 'ลบเลย');
 }
 
 function dbReports(){

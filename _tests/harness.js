@@ -21,7 +21,8 @@ function build(opts) {
   };
 
   // ---- คลังแท็บจำลอง: fileId -> tab -> values ----
-  const store = { SRCFILE: SRC, MASTER: {}, YEAR: {}, RRALL: {} };
+  // ไฟล์ของปี = ไฟล์เดียวกับที่มีแท็บ ps_report / RR ของเบียร์ (ไม่ก๊อปออกมา)
+  const store = { MASTER: {}, YEAR: { ps_report: SRC.ps_report, RR: SRC.RR }, RRALL: {} };
   const written = {};
 
   const sandbox = {
@@ -131,11 +132,12 @@ function build(opts) {
     function requireNotStore_(auth){ if (PRICE_ROLES.indexOf(__ROLE) < 0) throw new Error('ไม่มีสิทธิ์'); }
     function currentYearTH_(){ return 2569; }
     function yearFile_(y, t){ return t === 'RRALL' ? 'RRALL' : 'YEAR'; }
+    function psYearFile_(){ return 'YEAR'; }
+    function psAllFile_(){ return 'RRALL'; }
     function cacheOr_(k, ttl, fn){ return fn(); }
     function cacheDrop_(a){}
     __COLIDX__
     function fetchTabValues_(fileId, tab){
-      if (!__store[fileId] && (tab === 'ps_report' || tab === 'RR')) fileId = 'SRCFILE';
       return __store[fileId] && __store[fileId][tab] || null;
     }
     function openTabValues_(fileId, tab){ return fetchTabValues_(fileId, tab); }
@@ -156,7 +158,7 @@ function build(opts) {
   vm.runInContext(stub.replace('__COLIDX__', colSrc), sandbox, { filename: 'stub.js' });
 
   // แถวที่จัดซื้อกรอกเอง — จำลองไว้ให้เห็นป้ายในหน้าจอ
-  store.MASTER.PS_PO_EDIT = [sandbox.SCHEMA.MASTER.PS_PO_EDIT.slice()].concat(opts.edits || []);
+  store.YEAR[sandbox.TAB.EDIT] = [sandbox.SCHEMA.YEAR[sandbox.TAB.EDIT].slice()].concat(opts.edits || []);
 
   return { sandbox, store, written, SRC };
 }

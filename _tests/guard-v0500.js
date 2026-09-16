@@ -25,42 +25,41 @@ const URL = 'https://docs.google.com/spreadsheets/d/1ZRHCnbu-Dzdzk1RwHewgqKDUeb8
 const H = build({ role: 'ADMIN' });
 const S = H.sandbox;
 
-/* ---------- 1. นำเข้า ---------- */
-console.log('— นำเข้าจากไฟล์ My Account จริง —');
-const ip = S.psImportPO({}, URL, 'ps_report');
-eq('PO อ่านได้',          ip.read, 7951);
-eq('PO เขียนลงตาราง',     ip.written, 7950);
-eq('PO แถวเสีย 1 แถว',    ip.skipped, 1);
-eq('PO แถวเสียคือแถว 179', ip.skippedRows[0].row, 179);
-
-const ir = S.psImportRR({}, URL, 'RR');
-eq('RR อ่านได้',          ir.read, 7513);
-eq('RR ใช้งานได้',        ir.written, 7512);
-eq('RR แถวเสียคือแถว 151', ir.skippedRows[0].row, 151);
-
-/* ---------- 2. จับคู่ + ตารางกลาง ---------- */
-console.log('\n— จับคู่และสร้าง PS_PO_INDEX —');
+/* ---------- 1-2. อ่านจากไฟล์เดียว แล้วจับคู่ ---------- */
+console.log('— อ่าน ps_report / RR จากไฟล์เดียวกัน แล้วจับคู่ —');
 const rb = S.psRebuild({});
+eq('PO อ่านได้',           rb.poRead, 7951);
+eq('PO แถวเสีย 1 แถว',     rb.poSkipped, 1);
+eq('RR อ่านได้',           rb.rrRead, 7513);
+eq('RR แถวเสีย 1 แถว',     rb.rrSkipped, 1);
 eq('บรรทัด PO ที่ใช้จับคู่', rb.poLines, 7878);
+eq('บรรทัดใบรับที่ใช้',      rb.rrLines, 7512);
 eq('จับคู่ได้',             rb.matched, 7375);
 eq('ชั้น C1',               rb.tiers.C1, 7373);
 eq('รับข้ามปี (ไม่มี PO ปีนี้)', rb.noPO, 137);
 eq('จับคู่ไม่ได้',          rb.unmatched, 0);
 eq('รับเกินที่สั่ง',        rb.over, 0);
-eq('ตารางกลางมีทุกบรรทัด',  rb.indexLines, 7950);
+eq('ตารางหลักมีทุกบรรทัด',  rb.indexLines, 7950);
 eq('บรรทัดค้างรับ',         rb.openLines, 617);
 eq('ใบ PO ที่ยังค้าง',      rb.openDocs, 184);
 near('มูลค่าค้างรับ',        rb.openValue, 28432882.99);
+eq('เก็บใบรับลงไฟล์สะสม',    rb.rrAll.fresh, 7512);
+eq('ไม่มี error ตอนเขียนรายงาน', rb.reportError, '');
+
+/* ---------- 2ข. ห้ามแตะแท็บต้นทางของเบียร์ ---------- */
+console.log('\n— แท็บ ps_report / RR ของเบียร์ต้องไม่ถูกเขียนทับ —');
+eq('ps_report ยังมีแถวเท่าเดิม', H.store.YEAR.ps_report.length, 7952);
+eq('RR ยังมีแถวเท่าเดิม',        H.store.YEAR.RR.length, 7514);
 
 /* ---------- 3. ตารางกลางต้องครบทุกสถานะ ---------- */
 console.log('\n— ตารางกลางต้องไม่ทิ้งบรรทัดไหน —');
-const rows = H.store.MASTER.PS_PO_INDEX.slice(1);
-const nCancel = rows.filter(r => r[17] === 'Y').length;
+const rows = H.store.YEAR[S.TAB.PO].slice(1);
+const nCancel = rows.filter(r => r[S.IDX.cancelled] === 'Y').length;
 eq('บรรทัดยกเลิกถูกเก็บไว้', nCancel, 72);
 eq('รวมแล้วเท่าจำนวนที่นำเข้า', rows.length, 7950);
-ok('ทุกบรรทัดมีคีย์ poid+listno', rows.every(r => String(r[0]) && String(r[1])));
+ok('ทุกบรรทัดมีคีย์ poid+listno', rows.every(r => String(r[S.IDX.poid]) && String(r[S.IDX.listno])));
 const keys = {};
-rows.forEach(r => { keys[r[0] + '|' + r[1]] = (keys[r[0] + '|' + r[1]] || 0) + 1; });
+rows.forEach(r => { const k = r[S.IDX.poid] + '|' + r[S.IDX.listno]; keys[k] = (keys[k] || 0) + 1; });
 eq('คีย์ไม่ซ้ำ', Object.keys(keys).length, 7950);
 
 /* ---------- 4. หน้าฐานข้อมูล PO ---------- */
@@ -100,10 +99,7 @@ eq('ใบ PO ค้างตรงกัน', op.sum.docs, 184);
 
 /* ---------- 6. สิทธิ์: สโตร์ต้องไม่เห็นราคา ---------- */
 console.log('\n— สิทธิ์ราคา —');
-const HS = build({ role: 'STORE' });
-HS.sandbox.psImportPO({}, URL, 'ps_report');
-HS.sandbox.psImportRR({}, URL, 'RR');
-HS.sandbox.__ROLE = 'ADMIN';
+const HS = build({ role: 'ADMIN' });
 HS.sandbox.psRebuild({});
 HS.sandbox.__ROLE = 'STORE';
 const st = HS.sandbox.getPoAll({}, { page: 1, size: 20 });
@@ -166,14 +162,22 @@ var oneS = HS.sandbox.getRrOfPo({}, 'POR-69/2158');
 ok('สโตร์: กล่องใบรับของ PO ก็ไม่มีราคา',
    oneS.amnt === null && oneS.rows.every(function (x) { return x.amnt === null; }));
 
-/* ---------- 10. แท็บรายงานในชีตต้องตรงกับหน้าเว็บทุกตัว ---------- */
-console.log('\n— แท็บรายงานในชีต (เปิดชีตต้องเห็นเหมือนโปรแกรม) —');
-var M = H.store.MASTER;
-ok('มีแท็บ สรุปภาพรวม',       !!M['สรุปภาพรวม']);
-ok('มีแท็บ รายงาน PO',        !!M['รายงาน PO']);
-ok('มีแท็บ รายงานการรับเข้า', !!M['รายงานการรับเข้า']);
+/* ---------- 10. ห้ามแตะไฟล์ STT-DB-MASTER ---------- */
+console.log('\n— ห้ามสร้างแท็บใน STT-DB-MASTER (กติกาเบียร์ 16 ก.ย. 2569) —');
+eq('MASTER ต้องไม่มีแท็บที่ระบบสร้างเลย', Object.keys(H.store.MASTER).length, 0);
+ok('โค้ดไม่เขียนอะไรลง MASTER',
+   Object.keys(H.store.MASTER).join(',') === '', 'แท็บที่เจอ: ' + (Object.keys(H.store.MASTER).join(', ') || 'ไม่มี'));
+ok('ตารางหลักอยู่ไฟล์เดียวกับ ps_report', !!H.store.YEAR[S.TAB.PO] && !!H.store.YEAR.ps_report);
+ok('ใบรับสะสมอยู่ในไฟล์ RR-ALL', !!H.store.RRALL.RR_ALL);
 
-var rp = M['รายงาน PO'], rpH = rp[0], rpB = rp.slice(1);
+/* ---------- 11. แท็บรายงานในชีตต้องตรงกับหน้าเว็บทุกตัว ---------- */
+console.log('\n— แท็บรายงานในชีต (เปิดชีตต้องเห็นเหมือนโปรแกรม) —');
+var M = H.store.YEAR;
+ok('มีแท็บ สรุปภาพรวม',       !!M[S.TAB.SUM]);
+ok('มีแท็บ รายงาน PO',        !!M[S.TAB.PO]);
+ok('มีแท็บ รายงานการรับเข้า', !!M[S.TAB.RR]);
+
+var rp = M[S.TAB.PO], rpH = rp[0], rpB = rp.slice(1);
 eq('รายงาน PO มีครบทุกบรรทัด', rpB.length, all.all.lines);
 ok('หัวตารางเป็นภาษาไทย', /[ก-๙]/.test(rpH.join('')), rpH.slice(0, 4).join(' · '));
 ok('มีคอลัมน์ "ค้างรับ" และ "รับแล้ว"',
@@ -199,7 +203,7 @@ eq('จำนวนบรรทัดค้างรับในชีต = ใ�
 eq('จำนวนบรรทัดรับครบในชีต = ในโปรแกรม',  nDoneRpt, all.all.done);
 eq('จำนวนบรรทัดยกเลิกในชีต = ในโปรแกรม',  nCanRpt,  all.all.cancelled);
 
-var rrp = M['รายงานการรับเข้า'], rrH = rrp[0], rrB = rrp.slice(1);
+var rrp = M[S.TAB.RR], rrH = rrp[0], rrB = rrp.slice(1);
 eq('รายงานการรับเข้ามีครบทุกบรรทัด', rrB.length, rr.all.lines);
 var cQ = rrH.indexOf('จำนวนเงิน'), cM = rrH.indexOf('สถานะจับคู่');
 var rrSum = 0, rrOk = 0;
@@ -208,7 +212,7 @@ near('ยอดรับเข้ารวมในชีต = ในโปร�
 eq('จับคู่ได้ในชีต = ในโปรแกรม', rrOk, rr.all.ok);
 
 // แท็บสรุปต้องเป็นตัวเลขชุดเดียวกัน และต้องตรวจตัวเองว่า "ตรง"
-var sm = M['สรุปภาพรวม'];
+var sm = M[S.TAB.SUM];
 function smVal(label) {
   for (var i = 0; i < sm.length; i++) if (String(sm[i][0]) === label) return sm[i][1];
   return null;

@@ -272,11 +272,11 @@ function opRebuild(){
   busy('opRb', true, 'กำลังคำนวณ...');
   google.script.run
     .withSuccessHandler(function(r){
-      busy('opRb', false, 'คำนวณค้างรับใหม่');
+      busy('opRb', false, 'อัปเดตข้อมูลใหม่');
       loadOpenPO();
     })
     .withFailureHandler(function(e){
-      busy('opRb', false, 'คำนวณค้างรับใหม่');
+      busy('opRb', false, 'อัปเดตข้อมูลใหม่');
       alert('คำนวณไม่สำเร็จ: ' + e.message);
     })
     .psRebuild(AUTH);

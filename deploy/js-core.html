@@ -114,7 +114,7 @@ var MODULES = [
   { id:'db', g:'buy',   i:'🗃️', t:'ฐานข้อมูล PO',        d:'ทุกบรรทัดจาก My Account · ค้นหา กรอง ส่งออก',  roles:['PURCHASE','ADMIN','EXEC','STORE'],   phase:1, go:'openPoDb' },
   { id:'rr', g:'buy',   i:'📗', t:'ฐานข้อมูลการรับเข้า',  d:'ใบรับทุกใบทุกปี · ดูว่า PO ใบไหนของมาแล้ว',  roles:['PURCHASE','ADMIN','EXEC','STORE'],   phase:1, go:'openRrDb' },
   { id:'p2', g:'buy',   i:'📥', t:'PO ค้างรับ',          d:'ติดตามของที่ยังไม่เข้า รับข้ามปีได้',        roles:['PURCHASE','ADMIN','EXEC','STORE'],   phase:1, go:'openOpenPO' },
-  { id:'p1', g:'buy',   i:'⬆️', t:'นำเข้าข้อมูล',        d:'ดึง PO/RR จาก My Account แล้วจับคู่',        roles:['PURCHASE','ADMIN'],                  phase:1, go:'openImport' },
+  { id:'p1', g:'buy',   i:'⬆️', t:'อัปเดตข้อมูล',        d:'วางข้อมูลใหม่แล้วกดปุ่มเดียว จับคู่ให้อัตโนมัติ', roles:['PURCHASE','ADMIN'],              phase:1, go:'openImport' },
   { id:'p3', g:'buy',   i:'💳', t:'แผนการจ่ายเงิน',       d:'วางบิล · ตั้งเบิก · ตัดยอดมัดจำ',           roles:['PURCHASE','ADMIN','EXEC'],           phase:4 },
   { id:'p4', g:'buy',   i:'📊', t:'สรุปการสั่งซื้อ',       d:'รายเดือน · ผู้ขาย · หมวด · จ๊อบ',           roles:['PURCHASE','ADMIN','EXEC'],           phase:6 },
   { id:'p7', g:'buy',   i:'🎯', t:'Dashboard KPI',        d:'ลดต้นทุน · ผู้ขายใหม่ · Performance',       roles:['ADMIN','EXEC','PURCHASE'],           phase:6 },

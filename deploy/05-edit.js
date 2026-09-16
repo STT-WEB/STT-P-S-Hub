@@ -25,7 +25,7 @@ var EDIT_COLS = ['poid','listno','docuno','recv_manual','recv_date','billed_amou
 /** อ่านทั้งตารางเป็น map: "poid|listno" -> object */
 function poEditMap_() {
   return cacheOr_('PS_POEDIT', TTL.HOT, function () {
-    var v = fetchTabValues_(CFG.MASTER, 'PS_PO_EDIT') || [];
+    var v = fetchTabValues_(psYearFile_(), TAB.EDIT) || [];
     var m = {};
     for (var i = 1; i < v.length; i++) {
       var r = v[i], poid = s_(r[0]), ln = s_(r[1]);
@@ -82,8 +82,8 @@ function savePoEdit(auth, p) {
                       ' (สั่ง ' + line.ordered + ' · มีใบรับแล้ว ' + line.recvRR + ')');
   }
 
-  var ss = SpreadsheetApp.openById(CFG.MASTER);
-  var sh = ss.getSheetByName('PS_PO_EDIT');
+  var ss = SpreadsheetApp.openById(psYearFile_());
+  var sh = ss.getSheetByName(TAB.EDIT);
   if (!sh) throw new Error('ไม่พบตาราง PS_PO_EDIT — กด "ติดตั้งโครงข้อมูล" ก่อน');
 
   var m = poEditMap_();
@@ -138,7 +138,7 @@ function findPoLine_(poid, ln) {
 function writeLog_(auth, action, target, before, after, reason) {
   try {
     var me = roleOf_(auth);
-    var sh = SpreadsheetApp.openById(yearFile_(currentYearTH_(), 'YEAR')).getSheetByName('LOG');
+    var sh = SpreadsheetApp.openById(yearFile_(currentYearTH_(), 'YEAR')).getSheetByName(TAB.LOG);
     if (sh) sh.appendRow([new Date(), me.name || me.label, action, target, before, after, reason || '']);
   } catch (e) {}
 }

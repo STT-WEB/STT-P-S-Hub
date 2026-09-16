@@ -3,7 +3,8 @@
  * 08-report.js — เขียน "รายงานที่อ่านเองได้" ลง Google Sheet
  *
  * เบียร์สั่ง: เปิดไฟล์ Google Sheet มาแล้วต้องดูได้เหมือนในโปรแกรมเลย
- * ไฟล์นี้จึงสร้าง 3 แท็บใน STT-DB-MASTER — เปิดไฟล์เดียวเห็นครบ
+ * ไฟล์นี้จึงสร้าง 3 แท็บใน STT-PS-<ปี> — ไฟล์เดียวกับที่เก็บ PO และการรับเข้าของปีนั้น
+ * (ห้ามไปสร้างใน STT-DB-MASTER เด็ดขาด นั่นเป็นไฟล์ของ NOVA ใหญ่)
  *   สรุปภาพรวม        = การ์ดตัวเลขหน้าแรกของโปรแกรม
  *   รายงาน PO         = หน้าฐานข้อมูล PO (มี "ค้างรับ / รับครบ" รายบรรทัด)
  *   รายงานการรับเข้า  = หน้าฐานข้อมูลการรับเข้า
@@ -14,65 +15,38 @@
  *  - หัวตารางเป็นภาษาไทย เพราะแท็บนี้ทำไว้ให้คนอ่าน ไม่ใช่ให้โค้ดอ่าน
  */
 
-var RPT = { PO: 'รายงาน PO', RR: 'รายงานการรับเข้า', SUM: 'สรุปภาพรวม' };
+var RPT = { PO: TAB.PO, RR: TAB.RR, SUM: TAB.SUM };
 
-var RPT_PO_COLS = [
-  'เลขที่ PO', 'บรรทัด', 'วันที่สั่ง', 'ผู้ขาย', 'รหัสสินค้า', 'ชื่อสินค้า', 'หน่วย', 'จ๊อบ',
-  'จำนวนที่สั่ง', 'รับแล้ว', 'ค้างรับ', 'สถานะ',
-  'ราคา/หน่วย', 'ยอดสั่ง (บาท)', 'ค้างรับ (บาท)', 'อายุ (วัน)',
-  'นัดส่งเดิม', 'นัดส่งใหม่', 'ยืนยันรับเอง', 'ตั้งเบิกแล้ว (บาท)', 'สถานะของนำเข้า',
-  'หมายเหตุ', 'ปิดรายการ', 'หมวด', 'ในประเทศ / ต่างประเทศ', 'ชื่อจ๊อบ'
-];
 
-var RPT_RR_COLS = [
-  'เลขที่ใบรับ', 'บรรทัด', 'วันที่รับ', 'เลขที่ PO', 'ผู้ขาย', 'รหัสสินค้า', 'ชื่อสินค้า', 'หน่วย',
-  'จำนวน', 'ราคา/หน่วย', 'จำนวนเงิน', 'จ๊อบ', 'เลขที่ใบกำกับ', 'สถานะจับคู่', 'ชั้นที่จับคู่',
-  'ปี พ.ศ.', 'ชื่อจ๊อบ'
-];
-
-/** ---------- ปุ่ม/ตัวเรียก: สร้างรายงานทั้ง 3 แท็บ ---------- */
+/** ---------- ปุ่ม/ตัวเรียก ---------- */
 function psBuildReports(auth) {
   if (auth) requireRole_(auth, ['PURCHASE', 'ADMIN']);
   var t0 = new Date().getTime();
-  var po = buildPoReport_();
+  var po = statPoReport_();          // ตารางหลักเป็นรายงานอยู่แล้ว — แค่นับยอดกับใส่สี
   var rr = buildRrReport_();
   var sm = buildSummary_(po, rr);
   return { poRows: po.rows, rrRows: rr.rows, summary: sm, ms: new Date().getTime() - t0 };
 }
 
-/** ---------- รายงาน PO ---------- */
-function buildPoReport_() {
+/** ---------- นับยอดจากแท็บ "รายงาน PO" + ใส่สี (ไม่เขียนทับข้อมูล) ---------- */
+function statPoReport_() {
   var src = poIndexRows_();
-  var out = [], open = 0, openVal = 0, done = 0, cancel = 0, closed = 0, amnt = 0, docs = {};
-
+  var open = 0, openVal = 0, done = 0, cancel = 0, closed = 0, amnt = 0, docs = {}, n = 0;
   for (var i = 0; i < src.length; i++) {
     var r = src[i];
     if (!s_(r[IDX.poid])) continue;
-    var got    = num_(r[IDX.recv_rr]) + num_(r[IDX.recv_manual]);
-    var remain = num_(r[IDX.remain]);
-    var isCan  = s_(r[IDX.cancelled]) === 'Y';
-    var isCls  = s_(r[IDX.closed]) === 'Y';
-
+    n++;
     amnt += num_(r[IDX.amnt]); docs[s_(r[IDX.docuno])] = 1;
-    if (isCan) cancel++;
-    else if (isCls) closed++;
-    else if (remain > 1e-6) { open++; openVal += num_(r[IDX.amnt_remain]); }
+    if (s_(r[IDX.cancelled]) === 'Y') cancel++;
+    else if (s_(r[IDX.closed]) === 'Y') closed++;
+    else if (num_(r[IDX.remain]) > 1e-6) { open++; openVal += num_(r[IDX.amnt_remain]); }
     else done++;
-
-    out.push([
-      s_(r[IDX.docuno]), s_(r[IDX.listno]), r[IDX.docudate], s_(r[IDX.vendorname]),
-      s_(r[IDX.goodcode_n]), s_(r[IDX.goodname]), s_(r[IDX.unit]), s_(r[IDX.jobcode]),
-      num_(r[IDX.ordered]), got, remain, s_(r[IDX.status]),
-      num_(r[IDX.price]), num_(r[IDX.amnt]), num_(r[IDX.amnt_remain]), num_(r[IDX.age_days]),
-      r[IDX.shipdate], r[IDX.newship], num_(r[IDX.recv_manual]), num_(r[IDX.billed_amount]),
-      s_(r[IDX.intl_status]), s_(r[IDX.note]), isCls ? 'ปิดแล้ว' : '',
-      s_(r[IDX.cat]), s_(r[IDX.is_intl]) === 'Y' ? 'ต่างประเทศ' : 'ในประเทศ', s_(r[IDX.jobname])
-    ]);
   }
-
-  var sh = writeReport_(RPT.PO, RPT_PO_COLS, out);
-  paintPoReport_(sh, out.length);
-  return { rows: out.length, open: open, openVal: openVal, done: done,
+  try {
+    var sh = SpreadsheetApp.openById(psYearFile_()).getSheetByName(TAB.PO);
+    if (sh) paintPoReport_(sh, n);
+  } catch (e) {}
+  return { rows: n, open: open, openVal: openVal, done: done,
            cancel: cancel, closed: closed, amnt: amnt, docs: Object.keys(docs).length };
 }
 
@@ -99,7 +73,7 @@ function buildRrReport_() {
     ]);
   }
 
-  var sh = writeReport_(RPT.RR, RPT_RR_COLS, out);
+  var sh = writeReport_(TAB.RR, SCHEMA.YEAR[TAB.RR], out);
   paintRrReport_(sh, out.length);
   return { rows: out.length, amnt: amnt, docs: Object.keys(docs).length,
            ok: ok, cross: cross, todo: todo, nopo: nopo };
@@ -136,7 +110,7 @@ function buildSummary_(po, rr) {
      (rr.ok + rr.cross + rr.todo + rr.nopo) === rr.rows ? 'ตรง' : 'ไม่ตรง — แจ้ง Candy', '']
   ];
 
-  var ss = SpreadsheetApp.openById(CFG.MASTER);
+  var ss = SpreadsheetApp.openById(psYearFile_());
   var sh = ss.getSheetByName(RPT.SUM) || ss.insertSheet(RPT.SUM);
   sh.clear();
   sh.clearConditionalFormatRules();
@@ -156,7 +130,7 @@ function buildSummary_(po, rr) {
 
 /** ---------- เขียนแท็บรายงาน (ล้างแล้วเขียนใหม่ทั้งแท็บ) ---------- */
 function writeReport_(tab, cols, rows) {
-  var ss = SpreadsheetApp.openById(CFG.MASTER);
+  var ss = SpreadsheetApp.openById(psYearFile_());
   var sh = ss.getSheetByName(tab) || ss.insertSheet(tab);
   var f = sh.getFilter();
   if (f) f.remove();                                   // ต้องถอดตัวกรองก่อน ไม่งั้นเขียนทับไม่ได้
@@ -192,9 +166,9 @@ function paintPoReport_(sh, n) {
   sh.getRange(2, 17, n, 2).setNumberFormat('dd/MM/yyyy');         // นัดส่งเดิม / ใหม่
   sh.getRange(2, 19, n, 2).setNumberFormat('#,##0.00');           // ยืนยันเอง / ตั้งเบิก
   var W = { 1:150, 4:220, 5:115, 6:300, 7:70, 8:120, 12:130, 22:240, 26:200 };
-  for (var c = 1; c <= RPT_PO_COLS.length; c++) sh.setColumnWidth(c, W[c] || 100);
+  for (var c = 1; c <= PO_COLS.length; c++) sh.setColumnWidth(c, W[c] || 100);
 
-  var all = sh.getRange(2, 1, n, RPT_PO_COLS.length);
+  var all = sh.getRange(2, 1, n, PO_COLS.length);
   var st  = 'INDIRECT("L"&ROW())';                                 // คอลัมน์ L = สถานะ
   var rules = [
     rule_('=REGEXMATCH(' + st + ',"ยกเลิก")',   all, '#EEF0F3', '#79828F', true),
@@ -216,9 +190,9 @@ function paintRrReport_(sh, n) {
   sh.getRange(2, 9, n, 1).setNumberFormat('#,##0.###');
   sh.getRange(2, 10, n, 2).setNumberFormat('#,##0.00');
   var W = { 1:150, 4:150, 5:220, 6:115, 7:300, 8:70, 12:120, 13:150, 14:130, 17:200 };
-  for (var c = 1; c <= RPT_RR_COLS.length; c++) sh.setColumnWidth(c, W[c] || 100);
+  for (var c = 1; c <= RR_RPT_COLS.length; c++) sh.setColumnWidth(c, W[c] || 100);
 
-  var all = sh.getRange(2, 1, n, RPT_RR_COLS.length);
+  var all = sh.getRange(2, 1, n, RR_RPT_COLS.length);
   var st  = 'INDIRECT("N"&ROW())';                                 // คอลัมน์ N = สถานะจับคู่
   sh.setConditionalFormatRules([
     rule_('=REGEXMATCH(' + st + ',"ตรงกับ PO")',    all, '#E6F6EE', '#0E8A52', false),
