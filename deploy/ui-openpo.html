@@ -97,7 +97,6 @@ function renderOpenPO(r, ms){
          '<th style="text-align:end">ค้าง</th>' +
          (r.canPrice ? '<th style="text-align:end">มูลค่าค้าง</th>' : '') +
          '<th style="text-align:end">อายุ</th><th>สถานะ</th>' +
-         (r.canEdit ? '<th></th>' : '') +
          '</tr></thead><tbody>';
     r.rows.forEach(function(x){
       var ac = x.age > 90 ? 'var(--bad)' : (x.age > 60 ? 'var(--warn)' : 'var(--text-2)');
@@ -115,8 +114,6 @@ function renderOpenPO(r, ms){
         '<td class="num nw" style="color:' + ac + ';font-weight:600">' + x.age + ' วัน</td>' +
         '<td class="nw"><span class="badge ' + (x.received + x.manual > 0 ? 'b-warn2' : 'b-sys') + '">' +
           esc(x.status) + '</span>' + tagsOf(x) + '</td>' +
-        (r.canEdit ? '<td class="nw"><button class="editbtn" onclick="opEdit(\'' +
-          esc(x.poid) + '\',\'' + esc(x.ln) + '\',\'' + esc(x.po) + '\')">แก้</button></td>' : '') +
         '</tr>';
     });
     h += '</tbody></table></div>';
@@ -146,143 +143,4 @@ function tagsOf(x){
   return t ? '<div class="tags">' + t + '</div>' : '';
 }
 
-/* ============ กล่องแก้ไข — 6 ช่องที่จัดซื้อต้องใส่เอง ============ */
-var EDITING = null;
-
-function opEdit(poid, ln, po){
-  EDITING = { poid: poid, ln: ln, po: po };
-  var w = document.createElement('div');
-  w.className = 'modal'; w.id = 'editModal';
-  w.innerHTML = '<div class="box"><div class="mh"><b>' + esc(po) + ' · บรรทัด ' + esc(ln) +
-                '</b><div class="sub">กำลังโหลด...</div></div><div class="mb" id="edBody">' +
-                '<p class="small">กำลังโหลด...</p></div></div>';
-  document.body.appendChild(w);
-  w.onclick = function(e){ if(e.target === w) opCloseEdit(); };
-
-  google.script.run
-    .withSuccessHandler(function(r){ renderEdit(r, po, ln); })
-    .withFailureHandler(function(e){
-      $('edBody').innerHTML = '<div class="msg err" style="display:block">' + esc(e.message) + '</div>';
-    })
-    .getPoEdit(AUTH, poid, ln);
-}
-function opCloseEdit(){
-  var m = $('editModal'); if(m) m.remove();
-  EDITING = null;
-}
-
-function renderEdit(r, po, ln){
-  var e = r.edit;
-  var opts = r.intlOptions.map(function(o){
-    return '<option value="' + esc(o) + '"' + (o === e.intl_status ? ' selected' : '') + '>' +
-           (o || '— ไม่ระบุ —') + '</option>';
-  }).join('');
-
-  var h = '<div class="fgrid">' +
-    '<div class="field"><label for="edRecv">ยืนยันรับของเอง (จำนวน)</label>' +
-      '<input type="text" id="edRecv" inputmode="decimal" value="' + (e.recv_manual || '') + '">' +
-      '<div class="hint">ใช้กับของต่างประเทศ หรือของที่มาถึงแล้วแต่ยังไม่มีใบรับในระบบ</div></div>' +
-    '<div class="field"><label for="edRecvDate">วันที่รับของจริง</label>' +
-      '<input type="date" id="edRecvDate" value="' + isoDate(e.recv_date) + '"></div>' +
-
-    '<div class="field"><label for="edBilled">ยอดที่ตั้งเบิกบัญชีไปแล้ว (บาท)</label>' +
-      '<input type="text" id="edBilled" inputmode="decimal" value="' + (e.billed_amount || '') + '">' +
-      '<div class="hint">บัญชีรับรู้ยอดนี้ไปแล้ว ระบบจะหักออกจากมูลค่าค้างรับให้</div></div>' +
-    '<div class="field"><label for="edBilledNote">เลขที่ใบตั้งเบิก</label>' +
-      '<input type="text" id="edBilledNote" value="' + esc(e.billed_note || '') + '"></div>' +
-
-    '<div class="field"><label for="edShip">วันนัดส่งใหม่</label>' +
-      '<input type="date" id="edShip" value="' + isoDate(e.newship) + '">' +
-      '<div class="hint">ถ้าผู้ขายเลื่อนวัน ใส่วันใหม่ที่นี่</div></div>' +
-    '<div class="field"><label for="edIntl">สถานะของนำเข้า</label>' +
-      '<select id="edIntl">' + opts + '</select></div>' +
-
-    '<div class="field full"><label for="edNote">หมายเหตุ / ติดตามถึงไหน</label>' +
-      '<textarea id="edNote" placeholder="เช่น โทรตามแล้ว 12/9 ผู้ขายแจ้งของเข้าสัปดาห์หน้า">' +
-      esc(e.note || '') + '</textarea></div>' +
-
-    '<div class="field full"><label class="chk' + (e.closed ? ' on' : '') + '" id="edClosedBox">' +
-      '<input type="checkbox" id="edClosed"' + (e.closed ? ' checked' : '') +
-      ' onchange="edToggleClose()"> ปิดรายการนี้ — ไม่ต้องตามของแล้ว</label>' +
-      '<div id="edReasonWrap" class="' + (e.closed ? '' : 'hide') + '" style="margin-top:10px">' +
-        '<label for="edReason">เหตุผลที่ปิด (บังคับ)</label>' +
-        '<input type="text" id="edReason" value="' + esc(e.close_reason || '') +
-        '" placeholder="เช่น ยกเลิกกับผู้ขายแล้ว / สั่งซ้ำ / ไม่ผลิตแล้ว"></div></div>' +
-    '</div>' +
-    '<div class="msg" id="edMsg"></div>';
-
-  $('edBody').innerHTML = h;
-  document.querySelector('#editModal .mh .sub').textContent =
-    r.found ? 'เคยกรอกไว้แล้ว · แก้ล่าสุดโดย ' + (e.by_emp || '-') : 'ยังไม่เคยกรอก';
-
-  var box = document.querySelector('#editModal .box');
-  var f = document.createElement('div');
-  f.className = 'mf';
-  f.innerHTML = '<button class="btn ghost" onclick="opCloseEdit()">ยกเลิก</button>' +
-                '<button class="btn" id="edSave" onclick="edSave()">บันทึก</button>';
-  box.appendChild(f);
-}
-
-function isoDate(v){
-  if(!v) return '';
-  var d = new Date(v);
-  if(isNaN(d.getTime())) return '';
-  var p = function(n){ return (n<10?'0':'') + n; };
-  return d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate());
-}
-
-function edToggleClose(){
-  var on = $('edClosed').checked;
-  $('edClosedBox').className = 'chk' + (on ? ' on' : '');
-  $('edReasonWrap').className = on ? '' : 'hide';
-}
-
-function edSave(){
-  if(!EDITING) return;
-  var p = {
-    poid: EDITING.poid, listno: EDITING.ln, docuno: EDITING.po,
-    recv_manual: $('edRecv').value.trim(),
-    recv_date: $('edRecvDate').value,
-    billed_amount: $('edBilled').value.trim(),
-    billed_note: $('edBilledNote').value.trim(),
-    newship: $('edShip').value,
-    note: $('edNote').value.trim(),
-    intl_status: $('edIntl').value,
-    closed: $('edClosed').checked,
-    close_reason: $('edReason') ? $('edReason').value.trim() : ''
-  };
-  if(p.closed && !p.close_reason){
-    say('edMsg', 'ปิดรายการต้องใส่เหตุผลด้วย', 'err'); return;
-  }
-  busy('edSave', true, 'กำลังบันทึก...');
-  google.script.run
-    .withSuccessHandler(function(r){
-      busy('edSave', false, 'บันทึก');
-      say('edMsg', r.msg, 'ok');
-      setTimeout(function(){ opCloseEdit(); loadOpenPO(); }, 900);
-    })
-    .withFailureHandler(function(e){
-      busy('edSave', false, 'บันทึก');
-      say('edMsg', e.message, 'err');
-    })
-    .savePoEdit(AUTH, p);
-}
-
-function opRebuild(){
-  busy('opRb', true, 'กำลังคำนวณ...');
-  google.script.run
-    .withSuccessHandler(function(r){
-      busy('opRb', false, 'อัปเดตข้อมูลใหม่');
-      loadOpenPO();
-    })
-    .withFailureHandler(function(e){
-      busy('opRb', false, 'อัปเดตข้อมูลใหม่');
-      alert('คำนวณไม่สำเร็จ: ' + e.message);
-    })
-    .psRebuild(AUTH);
-}
-
-document.addEventListener('keydown', function(e){
-  if(e.key === 'Escape' && $('editModal')) opCloseEdit();
-});
 </script>

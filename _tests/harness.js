@@ -23,6 +23,28 @@ function build(opts) {
   // ---- คลังแท็บจำลอง: fileId -> tab -> values ----
   // ไฟล์ของปี = ไฟล์เดียวกับที่มีแท็บ ps_report / RR ของเบียร์ (ไม่ก๊อปออกมา)
   const store = { MASTER: {}, YEAR: { ps_report: SRC.ps_report, RR: SRC.RR }, RRALL: {} };
+  // เติมคอลัมน์ที่ระบบต่อท้าย (เหมือน psSetup ทำในชีตจริง)
+  const SYS_H = ['รับแล้ว (จำนวน)','รับแล้ว (บาท)','รับแล้ว + VAT','ค้างรับ (จำนวน)','ค้างรับ (บาท)',
+                 'ค้างรับ + VAT','สถานะ (ระบบ)','อายุ (วัน)','เลขที่ใบรับ','ชั้นที่จับคู่'];
+  const HUM_H = ['สถานะ (จัดซื้อ)','สถานะเอกสาร','ยืนยันรับเอง (จำนวน)','วันที่ยืนยัน','นัดส่งใหม่',
+                 'ตั้งเบิกแล้ว (บาท)','สถานะของนำเข้า','หมายเหตุ','เหตุผล'];
+  {
+    const po = store.YEAR.ps_report;
+    po[0] = po[0].concat(SYS_H, HUM_H);
+    const pad = SYS_H.length + HUM_H.length;
+    for (let i = 1; i < po.length; i++) po[i] = po[i].concat(new Array(pad).fill(''));
+    const rr = store.YEAR.RR;
+    rr[0] = rr[0].concat(['สถานะจับคู่']);
+    for (let i = 1; i < rr.length; i++) rr[i] = rr[i].concat(['']);
+    (opts.edits || []).forEach(e => {                      // [poid, listno, {คีย์:ค่า}]
+      const C = {}; po[0].forEach((h, k) => C[String(h)] = k);
+      for (let i = 1; i < po.length; i++) {
+        if (String(po[i][C['Poid']]) === e[0] && String(po[i][C['listno']]) === e[1]) {
+          for (const k in e[2]) po[i][C[k]] = e[2][k];
+        }
+      }
+    });
+  }
   const written = {};
 
   const sandbox = {
@@ -119,10 +141,8 @@ function build(opts) {
   vm.runInContext(D('00-config.js').replace(/function doGet[\s\S]*$/, ''), sandbox, { filename: '00-config.js' });
   vm.runInContext(D('03-setup.js'), sandbox, { filename: '03-setup.js' });
   vm.runInContext(D('04-import.js'), sandbox, { filename: '04-import.js' });
-  vm.runInContext(D('05-edit.js'), sandbox, { filename: '05-edit.js' });
   vm.runInContext(D('06-rrdb.js'), sandbox, { filename: '06-rrdb.js' });
   vm.runInContext(D('07-guide.js'), sandbox, { filename: '07-guide.js' });
-  vm.runInContext(D('08-report.js'), sandbox, { filename: '08-report.js' });
 
   // ---- ตัวแทนบริการของ Apps Script ----
   const stub = `
@@ -157,8 +177,6 @@ function build(opts) {
   var colSrc = D('02-master.js').match(/function colIdx_\(hdr, names\) \{[\s\S]*?\n\}/)[0];
   vm.runInContext(stub.replace('__COLIDX__', colSrc), sandbox, { filename: 'stub.js' });
 
-  // แถวที่จัดซื้อกรอกเอง — จำลองไว้ให้เห็นป้ายในหน้าจอ
-  store.YEAR[sandbox.TAB.EDIT] = [sandbox.SCHEMA.YEAR[sandbox.TAB.EDIT].slice()].concat(opts.edits || []);
 
   return { sandbox, store, written, SRC };
 }

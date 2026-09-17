@@ -32,8 +32,8 @@ var STATUS_CHIPS = [
   { k:'open',      t:'ค้างรับ' },
   { k:'partial',   t:'รับบางส่วน' },
   { k:'done',      t:'รับครบ' },
-  { k:'closed',    t:'ปิดรายการ' },
-  { k:'cancelled', t:'ยกเลิก' }
+  { k:'cancelled', t:'ยกเลิก' },
+  { k:'mismatch',  t:'สถานะไม่ตรงกัน' }
 ];
 var SORTS = [
   { k:'value',  t:'มูลค่าค้างมาก → น้อย' },
@@ -54,6 +54,7 @@ function renderPoDb(r, ms){
        stat(r.canPrice ? money(r.all.amnt) : 'ซ่อน', r.canPrice ? 'ยอดสั่งรวม (บาท)' : 'สโตร์ไม่เห็นราคา',
             r.canPrice ? 'var(--text)' : 'var(--text-3)') +
        stat(r.canPrice ? money(r.all.openVal) : '—', 'ค้างรับ (บาท)', 'var(--brand)') +
+       stat(r.canPrice ? money(r.all.openVat) : '—', 'ค้างรับ + VAT', 'var(--brand)') +
        '</div>';
 
   /* --- ชิปสถานะ --- */
@@ -65,7 +66,7 @@ function renderPoDb(r, ms){
           : c.k === 'partial'   ? r.all.partial
           : c.k === 'done'      ? r.all.done
           : c.k === 'cancelled' ? r.all.cancelled
-          : c.k === 'closed'    ? r.all.closed : null;
+          : c.k === 'mismatch'  ? r.all.mismatch : null;
     h += '<button class="chip2' + (DB.status === c.k ? ' on' : '') +
          '" onclick="dbPick(\'status\',\'' + c.k + '\')">' + esc(c.t) +
          (n !== null ? '<span class="cn">' + Number(n).toLocaleString() + '</span>' : '') + '</button>';
@@ -134,7 +135,8 @@ function renderPoDb(r, ms){
     h += '<div class="tblwrap"><table><thead><tr>' +
       '<th>เลขที่ PO</th><th>สินค้า</th><th>ผู้ขาย</th><th>จ๊อบ</th>' +
       '<th style="text-align:end">สั่ง</th><th style="text-align:end">รับแล้ว</th><th style="text-align:end">ค้าง</th>' +
-      (r.canPrice ? '<th style="text-align:end">ราคา/หน่วย</th><th style="text-align:end">ยอดสั่ง</th><th style="text-align:end">ค้าง ฿</th>' : '') +
+      (r.canPrice ? '<th style="text-align:end">ราคา/หน่วย</th><th style="text-align:end">ยอดสั่ง</th>' +
+                    '<th style="text-align:end">ค้าง ฿</th><th style="text-align:end">ค้าง +VAT</th>' : '') +
       '<th style="text-align:end">อายุ (วัน)</th><th>สถานะ</th><th></th>' +
       '</tr></thead><tbody>';
     r.rows.forEach(function(x){
@@ -155,14 +157,12 @@ function renderPoDb(r, ms){
         '<td class="num nw">' + (x.remain > 0 ? '<b>' + qty(x.remain) + '</b>' : '<span class="muted">—</span>') + '</td>' +
         (r.canPrice ? '<td class="num nw">' + money(x.price) + '</td>' +
                       '<td class="num nw">' + money(x.amnt) + '</td>' +
-                      '<td class="num nw">' + (x.value > 0 ? money(x.value) : '<span class="muted">—</span>') + '</td>' : '') +
+                      '<td class="num nw">' + (x.value > 0 ? money(x.value) : '<span class="muted">—</span>') + '</td>' +
+                      '<td class="num nw">' + (x.valueVat > 0 ? money(x.valueVat) : '<span class="muted">—</span>') + '</td>' : '') +
         '<td class="num nw" style="color:' + ac + '">' + x.age + '</td>' +
         '<td class="nw"><span class="badge ' + sc + '">' + esc(x.status) + '</span>' + tagsOf(x) + '</td>' +
         '<td class="nw"><button class="editbtn" title="ดูใบรับของ PO ใบนี้" ' +
-          'onclick="poRr(\'' + esc(x.po) + '\')">ใบรับ</button>' +
-          (r.canEdit && !x.cancelled
-            ? ' <button class="editbtn" onclick="opEdit(\'' + esc(x.poid) + '\',\'' + esc(x.ln) +
-              '\',\'' + esc(x.po) + '\')">แก้</button>' : '') + '</td>' +
+          'onclick="poRr(\'' + esc(x.po) + '\')">ใบรับ</button></td>' +
         '</tr>';
     });
     h += '</tbody></table></div>';

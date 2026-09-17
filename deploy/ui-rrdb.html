@@ -277,32 +277,6 @@ function renderDbLinks(r){
     }
     h += '</div>';
   });
-  if(ME.role === 'PURCHASE' || ME.role === 'ADMIN'){
-    h += '<div class="card"><div class="secthead" style="margin-top:0"><h3>สร้างแท็บรายงานใหม่</h3>' +
-         '<div class="line"></div></div>' +
-         '<p class="small">เขียนแท็บ สรุปภาพรวม · รายงาน PO · รายงานการรับเข้า ใหม่ทั้งหมด ' +
-         'ให้ตรงกับตัวเลขในโปรแกรมตอนนี้ (ปกติระบบทำให้เองทุกครั้งที่กด "อัปเดตข้อมูล")</p>' +
-         '<button class="btn" id="dlRpt" onclick="dbReports()">สร้างแท็บรายงานใหม่</button>' +
-         '<div id="dlRptMsg"></div></div>';
-  }
-  if(ME.role === 'ADMIN'){
-    h += '<div class="card" style="border-color:var(--brand-line);background:#FFFCFC">' +
-         '<div class="secthead" style="margin-top:0"><h3>ล้างแท็บที่เผลอสร้างไว้ใน STT-DB-MASTER</h3>' +
-         '<div class="line"></div></div>' +
-         '<p class="small">รุ่นก่อนหน้าเผลอสร้างแท็บของ P&amp;S ไว้ในไฟล์ของ NOVA ใหญ่ ' +
-         'ตอนนี้ย้ายมาอยู่ไฟล์รายปีหมดแล้ว กดปุ่มนี้เพื่อดูว่ามีอะไรค้างอยู่ แล้วค่อยลบ<br>' +
-         '<b>แท็บ USERS / SETTINGS / REGISTRY ของ NOVA ถูกกันไว้ ไม่มีทางโดนลบ</b></p>' +
-         '<button class="btn ghost" id="dlScan" onclick="mScan()">ดูว่ามีอะไรค้างอยู่</button>' +
-         '<div id="dlMScan"></div></div>';
-  }
-  if(ME.role === 'ADMIN'){
-    h += '<div class="card"><div class="secthead" style="margin-top:0"><h3>จัดหน้าตาฐานข้อมูล</h3>' +
-         '<div class="line"></div></div>' +
-         '<p class="small">ตรึงหัว · ใส่ตัวกรอง · จัดรูปแบบวันที่และตัวเลข · ใส่คำอธิบายไทยที่หัวคอลัมน์ · ' +
-         'เขียนแท็บคู่มือใหม่ — กดซ้ำกี่ครั้งก็ได้ ไม่แตะข้อมูล</p>' +
-         '<button class="btn" id="dlFix" onclick="dbBeautify()">จัดหน้าตาฐานข้อมูลใหม่</button>' +
-         '<div id="dlMsg"></div></div>';
-  }
   $('dlBody').innerHTML = h;
 }
 
@@ -349,37 +323,4 @@ function mClean(){
     .cleanMaster(AUTH, 'ลบเลย');
 }
 
-function dbReports(){
-  busy('dlRpt', true, 'กำลังเขียนรายงาน...');
-  google.script.run
-    .withSuccessHandler(function(r){
-      busy('dlRpt', false, 'สร้างแท็บรายงานใหม่');
-      $('dlRptMsg').innerHTML = '<div class="msg ok" style="display:block">เขียนเรียบร้อย · ' +
-        'รายงาน PO ' + Number(r.poRows).toLocaleString() + ' บรรทัด · ' +
-        'รายงานการรับเข้า ' + Number(r.rrRows).toLocaleString() + ' บรรทัด · ' + r.ms + ' ms</div>';
-    })
-    .withFailureHandler(function(e){
-      busy('dlRpt', false, 'สร้างแท็บรายงานใหม่');
-      $('dlRptMsg').innerHTML = '<div class="msg err" style="display:block">' + esc(e.message) + '</div>';
-    })
-    .psBuildReports(AUTH);
-}
-
-function dbBeautify(){
-  busy('dlFix', true, 'กำลังจัด...');
-  google.script.run
-    .withSuccessHandler(function(r){
-      busy('dlFix', false, 'จัดหน้าตาฐานข้อมูลใหม่');
-      $('dlMsg').innerHTML = '<div class="msg ok" style="display:block">จัดเรียบร้อย ' + r.tabs +
-        ' แท็บ · ' + r.ms + ' ms' +
-        (r.errors && r.errors.length ? '<br>ข้าม: ' + esc(r.errors.join(' · ')) : '') +
-        (r.guideUrl ? '<br><a href="' + esc(r.guideUrl) + '" target="_blank" rel="noopener">เปิดแท็บคู่มือฐานข้อมูล</a>' : '') +
-        '</div>';
-    })
-    .withFailureHandler(function(e){
-      busy('dlFix', false, 'จัดหน้าตาฐานข้อมูลใหม่');
-      $('dlMsg').innerHTML = '<div class="msg err" style="display:block">' + esc(e.message) + '</div>';
-    })
-    .psBeautify(AUTH);
-}
 </script>

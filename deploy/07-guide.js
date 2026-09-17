@@ -105,134 +105,18 @@ var PS_TABLE_DOC = {
   'ตั้งเบิก':   'รายการตั้งเบิกบัญชี'
 };
 
-/** ---------- จัดรูปแบบแท็บให้อ่านออกด้วยตาเปล่า ---------- */
-function beautifyTab_(sh, cols) {
-  var n = cols.length;
-  sh.setFrozenRows(1);
-  sh.getRange(1, 1, 1, n).setFontWeight('bold').setBackground('#12151A').setFontColor('#FFFFFF');
-
-  // คำอธิบายไทยใส่ไว้ในหมายเหตุของหัวคอลัมน์ (ไม่เปลี่ยนชื่อหัว โค้ดยังหาคอลัมน์เจอ)
-  var notes = [];
-  for (var i = 0; i < n; i++) notes.push(PS_LABEL[cols[i]] || PS_LABEL_TH[cols[i]] || '');
-  sh.getRange(1, 1, 1, n).setNotes([notes]);
-
-  var last = Math.max(sh.getMaxRows() - 1, 1);
-  for (var c = 0; c < n; c++) {
-    var name = String(cols[c]);
-    var rng = sh.getRange(2, c + 1, last, 1);
-    if (/_at$/.test(name))                                        rng.setNumberFormat('dd/MM/yyyy HH:mm');
-    else if (/date$|^date|ship|expire|first_rr|last_rr|first_seen|last_seen/.test(name))
-                                                                  rng.setNumberFormat('dd/MM/yyyy');
-    else if (/price|amnt|amount|wac|netamnt|advnamnt/.test(name)) rng.setNumberFormat('#,##0.00');
-    else if (/qty|ordered|recv_rr|recv_manual|remain|^n_|lines|days/.test(name))
-                                                                  rng.setNumberFormat('#,##0.###');
-
-    var w = /goodname|jobname|vendorname|note|reason|detail|close_reason/.test(name) ? 260
-          : /docuno|pono|goodcode|jobcode|status/.test(name) ? 150 : 110;
-    sh.setColumnWidth(c + 1, w);
-  }
-
-  if (!sh.getFilter()) {
-    try { sh.getRange(1, 1, Math.max(sh.getLastRow(), 1), n).createFilter(); } catch (_) {}
-  }
-  return sh.getName();
-}
-
-/** ---------- ปุ่ม: จัดหน้าตาฐานข้อมูลทั้งหมด ---------- */
-function psBeautify(auth) {
-  requireRole_(auth, ['ADMIN']);
-  var t0 = new Date().getTime(), done = [], err = [];
-  var jobs = [
-    { id: psYearFile_(), tabs: SCHEMA.YEAR, name: 'STT-PS-' + currentYearTH_() },
-    { id: psAllFile_(),  tabs: SCHEMA.RRALL, name: 'STT-PS-RR-ALL' }
-  ];
-  for (var j = 0; j < jobs.length; j++) {
-    var ss;
-    try { ss = SpreadsheetApp.openById(jobs[j].id); }
-    catch (e) { err.push(jobs[j].name + ': เปิดไฟล์ไม่ได้'); continue; }
-    for (var t in jobs[j].tabs) {
-      var sh = ss.getSheetByName(t);
-      if (!sh) { err.push(jobs[j].name + ' / ' + t + ': ไม่มีแท็บ'); continue; }
-      try { beautifyTab_(sh, jobs[j].tabs[t]); done.push(jobs[j].name + ' / ' + t); }
-      catch (e2) { err.push(jobs[j].name + ' / ' + t + ': ' + e2.message); }
-    }
-  }
-  // ไม่เขียนแท็บคู่มือแล้ว — คำอธิบายไทยอยู่ในหมายเหตุหัวคอลัมน์ทุกช่องอยู่แล้ว
-  return { tabs: done.length, errors: err, guideUrl: '', ms: new Date().getTime() - t0 };
-}
-
-/** ---------- แท็บ "คู่มือฐานข้อมูล" ใน STT-DB-MASTER ---------- */
-function psWriteGuide_(jobs) {
-  var ss = SpreadsheetApp.openById(psYearFile_());
-  var sh = ss.getSheetByName('คู่มือฐานข้อมูล') || ss.insertSheet('คู่มือฐานข้อมูล');
-  sh.clear();
-  sh.clearNotes();
-
-  var rows = [];
-  rows.push(['คู่มือฐานข้อมูล NOVA – PURCHASE & STORE HUB', '', '', '']);
-  rows.push(['อัปเดตอัตโนมัติเมื่อ ' + Utilities.formatDate(new Date(), 'Asia/Bangkok', 'd/M/yyyy HH:mm') +
-             ' · เวอร์ชัน ' + PS_VERSION, '', '', '']);
-  rows.push(['', '', '', '']);
-  rows.push(['ถ้าหน้าเว็บเปิดไม่ได้ ให้เปิดไฟล์ข้างล่างนี้ดูข้อมูลดิบได้เลย ทุกแท็บตรึงหัวและใส่ตัวกรองไว้แล้ว',
-             '', '', '']);
-  rows.push(['ไฟล์', 'ลิงก์', '', '']);
-  for (var j = 0; j < jobs.length; j++) {
-    var url = '';
-    try { url = SpreadsheetApp.openById(jobs[j].id).getUrl(); } catch (_) { url = '(เปิดไม่ได้)'; }
-    rows.push([jobs[j].name, url, '', '']);
-  }
-  rows.push(['', '', '', '']);
-  rows.push(['อยากดูแบบอ่านง่าย เปิด 3 แท็บนี้ในไฟล์นี้ได้เลย — หน้าตาเหมือนในโปรแกรม', '', '', '']);
-  rows.push(['สรุปภาพรวม', 'การ์ดตัวเลขชุดเดียวกับหน้าแรกของโปรแกรม', '', '']);
-  rows.push([RPT.PO, 'ใบสั่งซื้อทุกบรรทัด หัวตารางภาษาไทย มีค้างรับ/รับครบรายบรรทัด ใส่สีตามสถานะ', '', '']);
-  rows.push([RPT.RR, 'ใบรับของทุกบรรทัด พร้อมสถานะการจับคู่กับ PO', '', '']);
-  rows.push(['ทั้ง 3 แท็บสร้างใหม่อัตโนมัติทุกครั้งที่กด "คำนวณค้างรับใหม่" — ห้ามพิมพ์แก้ในนี้ เพราะจะโดนทับ',
-             '', '', '']);
-  rows.push(['', '', '', '']);
-  rows.push(['ตารางทั้งหมด', '', '', '']);
-  var hdrRow = rows.length + 1;                  // แถวหัวตารางของบล็อกรายละเอียด
-  rows.push(['ไฟล์', 'แท็บ', 'คอลัมน์', 'คำอธิบาย']);
-
-  for (var k = 0; k < jobs.length; k++) {
-    for (var t in jobs[k].tabs) {
-      var cols = jobs[k].tabs[t];
-      rows.push([jobs[k].name, t, '— ตารางนี้คืออะไร —', PS_TABLE_DOC[t] || '']);
-      for (var c = 0; c < cols.length; c++) {
-        rows.push(['', '', cols[c], PS_LABEL[cols[c]] || '']);
-      }
-    }
-  }
-
-  sh.getRange(1, 1, rows.length, 4).setValues(rows);
-  sh.getRange(1, 1).setFontSize(15).setFontWeight('bold');
-  sh.getRange(4, 1).setFontWeight('bold');
-  sh.getRange(5, 1, 1, 2).setFontWeight('bold').setBackground('#12151A').setFontColor('#FFFFFF');
-  sh.getRange(5 + jobs.length + 2, 1).setFontWeight('bold');    // หัวข้อ "อยากดูแบบอ่านง่าย..."
-  sh.getRange(hdrRow, 1, 1, 4).setFontWeight('bold')
-    .setBackground('#12151A').setFontColor('#FFFFFF');
-  sh.setColumnWidth(1, 170); sh.setColumnWidth(2, 190);
-  sh.setColumnWidth(3, 190); sh.setColumnWidth(4, 620);
-  sh.getRange(1, 4, rows.length, 1).setWrap(true);
-  sh.setFrozenRows(hdrRow);
-  return ss.getUrl() + '#gid=' + sh.getSheetId();
-}
-
-/** ---------- ลิงก์ไฟล์ฐานข้อมูล (หน้าเว็บเรียกไปแสดง) ---------- */
+/** ---------- ลิงก์ไฟล์ (หน้า "เปิดชีตดูเอง") ---------- */
 function getDbLinks(auth) {
   requireRole_(auth, ['PURCHASE', 'ADMIN', 'EXEC', 'STORE']);
   var year = currentYearTH_();
   var want = [
-    { key: 'REPORT', name: 'STT-PS-' + year + '  —  แท็บรายงาน (อ่านง่าย ภาษาไทย)',
-      what: 'เปิดแล้วเห็นเหมือนในโปรแกรม มีค้างรับ/รับครบรายบรรทัด ใส่สีตามสถานะ',
-      id: '', tabs: [TAB.SUM, TAB.PO, TAB.RR] },
-    { key: 'YEAR', name: 'STT-PS-' + year + '  —  ตารางที่โปรแกรมใช้',
-      what: 'ข้อมูลดิบที่วางมาจาก My Account · สิ่งที่จัดซื้อกรอกเอง · ผลจับคู่ · ประวัติ',
-      id: '', tabs: [TAB.SRC_PO, TAB.SRC_RR, TAB.EDIT, TAB.LINK, TAB.IMPORT, TAB.LOG] },
-    { key: 'RRALL', name: 'STT-PS-RR-ALL', what: 'ใบรับของสะสมทุกปี + ต้นทุนกลาง (ไฟล์เดียวตลอด 20 ปี)',
-      id: '', tabs: ['RR_ALL', 'PS_PRICE_LATEST'] }
+    { name: 'ไฟล์ของปี ' + year, what: 'ทุกอย่างอยู่ในไฟล์นี้ไฟล์เดียว',
+      id: '', tabs: [TAB.PO, TAB.RR, TAB.SUM] },
+    { name: 'STT-PS-RR-ALL', what: 'ใบรับสะสมทุกปี (ไว้ทำต้นทุนเฉลี่ย)',
+      id: '', tabs: ['RR_ALL'] }
   ];
-  try { want[0].id = psYearFile_(); want[1].id = want[0].id; } catch (_) {}
-  try { want[2].id = psAllFile_(); } catch (_) {}
+  try { want[0].id = psYearFile_(); } catch (_) {}
+  try { want[1].id = psAllFile_(); } catch (_) {}
 
   var out = [];
   for (var i = 0; i < want.length; i++) {
@@ -241,6 +125,7 @@ function getDbLinks(auth) {
       try {
         var ss = SpreadsheetApp.openById(w.id);
         url = ss.getUrl(); ok = true;
+        if (i === 0) w.name = ss.getName();
         for (var t = 0; t < w.tabs.length; t++) {
           var sh = ss.getSheetByName(w.tabs[t]);
           tabs.push({ name: w.tabs[t], rows: sh ? Math.max(0, sh.getLastRow() - 1) : null,

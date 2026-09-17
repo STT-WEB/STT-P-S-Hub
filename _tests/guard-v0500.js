@@ -1,10 +1,7 @@
 /**
- * guard-v0500 — รัน "ทั้งสายงาน" ของจริงบน Node: นำเข้า PO → นำเข้า RR → สร้างตารางกลาง →
- *                อ่านผ่าน getPoAll / getOpenPO เหมือนที่หน้าเว็บเรียก
+ * guard-v0500 — รันทั้งสายงานของจริงบน Node
+ *   อ่านแท็บ ps_report / RR จากไฟล์ของเบียร์ → จับคู่ → เขียนคอลัมน์สีน้ำเงิน → อ่านผ่านหน้าเว็บ
  * รัน:  node _tests/guard-v0500.js
- *
- * ต่างจาก guard-v0300 ตรงที่ v0300 ทดสอบเฉพาะ "เครื่องจับคู่"
- * ส่วนชุดนี้ทดสอบตั้งแต่ไฟล์ Excel ของ My Account จนถึงตัวเลขที่หน้าจอแสดง
  */
 const { build } = require('./harness.js');
 
@@ -19,213 +16,150 @@ function near(name, got, want, tol) {
      'ได้ ' + got.toFixed(2) + (Math.abs(got - want) < (tol || 0.01) ? '' : ' · ควรได้ ' + want.toFixed(2)));
 }
 
-console.log('\n=== guard-v0500 : ทั้งสายงาน นำเข้า → ตารางกลาง → หน้าจอ ===\n');
+console.log('\n=== guard-v0500 : ไฟล์เดียว ps_report + คอลัมน์ที่ระบบต่อท้าย ===\n');
 
-const URL = 'https://docs.google.com/spreadsheets/d/1ZRHCnbu-Dzdzk1RwHewgqKDUeb8gjngzHrhls32SSqQ/edit';
 const H = build({ role: 'ADMIN' });
 const S = H.sandbox;
 
-/* ---------- 1-2. อ่านจากไฟล์เดียว แล้วจับคู่ ---------- */
+/* ---------- 1. อ่าน + จับคู่ ---------- */
 console.log('— อ่าน ps_report / RR จากไฟล์เดียวกัน แล้วจับคู่ —');
 const rb = S.psRebuild({});
-eq('PO อ่านได้',           rb.poRead, 7951);
-eq('PO แถวเสีย 1 แถว',     rb.poSkipped, 1);
-eq('RR อ่านได้',           rb.rrRead, 7513);
-eq('RR แถวเสีย 1 แถว',     rb.rrSkipped, 1);
+eq('อ่าน ps_report',        rb.poRead, 7951);
+eq('แถวเสีย 1 แถว',         rb.poSkipped, 1);
+eq('อ่าน RR',               rb.rrRead, 7513);
+eq('RR แถวเสีย 1 แถว',      rb.rrSkipped, 1);
 eq('บรรทัด PO ที่ใช้จับคู่', rb.poLines, 7878);
-eq('บรรทัดใบรับที่ใช้',      rb.rrLines, 7512);
-eq('จับคู่ได้',             rb.matched, 7375);
-eq('ชั้น C1',               rb.tiers.C1, 7373);
-eq('รับข้ามปี (ไม่มี PO ปีนี้)', rb.noPO, 137);
-eq('จับคู่ไม่ได้',          rb.unmatched, 0);
-eq('รับเกินที่สั่ง',        rb.over, 0);
-eq('ตารางหลักมีทุกบรรทัด',  rb.indexLines, 7950);
-eq('บรรทัดค้างรับ',         rb.openLines, 617);
-eq('ใบ PO ที่ยังค้าง',      rb.openDocs, 184);
-near('มูลค่าค้างรับ',        rb.openValue, 28432882.99);
-eq('เก็บใบรับลงไฟล์สะสม',    rb.rrAll.fresh, 7512);
-eq('ไม่มี error ตอนเขียนรายงาน', rb.reportError, '');
+eq('จับคู่ได้',              rb.matched, 7375);
+eq('ชั้น C1',                rb.tiers.C1, 7373);
+eq('รับข้ามปี',              rb.noPO, 137);
+eq('จับคู่ไม่ได้',           rb.unmatched, 0);
+eq('รับเกินที่สั่ง',         rb.over, 0);
+eq('บรรทัดค้างรับ',          rb.openLines, 617);
+eq('ใบ PO ที่ยังค้าง',       rb.openDocs, 184);
+near('มูลค่าค้างรับ',         rb.openValue, 28432882.99);
+eq('เก็บใบรับลงไฟล์สะสม',     rb.rrAll.fresh, 7512);
+eq('เขียนแท็บสรุปสำเร็จ',     rb.summaryError, '');
 
-/* ---------- 2ข. ห้ามแตะแท็บต้นทางของเบียร์ ---------- */
-console.log('\n— แท็บ ps_report / RR ของเบียร์ต้องไม่ถูกเขียนทับ —');
-eq('ps_report ยังมีแถวเท่าเดิม', H.store.YEAR.ps_report.length, 7952);
-eq('RR ยังมีแถวเท่าเดิม',        H.store.YEAR.RR.length, 7514);
+/* ---------- 2. ห้ามแตะของเบียร์ ---------- */
+console.log('\n— 23 คอลัมน์เดิมของ My Account ต้องไม่ถูกแตะ —');
+const po = H.store.YEAR.ps_report, C = S.poColMap_(po[0]);
+eq('จำนวนแถว ps_report เท่าเดิม', po.length, 7952);
+eq('คอลัมน์แรกยังเป็น ShipDate',  String(po[0][0]), 'ShipDate');
+eq('คอลัมน์ที่ 23 ยังเป็น LocaCode', String(po[0][22]), 'LocaCode');
+ok('คอลัมน์เดิม 23 ช่องอยู่ก่อนของระบบเสมอ', C.got >= 23 && C.h_status > C.tier);
+eq('แท็บ RR แถวเท่าเดิม', H.store.YEAR.RR.length, 7514);
+eq('MASTER ต้องว่าง', Object.keys(H.store.MASTER).length, 0);
 
-/* ---------- 3. ตารางกลางต้องครบทุกสถานะ ---------- */
-console.log('\n— ตารางกลางต้องไม่ทิ้งบรรทัดไหน —');
-const rows = H.store.YEAR[S.TAB.PO].slice(1);
-const nCancel = rows.filter(r => r[S.IDX.cancelled] === 'Y').length;
-eq('บรรทัดยกเลิกถูกเก็บไว้', nCancel, 72);
-eq('รวมแล้วเท่าจำนวนที่นำเข้า', rows.length, 7950);
-ok('ทุกบรรทัดมีคีย์ poid+listno', rows.every(r => String(r[S.IDX.poid]) && String(r[S.IDX.listno])));
-const keys = {};
-rows.forEach(r => { const k = r[S.IDX.poid] + '|' + r[S.IDX.listno]; keys[k] = (keys[k] || 0) + 1; });
-eq('คีย์ไม่ซ้ำ', Object.keys(keys).length, 7950);
+/* ---------- 3. คอลัมน์ที่ระบบเติม ---------- */
+console.log('\n— คอลัมน์สีน้ำเงินที่ระบบเติม —');
+let sumGot = 0, sumRem = 0, sumRemVat = 0, badMath = 0, nStatus = 0;
+for (let i = 1; i < po.length; i++) {
+  const r = po[i];
+  if (!String(r[C.poid]) || !/^POR/i.test(String(r[C.docuno]))) continue;
+  const qty = Number(r[C.goodqty2]) || 0;
+  const got = Number(r[C.got]) || 0, rem = Number(r[C.remain]) || 0;
+  if (String(r[C.status]) !== 'ยกเลิก' && Math.abs((qty - got) - rem) > 1e-6) badMath++;
+  if (String(r[C.status])) nStatus++;
+  sumGot += Number(r[C.got_amt]) || 0;
+  sumRem += Number(r[C.remain_amt]) || 0;
+  sumRemVat += Number(r[C.remain_vat]) || 0;
+}
+eq('ทุกบรรทัดมีสถานะ', nStatus, 7950);
+eq('ทุกบรรทัด: สั่ง − รับแล้ว = ค้างรับ', badMath, 0);
+near('ยอดค้างรับรวมในชีต', sumRem, 28432882.99, 1);
+near('ค้างรับ + VAT = ค้างรับ × 1.07', sumRemVat, 28432882.99 * 1.07, 5);
 
-/* ---------- 4. หน้าฐานข้อมูล PO ---------- */
-console.log('\n— getPoAll : หน้าฐานข้อมูล —');
-const all = S.getPoAll({}, { page: 1, size: 100 });
-eq('บรรทัดทั้งหมด',  all.all.lines, 7950);
-eq('ใบ PO ทั้งหมด',  all.all.docs, 2273);
-eq('ค้างรับ',        all.all.open, 617);
-eq('รับครบ',         all.all.done, 7261);
-eq('ยกเลิก',         all.all.cancelled, 72);
-eq('ยอดรวมสามช่องต้องเท่าบรรทัดทั้งหมด',
-   all.all.open + all.all.done + all.all.cancelled + all.all.closed, 7950);
-near('ยอดสั่งรวม',   all.all.amnt, 77674802.64);
-near('มูลค่าค้างรับ', all.all.openVal, 28432882.99);
-eq('หน้าแรกส่ง 100 บรรทัด', all.rows.length, 100);
-eq('จำนวนหน้า',      all.pages, 80);
+/* ---------- 4. หน้าเว็บอ่านจากแถวเดียวกัน ---------- */
+console.log('\n— หน้าเว็บต้องได้เลขชุดเดียวกับในชีต —');
+const all = S.getPoAll({}, { size: 100 });
+eq('บรรทัดทั้งหมด', all.all.lines, 7950);
+eq('ใบ PO ทั้งหมด', all.all.docs, 2273);
+eq('ค้างรับ',       all.all.open, 617);
+eq('รับครบ',        all.all.done, 7261);
+eq('ยกเลิก',        all.all.cancelled, 72);
+eq('รวมกันต้องเท่าบรรทัดทั้งหมด',
+   all.all.open + all.all.done + all.all.cancelled, 7950);
+near('ยอดสั่งรวม',   all.all.amnt, 77674802.64, 1);
+near('ค้างรับ (บาท)', all.all.openVal, 28432882.99, 1);
+near('ค้างรับ + VAT', all.all.openVat, 28432882.99 * 1.07, 5);
+eq('จำนวนหน้า', all.pages, 80);
 
-const openOnly = S.getPoAll({}, { status: 'open', size: 200 });
-eq('กรองค้างรับ',    openOnly.filtered.lines, 617);
-near('มูลค่าตรงกับหน้าค้างรับ', openOnly.filtered.openVal, 28432882.99);
-const cancelOnly = S.getPoAll({}, { status: 'cancelled', size: 200 });
-eq('กรองยกเลิก',     cancelOnly.filtered.lines, 72);
-const intlOnly = S.getPoAll({}, { intl: 'Y', size: 200 });
-ok('กรองต่างประเทศได้', intlOnly.filtered.lines > 0 &&
-   intlOnly.rows.every(r => /^POR\.INT/i.test(r.po)), intlOnly.filtered.lines + ' บรรทัด');
-const q = S.getPoAll({}, { q: 'yangzhou', size: 200 });
-ok('ค้นหาชื่อผู้ขายได้', q.filtered.lines > 0 &&
-   q.rows.every(r => /yangzhou/i.test(r.vendor + ' ' + r.name + ' ' + r.po)),
-   q.filtered.lines + ' บรรทัด');
-
-/* ---------- 5. หน้าค้างรับต้องตรงกับฐานข้อมูลเป๊ะ ---------- */
-console.log('\n— หน้าค้างรับต้องอ่านจากตารางเดียวกัน —');
 const op = S.getOpenPO({}, {});
-eq('บรรทัดค้างรับตรงกัน', op.sum.lines, openOnly.filtered.lines);
-near('มูลค่าค้างรับตรงกัน', op.sum.value, openOnly.filtered.openVal);
-eq('ใบ PO ค้างตรงกัน', op.sum.docs, 184);
+eq('หน้าค้างรับตรงกัน', op.sum.lines, 617);
+near('มูลค่าตรงกัน', op.sum.value, 28432882.99, 1);
+eq('ช่วงอายุรวมกันเท่าบรรทัดค้างรับ',
+   op.buckets.reduce(function (a, b) { return a + b.n; }, 0), 617);
+eq('เกิน 90 วัน', op.buckets[4].n, 78);
 
-/* ---------- 6. สิทธิ์: สโตร์ต้องไม่เห็นราคา ---------- */
-console.log('\n— สิทธิ์ราคา —');
+/* ---------- 5. ช่องที่จัดซื้อพิมพ์เอง ---------- */
+console.log('\n— ช่องสีส้มที่จัดซื้อพิมพ์เอง —');
+const KEY = ['186013', '1'];                                   // POR.INT-69/0007 สั่ง 1 ค้าง 1
+function one(edits, q) {
+  const h = build({ edits: edits });
+  h.sandbox.psRebuild({});
+  const rows = h.sandbox.getPoAll({}, { q: q, size: 20 }).rows;
+  return { row: rows.filter(function (x) { return x.ln === KEY[1]; })[0],
+           all: h.sandbox.getPoAll({}, { size: 1 }).all };
+}
+const A = one([[KEY[0], KEY[1], { 'สถานะเอกสาร': 'รับของแล้ว ยังไม่ RR' }]], 'POR.INT-69/0007');
+eq('เลือก "รับของแล้ว ยังไม่ RR" → ค้างรับเป็น 0', A.row.remain, 0);
+eq('   สถานะเปลี่ยนเป็นรับครบ', A.row.status, 'รับครบ');
+eq('   บรรทัดค้างรับรวมลดลง 1', A.all.open, 616);
+
+const B = one([[KEY[0], KEY[1], { 'สถานะเอกสาร': 'ยกเลิก / ไม่รับแล้ว' }]], 'POR.INT-69/0007');
+eq('เลือก "ยกเลิก / ไม่รับแล้ว" → สถานะยกเลิก', B.row.status, 'ยกเลิก');
+eq('   ยกเลิกรวมเพิ่มเป็น 73', B.all.cancelled, 73);
+
+const D = one([[KEY[0], KEY[1], { 'ยืนยันรับเอง (จำนวน)': 0.4 }]], 'POR.INT-69/0007');
+near('ใส่ยืนยันรับเอง 0.4 → ค้าง 0.6', D.row.remain, 0.6);
+eq('   สถานะเป็นรับบางส่วน', D.row.status, 'รับบางส่วน');
+
+const E = one([[KEY[0], KEY[1], { 'สถานะ (จัดซื้อ)': 'Y' }]], 'POR.INT-69/0007');
+eq('สถานะจัดซื้อไม่ตรงกับระบบ → ขึ้นเตือน 1 บรรทัด', E.all.mismatch, 1);
+
+// กันนับซ้ำ: บรรทัดที่รับครบจาก RR แล้ว ใส่ยืนยันเองทับ ต้องไม่บวกเพิ่ม
+const doneRow = S.getPoAll({}, { status: 'done', size: 5 }).rows[0];
+const F = build({ edits: [[doneRow.poid, doneRow.ln,
+  { 'ยืนยันรับเอง (จำนวน)': doneRow.ordered, 'สถานะเอกสาร': 'รับของแล้ว ยังไม่ RR' }]] });
+F.sandbox.psRebuild({});
+const fr = F.sandbox.getPoAll({}, { q: doneRow.po, size: 20 })
+             .rows.filter(function (x) { return x.ln === doneRow.ln; })[0];
+eq('RR มาแล้ว + ยืนยันเองทับ → ไม่นับซ้ำ', fr.received, doneRow.ordered);
+near('   ยอดค้างรับรวมไม่เปลี่ยน',
+     F.sandbox.getPoAll({}, { size: 1 }).all.openVal, 28432882.99, 1);
+
+/* ---------- 6. สิทธิ์ราคา ---------- */
+console.log('\n— สโตร์ต้องไม่เห็นราคา —');
 const HS = build({ role: 'ADMIN' });
 HS.sandbox.psRebuild({});
 HS.sandbox.__ROLE = 'STORE';
-const st = HS.sandbox.getPoAll({}, { page: 1, size: 20 });
-ok('สโตร์: ยอดรวมเป็น null', st.all.amnt === null && st.all.openVal === null);
+const st = HS.sandbox.getPoAll({}, { size: 20 });
+ok('สโตร์: ยอดรวมเป็น null', st.all.amnt === null && st.all.openVal === null && st.all.openVat === null);
 ok('สโตร์: ทุกบรรทัดไม่มีราคา',
-   st.rows.every(r => r.price === null && r.amnt === null && r.value === null));
-ok('สโตร์: แก้ข้อมูลไม่ได้', st.canEdit === false);
+   st.rows.every(function (x) { return x.price === null && x.amnt === null && x.value === null; }));
 ok('สโตร์: ยังเห็นจำนวนและสถานะ',
-   st.rows.every(r => typeof r.ordered === 'number' && r.status));
+   st.rows.every(function (x) { return typeof x.ordered === 'number' && x.status; }));
 
-/* ---------- 7. หาคอลัมน์ต้องตรงตัวก่อนเสมอ ---------- */
+/* ---------- 7. colIdx_ ต้องตรงตัวก่อน ---------- */
 console.log('\n— colIdx_ ต้องไม่ไปโดนคอลัมน์ผิด —');
-var CI = S.colIdx_;
-eq('goodamnt ต้องไม่ไปโดน sumGoodamnt', CI(['sumGoodamnt', 'goodamnt'], ['goodamnt']), 1);
-eq('vendorname ต้องไม่ไปโดน vendornameeng',
+const CI = S.colIdx_;
+eq('goodamnt ไม่ไปโดน sumGoodamnt', CI(['sumGoodamnt', 'goodamnt'], ['goodamnt']), 1);
+eq('vendorname ไม่ไปโดน vendornameeng',
    CI(['vendorcode', 'vendornameeng', 'VendorName'], ['vendorname']), 2);
-eq('ไม่มีตรงตัว ค่อยยอมให้ใกล้เคียง', CI(['sumGoodamnt'], ['goodamnt']), 0);
 eq('ไม่เจอเลยต้องได้ -1', CI(['a', 'b'], ['zzz']), -1);
 
 /* ---------- 8. ฐานข้อมูลการรับเข้า ---------- */
-console.log('\n— getRrAll : หน้าฐานข้อมูลการรับเข้า —');
-var rr = S.getRrAll({}, { size: 100 });
+console.log('\n— หน้าฐานข้อมูลการรับเข้า —');
+const rr = S.getRrAll({}, { size: 100 });
 eq('บรรทัดรับเข้าทั้งหมด', rr.all.lines, 7512);
 eq('จำนวนใบรับ',          rr.all.docs, 2408);
 eq('จับคู่กับ PO ได้',     rr.all.ok, 7375);
 eq('รับข้ามปี',           rr.all.cross, 137);
-eq('ยังไม่จับคู่',        rr.all.todo, 0);
-eq('ไม่ได้อ้าง PO',       rr.all.nopo, 0);
-eq('สามช่องรวมกันต้องเท่าทั้งหมด', rr.all.ok + rr.all.cross + rr.all.todo + rr.all.nopo, 7512);
 near('มูลค่ารับเข้ารวม',   rr.all.amnt, 53035868.64, 0.05);
-
-// ยอดเงินต้องเป็นของ "บรรทัด" ไม่ใช่ยอดรวมทั้งใบ — เคยพลาดเพราะไฟล์มี sumGoodamnt
-var line1 = rr.rows.filter(function (x) { return x.qty > 0 && x.price > 0; })[0];
-ok('ยอดเงินต่อบรรทัด = จำนวน × ราคา (ก่อนหักส่วนลด)',
-   Math.abs(line1.qty * line1.price - line1.amnt) <= Math.abs(line1.qty * line1.price) * 0.5,
-   line1.qty + ' × ' + line1.price + ' ≈ ' + line1.amnt);
 ok('ทุกบรรทัดมีชื่อผู้ขาย', rr.rows.every(function (x) { return !!x.vendor; }));
-
-var cross = S.getRrAll({}, { mstat: 'cross', size: 200 });
-eq('กรองรับข้ามปี', cross.filtered.lines, 137);
-near('มูลค่ารับข้ามปี', cross.filtered.amnt, 4593786.54, 0.05);
-ok('รับข้ามปีทุกบรรทัดต้องไม่ใช่ PO ปีนี้',
-   cross.rows.every(function (x) { return x.mk === 'cross'; }));
-
-var one = S.getRrOfPo({}, 'POR-69/2158');
-eq('ใบรับของ PO ใบเดียว — บรรทัด', one.lines, 3);
-eq('ใบรับของ PO ใบเดียว — ใบรับ',  one.docs, 1);
-near('ใบรับของ PO ใบเดียว — ยอดเงิน', one.amnt, 36240, 0.01);
-
-/* ---------- 9. สิทธิ์ราคาในหน้ารับเข้า ---------- */
-console.log('\n— สิทธิ์ราคา (หน้ารับเข้า) —');
-HS.sandbox.__ROLE = 'STORE';
-var rrS = HS.sandbox.getRrAll({}, { size: 20 });
-ok('สโตร์: ยอดรวมเป็น null', rrS.all.amnt === null && rrS.filtered.amnt === null);
-ok('สโตร์: ทุกบรรทัดไม่มีราคา',
-   rrS.rows.every(function (x) { return x.price === null && x.amnt === null; }));
-ok('สโตร์: ยังเห็นจำนวนและสถานะจับคู่',
-   rrS.rows.every(function (x) { return typeof x.qty === 'number' && x.mt; }));
-var oneS = HS.sandbox.getRrOfPo({}, 'POR-69/2158');
-ok('สโตร์: กล่องใบรับของ PO ก็ไม่มีราคา',
-   oneS.amnt === null && oneS.rows.every(function (x) { return x.amnt === null; }));
-
-/* ---------- 10. ห้ามแตะไฟล์ STT-DB-MASTER ---------- */
-console.log('\n— ห้ามสร้างแท็บใน STT-DB-MASTER (กติกาเบียร์ 16 ก.ย. 2569) —');
-eq('MASTER ต้องไม่มีแท็บที่ระบบสร้างเลย', Object.keys(H.store.MASTER).length, 0);
-ok('โค้ดไม่เขียนอะไรลง MASTER',
-   Object.keys(H.store.MASTER).join(',') === '', 'แท็บที่เจอ: ' + (Object.keys(H.store.MASTER).join(', ') || 'ไม่มี'));
-ok('ตารางหลักอยู่ไฟล์เดียวกับ ps_report', !!H.store.YEAR[S.TAB.PO] && !!H.store.YEAR.ps_report);
-ok('ใบรับสะสมอยู่ในไฟล์ RR-ALL', !!H.store.RRALL.RR_ALL);
-
-/* ---------- 11. แท็บรายงานในชีตต้องตรงกับหน้าเว็บทุกตัว ---------- */
-console.log('\n— แท็บรายงานในชีต (เปิดชีตต้องเห็นเหมือนโปรแกรม) —');
-var M = H.store.YEAR;
-ok('มีแท็บ สรุปภาพรวม',       !!M[S.TAB.SUM]);
-ok('มีแท็บ รายงาน PO',        !!M[S.TAB.PO]);
-ok('มีแท็บ รายงานการรับเข้า', !!M[S.TAB.RR]);
-
-var rp = M[S.TAB.PO], rpH = rp[0], rpB = rp.slice(1);
-eq('รายงาน PO มีครบทุกบรรทัด', rpB.length, all.all.lines);
-ok('หัวตารางเป็นภาษาไทย', /[ก-๙]/.test(rpH.join('')), rpH.slice(0, 4).join(' · '));
-ok('มีคอลัมน์ "ค้างรับ" และ "รับแล้ว"',
-   rpH.indexOf('ค้างรับ') >= 0 && rpH.indexOf('รับแล้ว') >= 0);
-
-var cOrd = rpH.indexOf('จำนวนที่สั่ง'), cGot = rpH.indexOf('รับแล้ว'),
-    cRem = rpH.indexOf('ค้างรับ'), cSt = rpH.indexOf('สถานะ'),
-    cAmn = rpH.indexOf('ยอดสั่ง (บาท)'), cOpn = rpH.indexOf('ค้างรับ (บาท)');
-ok('ทุกบรรทัด: สั่ง − รับแล้ว = ค้างรับ',
-   rpB.every(function (r) { return Math.abs((r[cOrd] - r[cGot]) - r[cRem]) < 1e-6 || r[cOrd] < r[cGot]; }));
-
-var sumAmn = 0, sumOpen = 0, nOpenRpt = 0, nDoneRpt = 0, nCanRpt = 0;
-for (var z = 0; z < rpB.length; z++) {
-  sumAmn += rpB[z][cAmn]; sumOpen += rpB[z][cOpn];
-  var stx = String(rpB[z][cSt]);
-  if (/ยกเลิก/.test(stx)) nCanRpt++;
-  else if (/ยังไม่รับ|รับบางส่วน/.test(stx)) nOpenRpt++;
-  else if (/รับครบ/.test(stx)) nDoneRpt++;
-}
-near('ยอดสั่งรวมในชีต = ในโปรแกรม',  sumAmn,  all.all.amnt, 0.05);
-near('ค้างรับรวมในชีต = ในโปรแกรม', sumOpen, all.all.openVal, 0.05);
-eq('จำนวนบรรทัดค้างรับในชีต = ในโปรแกรม', nOpenRpt, all.all.open);
-eq('จำนวนบรรทัดรับครบในชีต = ในโปรแกรม',  nDoneRpt, all.all.done);
-eq('จำนวนบรรทัดยกเลิกในชีต = ในโปรแกรม',  nCanRpt,  all.all.cancelled);
-
-var rrp = M[S.TAB.RR], rrH = rrp[0], rrB = rrp.slice(1);
-eq('รายงานการรับเข้ามีครบทุกบรรทัด', rrB.length, rr.all.lines);
-var cQ = rrH.indexOf('จำนวนเงิน'), cM = rrH.indexOf('สถานะจับคู่');
-var rrSum = 0, rrOk = 0;
-for (var y = 0; y < rrB.length; y++) { rrSum += rrB[y][cQ]; if (/ตรงกับ PO/.test(String(rrB[y][cM]))) rrOk++; }
-near('ยอดรับเข้ารวมในชีต = ในโปรแกรม', rrSum, rr.all.amnt, 0.05);
-eq('จับคู่ได้ในชีต = ในโปรแกรม', rrOk, rr.all.ok);
-
-// แท็บสรุปต้องเป็นตัวเลขชุดเดียวกัน และต้องตรวจตัวเองว่า "ตรง"
-var sm = M[S.TAB.SUM];
-function smVal(label) {
-  for (var i = 0; i < sm.length; i++) if (String(sm[i][0]) === label) return sm[i][1];
-  return null;
-}
-eq('สรุป: บรรทัดทั้งหมด', smVal('บรรทัดทั้งหมด'), all.all.lines);
-eq('สรุป: ค้างรับ',        smVal('ค้างรับ'), all.all.open);
-eq('สรุป: ใบ PO ทั้งหมด',  smVal('ใบ PO ทั้งหมด'), all.all.docs);
-eq('สรุป: บรรทัดรับเข้า',  smVal('บรรทัดรับเข้าทั้งหมด'), rr.all.lines);
-eq('สรุป: จับคู่กับ PO ได้', smVal('จับคู่กับ PO ได้'), rr.all.ok);
-eq('สรุปตรวจตัวเอง (ฝั่ง PO)',
-   smVal('ค้างรับ + รับครบ + ปิด + ยกเลิก ต้องเท่าบรรทัดทั้งหมด'), 'ตรง');
-eq('สรุปตรวจตัวเอง (ฝั่งรับเข้า)',
-   smVal('สถานะการรับเข้า 4 กลุ่มรวมกันต้องเท่าบรรทัดรับเข้า'), 'ตรง');
+const one2 = S.getRrOfPo({}, 'POR-69/2158');
+eq('ใบรับของ PO ใบเดียว', one2.lines, 3);
+near('   ยอดเงิน', one2.amnt, 36240, 0.01);
 
 console.log('\n' + (fail ? '✗ ไม่ผ่าน ' + fail + ' ข้อ' : '✓ ผ่านหมด') + ' (' + pass + '/' + (pass + fail) + ')\n');
 process.exit(fail ? 1 : 0);

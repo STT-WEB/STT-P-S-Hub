@@ -79,83 +79,33 @@ function writeRows_(fileId, tab, cols, rows) {
 }
 
 /** =========================================================
- *  อ่าน PO และ RR จาก "ไฟล์ของปีนั้น" โดยตรง
- *  เบียร์ดึงจาก My Account มาวางทับแท็บ ps_report / RR ทุกวัน
- *  ระบบจึงอ่านจากแท็บนั้นตรง ๆ ไม่ก๊อปออกมาเก็บซ้ำอีกที่
+ *  อ่านแท็บ ps_report / RR จากไฟล์ของปีนั้นโดยตรง
+ *  23 คอลัมน์เดิมของ My Account ระบบอ่านอย่างเดียว ไม่เคยเขียนทับ
  *  ========================================================= */
-function readSrcPO_(yid) {
-  var src = fetchTabValues_(yid, TAB.SRC_PO);
-  if (!src || src.length < 2)
-    throw new Error('ไม่พบข้อมูลในแท็บ ' + TAB.SRC_PO + ' — วางข้อมูล PO จาก My Account ก่อน');
-  var h = [];
-  for (var hh = 0; hh < src[0].length; hh++) h.push(s_(src[0][hh]));
-  function I(n) { return colIdx_(h, n); }
-  var c = {
-    ship: I(['shipdate']), date: I(['docudate']), docu: I(['docuno']), poid: I(['poid']),
-    cancel: I(['cancelflag']), ln: I(['listno']), gname: I(['goodname']),
-    qty: I(['goodqty2']), price: I(['goodprice2']), amnt: I(['goodamnt']),
-    vcode: I(['vendorcode']), vname: I(['vendorname']), gcode: I(['goodcode']),
-    unit: I(['goodunitname']), job: I(['jobcode']), jname: I(['jobname'])
-  };
-  if (c.poid < 0 || c.ln < 0 || c.gcode < 0)
-    throw new Error('แท็บ ' + TAB.SRC_PO + ' ขาดคอลัมน์จำเป็น (poid / listno / goodcode) — หัวตารางที่เจอ: ' + h.join(' | '));
-
-  var live = [], cancelled = [], skipped = 0, seen = {};
-  for (var i = 1; i < src.length; i++) {
-    var r = src[i];
-    var poid = s_(r[c.poid]), ln = s_(r[c.ln]), docu = s_(r[c.docu]);
-    if (!poid || !ln || !docu || !/^POR/i.test(docu)) { if (r.join('').trim()) skipped++; continue; }
-    var key = poid + '|' + ln;
-    if (seen[key]) { skipped++; continue; }
-    seen[key] = 1;
-    var codeN = ncd_(r[c.gcode]);
-    var o = {
-      docu: docu, poid: poid, ln: ln, code: codeN, job: s_(r[c.job]),
-      name: nn_(r[c.gname]), price: num_(r[c.price]), qty: num_(r[c.qty]), amnt: num_(r[c.amnt]),
-      recv: 0,
-      gname: s_(r[c.gname]), unit: s_(r[c.unit]), vcode: s_(r[c.vcode]), vname: s_(r[c.vname]),
-      jname: s_(r[c.jname]), date: dt_(r[c.date]), ship: dt_(r[c.ship]), cat: cat_(codeN)
-    };
-    if (s_(r[c.cancel]).toUpperCase() === 'Y') cancelled.push(o); else live.push(o);
-  }
-  return { live: live, cancelled: cancelled, read: src.length - 1, skipped: skipped };
+function readPoSheet_(yid) {
+  var v = fetchTabValues_(yid, TAB.PO);
+  if (!v || v.length < 2)
+    throw new Error('ไม่พบข้อมูลในแท็บ ' + TAB.PO + ' — วางข้อมูล PO จาก My Account ก่อน');
+  var C = poColMap_(v[0]);
+  if (C.poid < 0 || C.listno < 0 || C.goodcode < 0)
+    throw new Error('แท็บ ' + TAB.PO + ' ขาดคอลัมน์จำเป็น (poid / listno / goodcode)');
+  return { hdr: v[0], rows: v.slice(1), C: C };
 }
 
-function readSrcRR_(yid) {
-  var src = fetchTabValues_(yid, TAB.SRC_RR);
-  if (!src || src.length < 2)
-    throw new Error('ไม่พบข้อมูลในแท็บ ' + TAB.SRC_RR + ' — วางข้อมูลใบรับจาก My Account ก่อน');
-  var h = [];
-  for (var hh = 0; hh < src[0].length; hh++) h.push(s_(src[0][hh]));
+function readRrSheet_(yid) {
+  var v = fetchTabValues_(yid, TAB.RR);
+  if (!v || v.length < 2)
+    throw new Error('ไม่พบข้อมูลในแท็บ ' + TAB.RR + ' — วางข้อมูลใบรับจาก My Account ก่อน');
+  var h = v[0].map(function (x) { return s_(x); });
   function I(n) { return colIdx_(h, n); }
-  var c = {
+  return { hdr: v[0], rows: v.slice(1), C: {
     date: I(['docudate']), docu: I(['docuno']), pono: I(['pono']), ln: I(['listno']),
     gcode: I(['goodcode']), gname: I(['goodname']), qty: I(['goodqty2']), price: I(['goodprice2']),
     dformula: I(['gooddiscformula']), damnt: I(['gooddiscamnt']), amnt: I(['goodamnt']),
     vcode: I(['vendorcode']), vname: I(['vendorname']), job: I(['jobcode']), jname: I(['jobname']),
-    unit: I(['goodunitname']), inv: I(['invno']), adv: I(['advnamnt']), net: I(['netamnt'])
-  };
-  if (c.docu < 0 || c.pono < 0 || c.gcode < 0)
-    throw new Error('แท็บ ' + TAB.SRC_RR + ' ขาดคอลัมน์จำเป็น (docuno / pono / goodcode)');
-
-  var list = [], skipped = 0;
-  for (var i = 1; i < src.length; i++) {
-    var r = src[i];
-    var docu = s_(r[c.docu]), pono = s_(r[c.pono]);
-    if (!docu || !pono) { if (r.join('').trim()) skipped++; continue; }
-    var codeN = ncd_(r[c.gcode]);
-    list.push({
-      docu: docu, pono: pono, ln: s_(r[c.ln]), date: dt_(r[c.date]),
-      code: codeN, name: nn_(r[c.gname]), price: num_(r[c.price]), qty: num_(r[c.qty]),
-      job: s_(r[c.job]),
-      gcode: s_(r[c.gcode]), gname: s_(r[c.gname]), amnt: num_(r[c.amnt]),
-      dformula: s_(r[c.dformula]), damnt: num_(r[c.damnt]),
-      vcode: s_(r[c.vcode]), vname: s_(r[c.vname]), jname: s_(r[c.jname]), unit: s_(r[c.unit]),
-      invno: c.inv >= 0 ? s_(r[c.inv]) : '', adv: c.adv >= 0 ? num_(r[c.adv]) : 0,
-      net: c.net >= 0 ? num_(r[c.net]) : 0
-    });
-  }
-  return { list: list, read: src.length - 1, skipped: skipped };
+    unit: I(['goodunitname']), inv: I(['invno']), adv: I(['advnamnt']), net: I(['netamnt']),
+    mstat: h.indexOf('สถานะจับคู่')
+  } };
 }
 
 /** เก็บใบรับของปีนี้ลงไฟล์สะสม RR-ALL (ของปีอื่นคงไว้ ห้ามลบ) */
@@ -243,256 +193,345 @@ function psRebuild(auth) {
   var year = currentYearTH_();
   var yid = psYearFile_();
 
-  // ---- อ่านจากแท็บของเบียร์ในไฟล์เดียวกัน ----
-  var P = readSrcPO_(yid);
-  var R = readSrcRR_(yid);
-  var poRows = P.live, rrList = R.list;
+  var P = readPoSheet_(yid), C = P.C;
+  var R = readRrSheet_(yid), RC = R.C;
+
+  // ---- เตรียมบรรทัด PO (ไม่รวมที่ My Account ยกเลิก) ----
+  var poRows = [], meta = [], seen = {}, skipPO = 0;
+  for (var i = 0; i < P.rows.length; i++) {
+    var r = P.rows[i];
+    var poid = s_(r[C.poid]), ln = s_(r[C.listno]), docu = s_(r[C.docuno]);
+    if (!poid || !ln || !docu || !/^POR/i.test(docu)) { if (r.join('').trim()) skipPO++; meta.push(null); continue; }
+    var key = poid + '|' + ln;
+    if (seen[key]) { skipPO++; meta.push(null); continue; }
+    seen[key] = 1;
+
+    var hDoc = s_(r[C.h_doc]);
+    var canceled = s_(r[C.cancelflag]).toUpperCase() === 'Y' || hDoc === DOC_CANCEL;
+    var o = { docu: docu, poid: poid, ln: ln, code: ncd_(r[C.goodcode]), job: s_(r[C.jobcode]),
+              name: nn_(r[C.goodname]), price: num_(r[C.goodprice2]), qty: num_(r[C.goodqty2]),
+              amnt: num_(r[C.goodamnt]), recv: 0, row: i, canceled: canceled, hDoc: hDoc };
+    meta.push(o);
+    if (!canceled) poRows.push(o);
+  }
+
+  // ---- เตรียมบรรทัดใบรับ ----
+  var rrList = [], skipRR = 0;
+  for (var j = 0; j < R.rows.length; j++) {
+    var q = R.rows[j];
+    var rdocu = s_(q[RC.docu]), pono = s_(q[RC.pono]);
+    if (!rdocu || !pono) { if (q.join('').trim()) skipRR++; continue; }
+    rrList.push({ docu: rdocu, pono: pono, ln: s_(q[RC.ln]), date: dt_(q[RC.date]),
+      code: ncd_(q[RC.gcode]), name: nn_(q[RC.gname]), price: num_(q[RC.price]), qty: num_(q[RC.qty]),
+      job: s_(q[RC.job]), gcode: s_(q[RC.gcode]), gname: s_(q[RC.gname]), amnt: num_(q[RC.amnt]),
+      dformula: s_(q[RC.dformula]), damnt: num_(q[RC.damnt]), vcode: s_(q[RC.vcode]),
+      vname: s_(q[RC.vname]), jname: s_(q[RC.jname]), unit: s_(q[RC.unit]),
+      invno: RC.inv >= 0 ? s_(q[RC.inv]) : '', adv: RC.adv >= 0 ? num_(q[RC.adv]) : 0,
+      net: RC.net >= 0 ? num_(q[RC.net]) : 0, row: j });
+  }
 
   // ---- จับคู่ ----
   var M = psMatchEngine_(poRows, rrList);
-  var links = M.links, tierN = M.tiers, noPO = M.noPO, unmatched = M.unmatched, now = new Date();
-  for (var li = 0; li < links.length; li++) links[li].push(now);
-  writeRows_(yid, TAB.LINK, SCHEMA.YEAR[TAB.LINK], links);
+  var links = M.links, tierN = M.tiers, noPO = M.noPO, unmatched = M.unmatched;
 
-  // ---- เก็บใบรับลงไฟล์สะสมข้ามปี ----
+  // เลขที่ใบรับ + ชั้นที่จับคู่ ของแต่ละบรรทัด PO
+  var rrOf = {}, linkedRR = {};
+  for (var li = 0; li < links.length; li++) {
+    var L = links[li];                       // [rr_docuno, rr_listno, pono, poid, po_listno, qty, tier]
+    var k2 = s_(L[3]) + '|' + s_(L[4]);
+    if (!rrOf[k2]) rrOf[k2] = { docs: {}, tier: s_(L[6]) };
+    rrOf[k2].docs[s_(L[0])] = 1;
+    linkedRR[s_(L[0]) + '|' + s_(L[1])] = s_(L[6]);
+  }
+
+  // ---- คำนวณแล้วเขียนเฉพาะคอลัมน์สีน้ำเงิน ----
+  var today = new Date(); today.setHours(0, 0, 0, 0);
+  var out = [], openLines = 0, openVal = 0, nCancel = 0, nDone = 0, nClosed = 0;
+  var amntAll = 0, docs = {}, openDocs = {};
+
+  for (var k = 0; k < P.rows.length; k++) {
+    var p = meta[k];
+    if (!p) { out.push(blankSys_()); continue; }
+    var row = P.rows[k];
+
+    var manual = num_(row[C.h_recv]);
+    if (p.hDoc === DOC_RECV && manual <= 0) manual = p.qty;      // เลือก "รับของแล้ว" = ถือว่ารับครบ
+    var got = Math.max(p.recv, manual);                          // ห้ามบวกกัน เดี๋ยวนับซ้ำตอน RR เข้ามา
+    if (got > p.qty) got = p.qty;
+    var remain = p.canceled ? 0 : Math.max(0, p.qty - got);
+
+    var gotAmt = p.qty > 0 ? p.amnt * got / p.qty : 0;
+    var remAmt = p.qty > 0 ? p.amnt * remain / p.qty : 0;
+    var billed = num_(row[C.h_billed]);
+    if (billed > 0) remAmt = Math.max(0, remAmt - billed);
+
+    var status;
+    if (p.canceled)          status = 'ยกเลิก';
+    else if (remain <= 1e-6) status = 'รับครบ';
+    else if (got > 0)        status = 'รับบางส่วน';
+    else                     status = 'ยังไม่รับ';
+
+    amntAll += p.amnt; docs[p.docu] = 1;
+    if (p.canceled) nCancel++;
+    else if (remain > 1e-6) { openLines++; openVal += remAmt; openDocs[p.docu] = 1; }
+    else nDone++;
+
+    var hit = rrOf[p.poid + '|' + p.ln];
+    var rrNo = '';
+    if (hit) { var a = []; for (var d in hit.docs) a.push(d); a.sort(); rrNo = a.join(', '); }
+
+    out.push([
+      got, round2_(gotAmt), round2_(gotAmt * (1 + VAT_RATE)),
+      remain, round2_(remAmt), round2_(remAmt * (1 + VAT_RATE)),
+      status, days_(dt_(row[C.docudate]), today),
+      rrNo, hit ? hit.tier : ''
+    ]);
+  }
+
+  writeSysCols_(yid, TAB.PO, C, out);
+  writeRrStatus_(yid, R, linkedRR, seen);
+  cacheDrop_(['PS_POIDX', 'PS_RRALL', 'PS_RRLINK', 'PS_PODOCS']);
+
   var rrSaved = { kept: 0, fresh: 0 };
   try { rrSaved = saveRrAll_(rrList, year); } catch (eRR) { rrSaved.error = String(eRR.message || eRR); }
 
-  // ---- สร้างแท็บ "รายงาน PO" : ทุกบรรทัด (ค้าง + รับครบ + ปิด + ยกเลิก) ----
-  var EDIT = poEditMap_();
-  var today = new Date(); today.setHours(0, 0, 0, 0);
-  var idx = [], openLines = 0, openVal = 0, nClosed = 0, nManual = 0, billedTotal = 0;
-
-  function pushRow(p, cancelled) {
-    var ed = EDIT[p.poid + '|' + p.ln] || null;
-    var manual  = ed ? ed.recv_manual : 0;
-    var billed  = ed ? ed.billed_amount : 0;
-    var closed  = !!(ed && ed.closed);
-    var gotAll  = p.recv + manual;
-    var remain  = Math.max(0, p.qty - gotAll);
-    var amntRem = 0;
-
-    var status;
-    if (cancelled)           status = 'ยกเลิก';
-    else if (closed)         status = 'ปิดรายการ';
-    else if (remain <= 1e-6) status = 'รับครบ';
-    else if (gotAll > 0)     status = 'รับบางส่วน';
-    else                     status = 'ยังไม่รับ';
-    if (!cancelled && !closed && manual > 0 && remain > 1e-6) status += ' (ยืนยันเอง)';
-
-    if (!cancelled && !closed && remain > 1e-6) {
-      amntRem = p.qty > 0 ? p.amnt * remain / p.qty : 0;
-      if (billed > 0) { billedTotal += billed; amntRem = Math.max(0, amntRem - billed); }
-      openLines++; openVal += amntRem;
-      if (manual > 0) nManual++;
-    }
-    if (closed) nClosed++;
-
-    var mth = (p.date instanceof Date) ? (p.date.getMonth() + 1) : '';
-    var row = [];
-    row[IDX.docuno] = p.docu;          row[IDX.listno] = p.ln;
-    row[IDX.docudate] = p.date;        row[IDX.vendorname] = p.vname;
-    row[IDX.goodcode_n] = p.code;      row[IDX.goodname] = p.gname;
-    row[IDX.unit] = p.unit;            row[IDX.jobcode] = p.job;
-    row[IDX.ordered] = p.qty;          row[IDX.got] = gotAll;
-    row[IDX.remain] = remain;          row[IDX.status] = status;
-    row[IDX.price] = p.price;          row[IDX.amnt] = p.amnt;
-    row[IDX.amnt_remain] = amntRem;    row[IDX.age_days] = days_(p.date, today);
-    row[IDX.shipdate] = p.ship;        row[IDX.newship] = (ed && ed.newship) ? ed.newship : '';
-    row[IDX.recv_rr] = p.recv;         row[IDX.recv_manual] = manual;
-    row[IDX.billed_amount] = billed;   row[IDX.intl_status] = ed ? ed.intl_status : '';
-    row[IDX.note] = ed ? ed.note : ''; row[IDX.closed] = closed ? 'Y' : '';
-    row[IDX.cancelled] = cancelled ? 'Y' : '';
-    row[IDX.cat] = p.cat;
-    row[IDX.is_intl] = /^POR\.INT/i.test(p.docu) ? 'ต่างประเทศ' : 'ในประเทศ';
-    row[IDX.jobname] = p.jname;        row[IDX.poid] = p.poid;
-    row[IDX.year_th] = year;           row[IDX.month] = mth;
-    row[IDX.vendorcode] = p.vcode;     row[IDX.updated_at] = now;
-    idx.push(row);
-  }
-
-  for (var k = 0; k < poRows.length; k++) pushRow(poRows[k], false);
-  // บรรทัดที่ยกเลิกต้องอยู่ครบ — เบียร์สั่งไว้ว่าห้ามซ่อนทิ้ง
-  for (var cq = 0; cq < P.cancelled.length; cq++) pushRow(P.cancelled[cq], true);
-
-  // เรียง: ค้างรับมูลค่ามากก่อน แล้วที่เหลือเรียงตามเลขที่ PO
-  idx.sort(function (a, b) {
-    if (b[IDX.amnt_remain] !== a[IDX.amnt_remain]) return b[IDX.amnt_remain] - a[IDX.amnt_remain];
-    return a[IDX.docuno] < b[IDX.docuno] ? -1
-         : (a[IDX.docuno] > b[IDX.docuno] ? 1 : num_(a[IDX.listno]) - num_(b[IDX.listno]));
-  });
-  writeRows_(yid, TAB.PO, SCHEMA.YEAR[TAB.PO], idx);
-  cacheDrop_(['PS_OPENPO', 'PS_POIDX', 'PS_RRALL', 'PS_RRLINK', 'PS_PODOCS']);
-
-  // แท็บที่เหลือให้คนอ่าน — พังแล้วห้ามลากการคำนวณพังไปด้วย
-  var rpt = null, rptErr = '';
-  try { rpt = psBuildReports(null); }
-  catch (eR) { rptErr = String(eR && eR.message ? eR.message : eR); }
-
-  logImport_(yid, auth, 'REFRESH', yid, P.read + R.read, idx.length,
-             P.skipped + R.skipped, new Date().getTime() - t0);
+  var sum = null, sumErr = '';
+  try {
+    sum = writeSummary_(yid, { lines: out.length - skipPO, amnt: amntAll, docs: Object.keys(docs).length,
+                               open: openLines, openVal: openVal, openDocs: Object.keys(openDocs).length,
+                               done: nDone, cancel: nCancel, rr: rrList.length, matched: M.matched });
+  } catch (eS) { sumErr = String(eS.message || eS); }
 
   var matched = 0;
   for (var tn in tierN) matched += tierN[tn];
   return {
-    year: year,
-    poRead: P.read, poSkipped: P.skipped, rrRead: R.read, rrSkipped: R.skipped,
+    year: year, poRead: P.rows.length, poSkipped: skipPO, rrRead: R.rows.length, rrSkipped: skipRR,
     poLines: poRows.length, rrLines: rrList.length,
     matched: matched, tiers: tierN, noPO: noPO, unmatched: unmatched, over: M.over,
     matchPct: rrList.length ? (matched / (rrList.length - noPO) * 100) : 0,
-    indexLines: idx.length,
-    openLines: openLines, openDocs: countOpenDocs_(idx), openValue: openVal,
-    closed: nClosed, manualRecv: nManual, billedTotal: billedTotal,
-    rrAll: rrSaved, report: rpt, reportError: rptErr,
+    indexLines: out.length,
+    openLines: openLines, openDocs: Object.keys(openDocs).length, openValue: openVal,
+    done: nDone, cancelled: nCancel, amntAll: amntAll,
+    rrAll: rrSaved, summaryError: sumErr,
     ms: new Date().getTime() - t0
   };
 }
 
-function countOpenDocs_(rows) {
-  var o = {}, n = 0;
-  for (var i = 0; i < rows.length; i++) {
-    if (num_(rows[i][IDX.remain]) <= 1e-6) continue;
-    if (s_(rows[i][IDX.cancelled]) === 'Y' || s_(rows[i][IDX.closed]) === 'Y') continue;
-    if (!o[rows[i][IDX.docuno]]) { o[rows[i][IDX.docuno]] = 1; n++; }
+function round2_(n) { return Math.round(n * 100) / 100; }
+function blankSys_() { return ['', '', '', '', '', '', '', '', '', '']; }
+
+/** เขียนเฉพาะบล็อกคอลัมน์สีน้ำเงิน — ไม่แตะคอลัมน์อื่นเลย */
+function writeSysCols_(fileId, tab, C, rows) {
+  if (!rows.length) return 0;
+  var first = C[SYS_COLS[0][0]];
+  var ok = first >= 0;
+  for (var i = 1; i < SYS_COLS.length && ok; i++) ok = (C[SYS_COLS[i][0]] === first + i);
+  if (!ok) throw new Error('คอลัมน์ที่ระบบเติมไม่เรียงติดกัน — กด "ติดตั้ง" อีกครั้ง');
+
+  var sh = SpreadsheetApp.openById(fileId).getSheetByName(tab);
+  var CH = 2000;
+  for (var a = 0; a < rows.length; a += CH) {
+    var part = rows.slice(a, a + CH);
+    sh.getRange(a + 2, first + 1, part.length, SYS_COLS.length).setValues(part);
+    SpreadsheetApp.flush();
   }
-  return n;
+  return rows.length;
 }
 
-function logImport_(fileId, auth, kind, srcId, read, written, skipped, ms) {
-  try {
-    var sh = SpreadsheetApp.openById(fileId).getSheetByName(TAB.IMPORT);
-    if (!sh) return;
-    var me = roleOf_(auth);
-    sh.appendRow([Utilities.getUuid().slice(0, 8), new Date(), me.name || me.label,
-                  kind, srcId, read, written, skipped, ms, 'OK', '']);
-  } catch (e) {}
+/** เขียนคอลัมน์ "สถานะจับคู่" ในแท็บ RR */
+function writeRrStatus_(fileId, R, linkedRR, poKeys) {
+  if (R.C.mstat < 0) return 0;
+  var out = [];
+  for (var i = 0; i < R.rows.length; i++) {
+    var q = R.rows[i];
+    var docu = s_(q[R.C.docu]), pono = s_(q[R.C.pono]);
+    if (!docu || !pono) { out.push(['']); continue; }
+    var tier = linkedRR[docu + '|' + s_(q[R.C.ln])];
+    out.push([tier ? 'ตรงกับ PO (' + tier + ')' : 'ยังไม่จับคู่ / PO ปีก่อน']);
+  }
+  var sh = SpreadsheetApp.openById(fileId).getSheetByName(TAB.RR);
+  var CH = 2000;
+  for (var a = 0; a < out.length; a += CH) {
+    var part = out.slice(a, a + CH);
+    sh.getRange(a + 2, R.C.mstat + 1, part.length, 1).setValues(part);
+    SpreadsheetApp.flush();
+  }
+  return out.length;
+}
+
+/** แท็บสรุปภาพรวม */
+function writeSummary_(fileId, st) {
+  var when = Utilities.formatDate(new Date(), 'Asia/Bangkok', 'd/M/yyyy HH:mm');
+  var rows = [
+    ['สรุปภาพรวม — จัดซื้อ & คลังสินค้า', '', ''],
+    ['ตัวเลขชุดนี้ตรงกับที่เห็นในโปรแกรมทุกตัว · อัปเดตล่าสุด ' + when, '', ''],
+    ['', '', ''],
+    ['ใบสั่งซื้อ', 'จำนวน', 'บาท'],
+    ['บรรทัดทั้งหมด', st.lines, st.amnt],
+    ['ใบ PO ทั้งหมด', st.docs, ''],
+    ['ค้างรับ', st.open, st.openVal],
+    ['ค้างรับ + VAT', '', round2_(st.openVal * (1 + VAT_RATE))],
+    ['ใบ PO ที่ยังค้าง', st.openDocs, ''],
+    ['รับครบแล้ว', st.done, ''],
+    ['ยกเลิก', st.cancel, ''],
+    ['', '', ''],
+    ['ใบรับของ', 'จำนวน', ''],
+    ['บรรทัดรับเข้าทั้งหมด', st.rr, ''],
+    ['', '', ''],
+    ['ตรวจความถูกต้อง', 'ผล', ''],
+    ['ค้างรับ + รับครบ + ยกเลิก ต้องเท่าบรรทัดทั้งหมด',
+     (st.open + st.done + st.cancel) === st.lines ? 'ตรง' : 'ไม่ตรง — แจ้ง Candy', '']
+  ];
+  var ss = SpreadsheetApp.openById(fileId);
+  var sh = ss.getSheetByName(TAB.SUM) || ss.insertSheet(TAB.SUM);
+  sh.clear();
+  sh.getRange(1, 1, rows.length, 3).setValues(rows);
+  sh.getRange(1, 1).setFontSize(15).setFontWeight('bold');
+  sh.getRange(2, 1).setFontColor('#79828F');
+  [4, 13, 16].forEach(function (r) {
+    sh.getRange(r, 1, 1, 3).setFontWeight('bold').setBackground('#12151A').setFontColor('#FFFFFF');
+  });
+  sh.getRange(7, 1, 2, 3).setFontWeight('bold').setFontColor('#C0182B');
+  sh.getRange(4, 2, rows.length - 3, 1).setNumberFormat('#,##0');
+  sh.getRange(4, 3, rows.length - 3, 1).setNumberFormat('#,##0.00');
+  sh.setColumnWidth(1, 400); sh.setColumnWidth(2, 120); sh.setColumnWidth(3, 170);
+  return { at: when };
 }
 
 /** =========================================================
- *  อ่านตารางกลาง PS_PO_INDEX — ใช้ร่วมกันทั้งหน้าฐานข้อมูล PO และหน้า PO ค้างรับ
- *  → สองหน้าอ่านตัวเลขจากที่เดียวกัน ไม่มีทางไม่ตรงกัน
+ *  อ่านตารางหลัก (แท็บ ps_report) — หน้าเว็บทุกหน้าใช้ตัวนี้
+ *  → ตัวเลขในเว็บกับในชีตมาจากแถวเดียวกันเป๊ะ
  *  ========================================================= */
-/** ตำแหน่งคอลัมน์ของแท็บ "รายงาน PO" — มาจากนิยามกลางใน 03-setup.js ที่เดียว */
-var IDX = idxOf_(PO_COLS);
-
 function poIndexRows_() {
   return cacheOr_('PS_POIDX', TTL.HOT, function () {
     var v = fetchTabValues_(psYearFile_(), TAB.PO) || [];
-    return v.slice(1);
+    if (v.length < 2) return { rows: [], C: {} };
+    return { rows: v.slice(1), C: poColMap_(v[0]) };
   });
 }
 
 /** แปลงแถวดิบเป็นวัตถุที่หน้าเว็บใช้ (ตัดราคาถ้าไม่มีสิทธิ์) */
-function idxRow_(r, canPrice, canEdit) {
+function idxRow_(r, C, canPrice) {
+  var got = num_(r[C.got]), remain = num_(r[C.remain]);
   return {
-    po: s_(r[IDX.docuno]), poid: s_(r[IDX.poid]), ln: s_(r[IDX.listno]),
-    date: fmtD_(r[IDX.docudate]), ship: fmtD_(r[IDX.shipdate]), newship: fmtD_(r[IDX.newship]),
-    month: num_(r[IDX.month]),
-    code: s_(r[IDX.goodcode_n]), name: s_(r[IDX.goodname]), unit: s_(r[IDX.unit]),
-    vendor: s_(r[IDX.vendorname]), vcode: s_(r[IDX.vendorcode]),
-    job: s_(r[IDX.jobcode]), jobname: s_(r[IDX.jobname]),
-    cat: s_(r[IDX.cat]), intlPo: s_(r[IDX.is_intl]) === 'ต่างประเทศ',
-    cancelled: s_(r[IDX.cancelled]) === 'Y', closed: s_(r[IDX.closed]) === 'Y',
-    ordered: num_(r[IDX.ordered]), received: num_(r[IDX.recv_rr]),
-    manual: num_(r[IDX.recv_manual]), remain: num_(r[IDX.remain]),
-    price: canPrice ? num_(r[IDX.price]) : null,
-    amnt:  canPrice ? num_(r[IDX.amnt]) : null,
-    value: canPrice ? num_(r[IDX.amnt_remain]) : null,
-    billed: canPrice ? num_(r[IDX.billed_amount]) : null,
-    intl: s_(r[IDX.intl_status]), note: s_(r[IDX.note]),
-    status: s_(r[IDX.status]), age: num_(r[IDX.age_days]),
-    canEdit: canEdit
+    po: s_(r[C.docuno]), poid: s_(r[C.poid]), ln: s_(r[C.listno]),
+    date: fmtD_(r[C.docudate]), ship: fmtD_(r[C.shipdate]), newship: fmtD_(r[C.h_newship]),
+    code: ncd_(r[C.goodcode]), name: s_(r[C.goodname]), unit: s_(r[C.goodunitname]),
+    vendor: s_(r[C.vendorname]), job: s_(r[C.jobcode]), jobname: s_(r[C.jobname]),
+    cat: cat_(ncd_(r[C.goodcode])), intlPo: /^POR\.INT/i.test(s_(r[C.docuno])),
+    ordered: num_(r[C.goodqty2]), received: got, manual: num_(r[C.h_recv]), remain: remain,
+    price:      canPrice ? num_(r[C.goodprice2])  : null,
+    amnt:       canPrice ? num_(r[C.goodamnt])    : null,
+    gotAmt:     canPrice ? num_(r[C.got_amt])     : null,
+    gotVat:     canPrice ? num_(r[C.got_vat])     : null,
+    value:      canPrice ? num_(r[C.remain_amt])  : null,
+    valueVat:   canPrice ? num_(r[C.remain_vat])  : null,
+    billed:     canPrice ? num_(r[C.h_billed])    : null,
+    status: s_(r[C.status]), age: num_(r[C.age_days]),
+    rrNo: s_(r[C.rr_no]), tier: s_(r[C.tier]),
+    hStatus: s_(r[C.h_status]), hDoc: s_(r[C.h_doc]),
+    docustatus: s_(r[C.docustatus]),
+    intl: s_(r[C.h_intl]), note: s_(r[C.h_note]),
+    cancelled: s_(r[C.status]) === 'ยกเลิก'
   };
 }
 
-/** ---------- หน้าฐานข้อมูล PO (เห็นทุกบรรทัดจาก My Account) ---------- */
+/** สถานะ 3 ทางไม่ตรงกันไหม (ไว้ขึ้นป้ายเตือน) */
+function statusMismatch_(r, C) {
+  var sys = s_(r[C.status]), hum = s_(r[C.h_status]);
+  if (!hum) return false;
+  var want = sys === 'รับครบ' ? 'Y' : (sys === 'รับบางส่วน' ? 'P' : 'N');
+  return hum !== want;
+}
+
+/** ---------- หน้าฐานข้อมูล PO ---------- */
 function getPoAll(auth, o) {
-  var myRole  = roleOf_(auth).role;
+  var myRole = roleOf_(auth).role;
   requireRole_(auth, ['PURCHASE', 'ADMIN', 'EXEC', 'STORE']);
   var canPrice = PRICE_ROLES.indexOf(myRole) >= 0;
-  var canEdit  = ['PURCHASE', 'ADMIN'].indexOf(myRole) >= 0;
   o = o || {};
 
-  var rows = poIndexRows_();
-  var q     = s_(o.q).toLowerCase();
-  var st    = s_(o.status);                 // '' | open | done | cancelled | closed | partial
-  var mth   = s_(o.month);
-  var cat   = s_(o.cat);
-  var intl  = s_(o.intl);                   // '' | Y | N
-  var vend  = s_(o.vendor).toLowerCase();
-  var sort  = s_(o.sort) || 'value';
-  var size  = Math.min(200, Math.max(20, num_(o.size) || 100));
+  var D = poIndexRows_(), rows = D.rows, C = D.C;
+  var q    = s_(o.q).toLowerCase();
+  var st   = s_(o.status);
+  var mth  = s_(o.month);
+  var cat  = s_(o.cat);
+  var intl = s_(o.intl);
+  var vend = s_(o.vendor).toLowerCase();
+  var sort = s_(o.sort) || 'value';
+  var size = Math.min(200, Math.max(20, num_(o.size) || 100));
 
-  // ตัวเลือกสำหรับกล่องกรอง + สรุปทั้งชุด (นับก่อนกรอง)
   var vendors = {}, cats = {}, months = {};
-  var all = { lines: 0, amnt: 0, open: 0, openVal: 0, partial: 0, done: 0,
-              cancelled: 0, closed: 0, docs: {} };
-
+  var all = { lines: 0, amnt: 0, open: 0, openVal: 0, openVat: 0, partial: 0,
+              done: 0, cancelled: 0, mismatch: 0, docs: {} };
+  var BK = [{ key:'0-7', n:0, v:0 }, { key:'8-30', n:0, v:0 }, { key:'31-60', n:0, v:0 },
+            { key:'61-90', n:0, v:0 }, { key:'90+', n:0, v:0 }];
   var out = [];
+
   for (var i = 0; i < rows.length; i++) {
     var r = rows[i];
-    if (!s_(r[IDX.poid])) continue;
+    if (!s_(r[C.poid]) || !/^POR/i.test(s_(r[C.docuno]))) continue;   // ข้ามแถวเสีย
 
-    var vn = s_(r[IDX.vendorname]), ct = s_(r[IDX.cat]), mo = num_(r[IDX.month]);
+    var vn = s_(r[C.vendorname]);
+    var ct = cat_(ncd_(r[C.goodcode]));
+    var d  = dt_(r[C.docudate]);
+    var mo = (d instanceof Date) ? (d.getMonth() + 1) : '';
+    var sys = s_(r[C.status]);
+    var rem = num_(r[C.remain]);
+
     if (vn) vendors[vn] = (vendors[vn] || 0) + 1;
     if (ct) cats[ct] = (cats[ct] || 0) + 1;
     if (mo) months[mo] = (months[mo] || 0) + 1;
 
-    var isCancel = s_(r[IDX.cancelled]) === 'Y';
-    var isClosed = s_(r[IDX.closed]) === 'Y';
-    var rem = num_(r[IDX.remain]);
-    var isOpen = !isCancel && !isClosed && rem > 1e-6;
+    all.lines++; all.amnt += num_(r[C.goodamnt]); all.docs[s_(r[C.docuno])] = 1;
+    if (sys === 'ยกเลิก') all.cancelled++;
+    else if (rem > 1e-6) {
+      all.open++; all.openVal += num_(r[C.remain_amt]); all.openVat += num_(r[C.remain_vat]);
+      if (num_(r[C.got]) > 0) all.partial++;
+      var ag = num_(r[C.age_days]);
+      var bi = ag <= 7 ? 0 : ag <= 30 ? 1 : ag <= 60 ? 2 : ag <= 90 ? 3 : 4;
+      BK[bi].n++; BK[bi].v += num_(r[C.remain_amt]);
+    } else all.done++;
+    if (statusMismatch_(r, C)) all.mismatch++;
 
-    all.lines++; all.amnt += num_(r[IDX.amnt]); all.docs[s_(r[IDX.docuno])] = 1;
-    if (isCancel) all.cancelled++;
-    else if (isClosed) all.closed++;
-    else if (isOpen) {
-      all.open++; all.openVal += num_(r[IDX.amnt_remain]);
-      if ((num_(r[IDX.recv_rr]) + num_(r[IDX.recv_manual])) > 0) all.partial++;
-    }
-    else all.done++;
-
-    // ---- ตัวกรอง ----
-    if (st === 'open'      && !isOpen) continue;
-    if (st === 'done'      && (isCancel || isClosed || rem > 1e-6)) continue;
-    if (st === 'cancelled' && !isCancel) continue;
-    if (st === 'closed'    && !isClosed) continue;
-    if (st === 'partial'   && !(isOpen && (num_(r[IDX.recv_rr]) + num_(r[IDX.recv_manual])) > 0)) continue;
+    if (st === 'open'      && !(sys !== 'ยกเลิก' && rem > 1e-6)) continue;
+    if (st === 'partial'   && sys !== 'รับบางส่วน') continue;
+    if (st === 'done'      && sys !== 'รับครบ') continue;
+    if (st === 'cancelled' && sys !== 'ยกเลิก') continue;
+    if (st === 'mismatch'  && !statusMismatch_(r, C)) continue;
     if (mth  && String(mo) !== mth) continue;
     if (cat  && ct !== cat) continue;
-    if (intl === 'Y' && s_(r[IDX.is_intl]) !== 'ต่างประเทศ') continue;
-    if (intl === 'N' && s_(r[IDX.is_intl]) === 'ต่างประเทศ') continue;
+    if (intl === 'Y' && !/^POR\.INT/i.test(s_(r[C.docuno]))) continue;
+    if (intl === 'N' &&  /^POR\.INT/i.test(s_(r[C.docuno]))) continue;
     if (vend && vn.toLowerCase().indexOf(vend) < 0) continue;
     if (q) {
-      var hay = (s_(r[IDX.docuno]) + ' ' + s_(r[IDX.goodcode_n]) + ' ' + s_(r[IDX.goodname]) + ' ' +
-                 vn + ' ' + s_(r[IDX.jobcode]) + ' ' + s_(r[IDX.jobname]) + ' ' +
-                 s_(r[IDX.note])).toLowerCase();
+      var hay = (s_(r[C.docuno]) + ' ' + s_(r[C.goodcode]) + ' ' + s_(r[C.goodname]) + ' ' + vn +
+                 ' ' + s_(r[C.jobcode]) + ' ' + s_(r[C.jobname]) + ' ' + s_(r[C.h_note]) +
+                 ' ' + s_(r[C.rr_no])).toLowerCase();
       if (hay.indexOf(q) < 0) continue;
     }
     out.push(r);
   }
 
-  // ---- เรียง ----
   var SORT = {
-    value:  function (a, b) { return num_(b[IDX.amnt_remain]) - num_(a[IDX.amnt_remain]); },
-    amnt:   function (a, b) { return num_(b[IDX.amnt]) - num_(a[IDX.amnt]); },
-    age:    function (a, b) { return num_(b[IDX.age_days]) - num_(a[IDX.age_days]); },
-    po:     function (a, b) { var x = s_(a[IDX.docuno]), y = s_(b[IDX.docuno]);
-                              return x < y ? -1 : (x > y ? 1 : num_(a[IDX.listno]) - num_(b[IDX.listno])); },
-    date:   function (a, b) { var x = a[IDX.docudate], y = b[IDX.docudate];
-                              var ax = (x instanceof Date) ? x.getTime() : 0;
-                              var by = (y instanceof Date) ? y.getTime() : 0; return by - ax; },
-    vendor: function (a, b) { var x = s_(a[IDX.vendorname]), y = s_(b[IDX.vendorname]);
+    value:  function (a, b) { return num_(b[C.remain_amt]) - num_(a[C.remain_amt]); },
+    amnt:   function (a, b) { return num_(b[C.goodamnt]) - num_(a[C.goodamnt]); },
+    age:    function (a, b) { return num_(b[C.age_days]) - num_(a[C.age_days]); },
+    po:     function (a, b) { var x = s_(a[C.docuno]), y = s_(b[C.docuno]);
+                              return x < y ? -1 : (x > y ? 1 : num_(a[C.listno]) - num_(b[C.listno])); },
+    date:   function (a, b) { var x = dt_(a[C.docudate]), y = dt_(b[C.docudate]);
+                              return ((y instanceof Date) ? y.getTime() : 0) -
+                                     ((x instanceof Date) ? x.getTime() : 0); },
+    vendor: function (a, b) { var x = s_(a[C.vendorname]), y = s_(b[C.vendorname]);
                               return x < y ? -1 : (x > y ? 1 : 0); }
   };
   out.sort(SORT[sort] || SORT.value);
 
-  // ---- สรุปเฉพาะที่กรองแล้ว ----
   var f = { lines: out.length, amnt: 0, openVal: 0, docs: {} };
   for (var j = 0; j < out.length; j++) {
-    f.amnt += num_(out[j][IDX.amnt]);
-    f.openVal += num_(out[j][IDX.amnt_remain]);
-    f.docs[s_(out[j][IDX.docuno])] = 1;
+    f.amnt += num_(out[j][C.goodamnt]);
+    f.openVal += num_(out[j][C.remain_amt]);
+    f.docs[s_(out[j][C.docuno])] = 1;
   }
 
   var page = Math.max(1, num_(o.page) || 1);
@@ -507,135 +546,83 @@ function getPoAll(auth, o) {
   }
 
   return {
-    rows: out.slice((page - 1) * size, page * size).map(function (r) {
-      return idxRow_(r, canPrice, canEdit);
-    }),
+    rows: out.slice((page - 1) * size, page * size).map(function (r) { return idxRow_(r, C, canPrice); }),
     page: page, pages: pages, size: size,
     filtered: { lines: f.lines, docs: Object.keys(f.docs).length,
                 amnt: canPrice ? f.amnt : null, openVal: canPrice ? f.openVal : null },
     all: { lines: all.lines, docs: Object.keys(all.docs).length,
            amnt: canPrice ? all.amnt : null, openVal: canPrice ? all.openVal : null,
+           openVat: canPrice ? all.openVat : null,
            open: all.open, partial: all.partial, done: all.done,
-           cancelled: all.cancelled, closed: all.closed },
+           cancelled: all.cancelled, closed: 0, mismatch: all.mismatch, buckets: BK },
     opts: { vendors: top(vendors, 40), cats: top(cats), months: top(months) },
-    canPrice: canPrice, canEdit: canEdit
+    canPrice: canPrice, canEdit: false
   };
 }
 
 /** ---------- หน้า PO ค้างรับ = มุมมองย่อยของตารางเดียวกัน ---------- */
 function getOpenPO(auth, opt) {
-  var myRole = roleOf_(auth).role;
-  requireRole_(auth, ['PURCHASE', 'ADMIN', 'EXEC', 'STORE']);
-  var canPrice = PRICE_ROLES.indexOf(myRole) >= 0;
-  var canEdit  = ['PURCHASE', 'ADMIN'].indexOf(myRole) >= 0;
   opt = opt || {};
-
-  var rows = poIndexRows_();
-  var q = s_(opt.q).toLowerCase(), age = s_(opt.age);
-  var BK = [['0-7', 0, 7], ['8-30', 8, 30], ['31-60', 31, 60], ['61-90', 61, 90], ['90+', 91, 999999]];
-  var list = [], sum = { lines: 0, value: 0 }, bucket = {};
-
-  for (var i = 0; i < rows.length; i++) {
-    var r = rows[i];
-    if (!s_(r[IDX.poid])) continue;
-    if (s_(r[IDX.cancelled]) === 'Y' || s_(r[IDX.closed]) === 'Y') continue;
-    if (num_(r[IDX.remain]) <= 1e-6) continue;
-
-    var a = num_(r[IDX.age_days]), val = num_(r[IDX.amnt_remain]);
-    for (var b = 0; b < BK.length; b++) {
-      if (a >= BK[b][1] && a <= BK[b][2]) {
-        bucket[BK[b][0]] = bucket[BK[b][0]] || { n: 0, v: 0 };
-        bucket[BK[b][0]].n++; bucket[BK[b][0]].v += val; break;
-      }
-    }
-    sum.lines++; sum.value += val;
-
-    if (age) {
-      var ok = false;
-      for (var b2 = 0; b2 < BK.length; b2++)
-        if (BK[b2][0] === age && a >= BK[b2][1] && a <= BK[b2][2]) ok = true;
-      if (!ok) continue;
-    }
-    if (q) {
-      var hay = (s_(r[IDX.docuno]) + ' ' + s_(r[IDX.goodcode_n]) + ' ' + s_(r[IDX.goodname]) + ' ' +
-                 s_(r[IDX.vendorname]) + ' ' + s_(r[IDX.jobcode])).toLowerCase();
-      if (hay.indexOf(q) < 0) continue;
-    }
-    list.push(idxRow_(r, canPrice, canEdit));
+  opt.status = 'open';
+  opt.sort = opt.sort || 'value';
+  var r = getPoAll(auth, opt);
+  var age = s_(opt.age), rows = r.rows;
+  if (age) {
+    rows = rows.filter(function (x) {
+      return age === '0-7'   ? x.age <= 7
+           : age === '8-30'  ? (x.age > 7 && x.age <= 30)
+           : age === '31-60' ? (x.age > 30 && x.age <= 60)
+           : age === '61-90' ? (x.age > 60 && x.age <= 90)
+           : x.age > 90;
+    });
   }
-
-  var page = Math.max(1, num_(opt.page) || 1), size = 50;
-  var docs = {};
-  for (var d = 0; d < list.length; d++) docs[list[d].po] = 1;
-
-  return {
-    total: list.length, page: page, pages: Math.ceil(list.length / size) || 1,
-    rows: list.slice((page - 1) * size, page * size),
-    sum: { lines: sum.lines, value: canPrice ? sum.value : null, docs: Object.keys(docs).length },
-    buckets: BK.map(function (b) {
-      var x = bucket[b[0]] || { n: 0, v: 0 };
-      return { key: b[0], n: x.n, v: canPrice ? x.v : null };
-    }),
-    canPrice: canPrice, canEdit: canEdit
-  };
+  return { rows: rows, page: r.page, pages: r.pages,
+           sum: { lines: r.all.open, value: r.all.openVal, docs: r.filtered.docs },
+           buckets: r.all.buckets, canPrice: r.canPrice, canEdit: false };
 }
 
 function fmtD_(v) {
-  if (v === '' || v === null || v === undefined) return '';
-  if (!(v instanceof Date)) { var d = dt_(v); if (!(d instanceof Date)) return s_(v); v = d; }
-  var p = function (n) { return (n < 10 ? '0' : '') + n; };
-  return p(v.getDate()) + '/' + p(v.getMonth() + 1) + '/' + (v.getFullYear() + 543);
+  var d = (v instanceof Date) ? v : dt_(v);
+  if (!(d instanceof Date)) return s_(v);
+  var dd = ('0' + d.getDate()).slice(-2), mm = ('0' + (d.getMonth() + 1)).slice(-2);
+  return dd + '/' + mm + '/' + (d.getFullYear() + 543);
 }
 
-/* สำหรับชุดทดสอบใน node เท่านั้น — Apps Script ไม่มี module จึงข้ามบรรทัดนี้ */
-if (typeof module !== 'undefined') module.exports = { psMatchEngine_: psMatchEngine_, ncd_: ncd_, nn_: nn_, num_: num_, s_: s_, cat_: cat_ };
-
-/** =========================================================
- *  ส่งออกตามตัวกรองปัจจุบันเป็น Google Sheet ใหม่ในโฟลเดอร์ P&S Hub
- *  (จัดซื้อเอาไปทำงานต่อ / ส่งให้คนอื่นดูได้ โดยไม่ต้องเปิดระบบ)
- *  ========================================================= */
+/** ---------- ส่งออกผลกรองปัจจุบันเป็น Google Sheet ---------- */
 function exportPoAll(auth, o) {
-  requireRole_(auth, ['PURCHASE', 'ADMIN']);
+  requireRole_(auth, ['PURCHASE', 'ADMIN', 'EXEC']);
   var canPrice = PRICE_ROLES.indexOf(roleOf_(auth).role) >= 0;
-  o = o || {}; o.page = 1; o.size = 200;
+  o = o || {}; o.size = 200;
+  var head = ['เลขที่ PO', 'บรรทัด', 'วันที่สั่ง', 'ผู้ขาย', 'รหัสสินค้า', 'ชื่อสินค้า', 'หน่วย', 'จ๊อบ',
+              'สั่ง', 'รับแล้ว', 'ค้างรับ', 'สถานะ', 'อายุ (วัน)', 'เลขที่ใบรับ'];
+  if (canPrice) head = head.concat(['ราคา/หน่วย', 'ยอดสั่ง', 'ค้างรับ (บาท)', 'ค้างรับ + VAT']);
 
-  // ดึงทุกหน้าโดยใช้ตัวกรองชุดเดียวกับหน้าจอ
-  var first = getPoAll(auth, o);
-  var rows = first.rows.slice();
-  for (var p = 2; p <= first.pages; p++) {
-    o.page = p;
-    rows = rows.concat(getPoAll(auth, o).rows);
-  }
+  var body = [], page = 1, pages = 1;
+  do {
+    o.page = page;
+    var r = getPoAll(auth, o);
+    pages = r.pages;
+    for (var i = 0; i < r.rows.length; i++) {
+      var x = r.rows[i];
+      var row = [x.po, x.ln, x.date, x.vendor, x.code, x.name, x.unit, x.job,
+                 x.ordered, x.received, x.remain, x.status, x.age, x.rrNo];
+      if (canPrice) row = row.concat([x.price, x.amnt, x.value, x.valueVat]);
+      body.push(row);
+    }
+    page++;
+  } while (page <= pages && body.length < 50000);
 
-  var head = ['เลขที่ PO', 'บรรทัด', 'วันที่', 'นัดส่ง', 'นัดส่งใหม่', 'รหัสสินค้า', 'ชื่อสินค้า', 'หน่วย',
-              'ผู้ขาย', 'จ๊อบ', 'ชื่อจ๊อบ', 'หมวด', 'ต่างประเทศ',
-              'สั่ง', 'รับจากใบรับ', 'จัดซื้อยืนยันเอง', 'ค้าง'];
-  if (canPrice) head = head.concat(['ราคา/หน่วย', 'ยอดสั่ง', 'ค้าง (บาท)', 'ตั้งเบิกแล้ว']);
-  head = head.concat(['สถานะของนำเข้า', 'หมายเหตุ', 'อายุ (วัน)', 'สถานะ']);
-
-  var body = rows.map(function (x) {
-    var a = [x.po, x.ln, x.date, x.ship, x.newship, x.code, x.name, x.unit,
-             x.vendor, x.job, x.jobname, x.cat, x.intlPo ? 'Y' : '',
-             x.ordered, x.received, x.manual, x.remain];
-    if (canPrice) a = a.concat([x.price, x.amnt, x.value, x.billed]);
-    return a.concat([x.intl, x.note, x.age, x.status]);
-  });
-
-  var stamp = Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyyMMdd-HHmm');
-  var name = 'STT-PS-PO-Export-' + stamp;
+  var name = 'PO-' + Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyyMMdd-HHmm');
   var ss = SpreadsheetApp.create(name);
   DriveApp.getFileById(ss.getId()).moveTo(DriveApp.getFolderById(CFG.PSFOLDER));
   var sh = ss.getSheets()[0].setName('PO');
   sh.getRange(1, 1, 1, head.length).setValues([head])
     .setFontWeight('bold').setBackground('#12151A').setFontColor('#FFFFFF');
   sh.setFrozenRows(1);
-  var CH = 2000;
-  for (var i = 0; i < body.length; i += CH) {
-    var part = body.slice(i, i + CH);
-    sh.getRange(i + 2, 1, part.length, head.length).setValues(part);
-  }
-  sh.autoResizeColumns(1, Math.min(head.length, 12));
-
-  writeLog_(auth, 'ส่งออกข้อมูล PO', name, '', body.length + ' บรรทัด', '');
-  return { name: name, rows: body.length, url: ss.getUrl() };
+  if (body.length) sh.getRange(2, 1, body.length, head.length).setValues(body);
+  sh.getDataRange().createFilter();
+  return { rows: body.length, name: name, url: ss.getUrl() };
 }
+
+/* ให้ชุดทดสอบบน Node เรียกใช้โค้ดตัวจริงได้ (Apps Script ไม่มี module จึงไม่กระทบ) */
+if (typeof module !== 'undefined') module.exports = { psMatchEngine_, ncd_, nn_, num_, s_, cat_ };

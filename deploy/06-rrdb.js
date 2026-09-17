@@ -29,14 +29,24 @@ function rrAllRows_() {
   });
 }
 
-/** แผนที่บรรทัด RR ที่จับคู่กับ PO ได้แล้ว (ของปีปัจจุบัน) : 'ใบรับ|บรรทัด' -> ชั้นที่จับคู่ */
+/**
+ * แผนที่บรรทัด RR ที่จับคู่กับ PO ได้แล้ว : 'ใบรับ|บรรทัด' -> ชั้นที่จับคู่
+ * อ่านจากคอลัมน์ "สถานะจับคู่" ในแท็บ RR ของไฟล์ปีนั้น (ระบบเขียนไว้ตอนกดอัปเดต)
+ */
 function rrLinkMap_() {
   return cacheOr_('PS_RRLINK', TTL.HOT, function () {
-    var v = fetchTabValues_(psYearFile_(), TAB.LINK) || [];
+    var v = fetchTabValues_(psYearFile_(), TAB.RR) || [];
     var m = {};
+    if (v.length < 2) return m;
+    var h = v[0].map(function (x) { return s_(x); });
+    var iDoc = colIdx_(h, ['docuno']), iLn = colIdx_(h, ['listno']);
+    var iSt  = h.indexOf('สถานะจับคู่');
+    if (iSt < 0 || iDoc < 0) return m;
     for (var i = 1; i < v.length; i++) {
-      var r = v[i], k = s_(r[0]) + '|' + s_(r[1]);
-      if (!m[k]) m[k] = { tier: s_(r[6]), poid: s_(r[3]), po_ln: s_(r[4]) };
+      var t = s_(v[i][iSt]);
+      if (t.indexOf('ตรงกับ PO') !== 0) continue;
+      var tier = (t.match(/\(([^)]+)\)/) || ['', ''])[1];
+      m[s_(v[i][iDoc]) + '|' + s_(v[i][iLn])] = { tier: tier };
     }
     return m;
   });
@@ -45,8 +55,8 @@ function rrLinkMap_() {
 /** เลขที่ PO ทั้งหมดที่มีในปีนี้ — ใช้แยกว่า "รับข้ามปี" หรือ "ยังไม่จับคู่" */
 function poDocSet_() {
   return cacheOr_('PS_PODOCS', TTL.HOT, function () {
-    var rows = poIndexRows_(), m = {};
-    for (var i = 0; i < rows.length; i++) m[s_(rows[i][IDX.docuno])] = 1;
+    var D = poIndexRows_(), rows = D.rows, C = D.C, m = {};
+    for (var i = 0; i < rows.length; i++) m[s_(rows[i][C.docuno])] = 1;
     return m;
   });
 }

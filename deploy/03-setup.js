@@ -20,112 +20,90 @@
  *   4. STT-PS-RR-ALL = ไฟล์เดียวที่ข้ามปีจริง ๆ (ใบรับสะสม + ต้นทุนกลาง)
  */
 
-/** คู่ [ชื่อที่โค้ดใช้, หัวตารางภาษาไทยที่คนอ่าน] — ลำดับนี้คือลำดับคอลัมน์จริง */
-var PO_COLS = [
-  ['docuno',        'เลขที่ PO'],
-  ['listno',        'บรรทัด'],
-  ['docudate',      'วันที่สั่ง'],
-  ['vendorname',    'ผู้ขาย'],
-  ['goodcode_n',    'รหัสสินค้า'],
-  ['goodname',      'ชื่อสินค้า'],
-  ['unit',          'หน่วย'],
-  ['jobcode',       'จ๊อบ'],
-  ['ordered',       'จำนวนที่สั่ง'],
-  ['got',           'รับแล้ว'],
-  ['remain',        'ค้างรับ'],
-  ['status',        'สถานะ'],
-  ['price',         'ราคา/หน่วย'],
-  ['amnt',          'ยอดสั่ง (บาท)'],
-  ['amnt_remain',   'ค้างรับ (บาท)'],
-  ['age_days',      'อายุ (วัน)'],
-  ['shipdate',      'นัดส่งเดิม'],
-  ['newship',       'นัดส่งใหม่'],
-  ['recv_rr',       'รับจากใบรับ'],
-  ['recv_manual',   'ยืนยันรับเอง'],
-  ['billed_amount', 'ตั้งเบิกแล้ว (บาท)'],
-  ['intl_status',   'สถานะของนำเข้า'],
-  ['note',          'หมายเหตุ'],
-  ['closed',        'ปิดรายการ'],
-  ['cancelled',     'ยกเลิก'],
-  ['cat',           'หมวด'],
-  ['is_intl',       'ในประเทศ / ต่างประเทศ'],
-  ['jobname',       'ชื่อจ๊อบ'],
-  ['poid',          'รหัสบรรทัด'],
-  ['year_th',       'ปี พ.ศ.'],
-  ['month',         'เดือน'],
-  ['vendorcode',    'รหัสผู้ขาย'],
-  ['updated_at',    'อัปเดตเมื่อ']
+/**
+ * ---------- คอลัมน์ที่ระบบ "ต่อท้าย" ในแท็บ ps_report ----------
+ * 23 คอลัมน์เดิมของ My Account อยู่ครบเป๊ะ ไม่ขยับ ไม่แตะ
+ * ระบบต่อท้ายอีก 2 กลุ่ม แล้วหาคอลัมน์จาก "ชื่อหัว" เสมอ (ไม่ยึดตำแหน่ง)
+ * → ถ้าวันหลัง My Account เพิ่มคอลัมน์ ระบบก็ยังหาถูก
+ */
+
+/** กลุ่มน้ำเงิน — ระบบคำนวณให้ ห้ามพิมพ์ทับ (โดนเขียนทับทุกครั้งที่กดอัปเดต) */
+var SYS_COLS = [
+  ['got',        'รับแล้ว (จำนวน)'],
+  ['got_amt',    'รับแล้ว (บาท)'],
+  ['got_vat',    'รับแล้ว + VAT'],
+  ['remain',     'ค้างรับ (จำนวน)'],
+  ['remain_amt', 'ค้างรับ (บาท)'],
+  ['remain_vat', 'ค้างรับ + VAT'],
+  ['status',     'สถานะ (ระบบ)'],
+  ['age_days',   'อายุ (วัน)'],
+  ['rr_no',      'เลขที่ใบรับ'],
+  ['tier',       'ชั้นที่จับคู่']
 ];
 
-var RR_RPT_COLS = [
-  ['docuno',     'เลขที่ใบรับ'],
-  ['listno',     'บรรทัด'],
-  ['docudate',   'วันที่รับ'],
-  ['pono',       'เลขที่ PO'],
-  ['vendorname', 'ผู้ขาย'],
-  ['goodcode_n', 'รหัสสินค้า'],
-  ['goodname',   'ชื่อสินค้า'],
-  ['goodunitname', 'หน่วย'],
-  ['goodqty2',   'จำนวน'],
-  ['goodprice2', 'ราคา/หน่วย'],
-  ['goodamnt',   'จำนวนเงิน'],
-  ['jobcode',    'จ๊อบ'],
-  ['invno',      'เลขที่ใบกำกับ'],
-  ['mstat',      'สถานะจับคู่'],
-  ['tier',       'ชั้นที่จับคู่'],
-  ['year_th',    'ปี พ.ศ.'],
-  ['jobname',    'ชื่อจ๊อบ']
+/** กลุ่มส้ม — จัดซื้อพิมพ์เอง ระบบไม่แตะเด็ดขาด */
+var HUM_COLS = [
+  ['h_status',   'สถานะ (จัดซื้อ)'],
+  ['h_doc',      'สถานะเอกสาร'],
+  ['h_recv',     'ยืนยันรับเอง (จำนวน)'],
+  ['h_recvdate', 'วันที่ยืนยัน'],
+  ['h_newship',  'นัดส่งใหม่'],
+  ['h_billed',   'ตั้งเบิกแล้ว (บาท)'],
+  ['h_intl',     'สถานะของนำเข้า'],
+  ['h_note',     'หมายเหตุ'],
+  ['h_reason',   'เหตุผล']
 ];
+
+/** ตัวเลือกในช่องกดเลือก */
+var LIST_STATUS = ['Y', 'N', 'P'];                       // ลิสต์เดียวกับ docustatus เป๊ะ
+var LIST_DOC    = ['ยังไม่ได้ของ', 'รับของแล้ว ยังไม่ RR', 'RR แล้ว', 'ยกเลิก / ไม่รับแล้ว'];
+var LIST_INTL   = ['สั่งแล้ว', 'ลงเรือแล้ว', 'ถึงท่าเรือ', 'ผ่านศุลกากร', 'ถึงโรงงาน'];
+var DOC_RECV    = 'รับของแล้ว ยังไม่ RR';                 // = ถือว่าของมาแล้ว
+var DOC_CANCEL  = 'ยกเลิก / ไม่รับแล้ว';
+var VAT_RATE    = 0.07;
+
+/** คอลัมน์ดิบของ My Account ที่ระบบต้องใช้ — หาจากชื่อหัว */
+var SRC_KEYS = {
+  docuno:['docuno'], poid:['poid'], listno:['listno'], docudate:['docudate'], shipdate:['shipdate'],
+  docustatus:['docustatus'], cancelflag:['cancelflag'], goodname:['goodname'], goodqty2:['goodqty2'],
+  goodprice2:['goodprice2'], goodamnt:['goodamnt'], vendorcode:['vendorcode'], vendorname:['vendorname'],
+  goodcode:['goodcode'], goodunitname:['goodunitname'], jobcode:['jobcode'], jobname:['jobname']
+};
+
+/** อ่านหัวตาราง แล้วบอกว่าคอลัมน์ไหนอยู่ตำแหน่งไหน (0-based) */
+function poColMap_(hdr) {
+  var h = [];
+  for (var i = 0; i < hdr.length; i++) h.push(s_(hdr[i]));
+  var C = {};
+  for (var k in SRC_KEYS) C[k] = colIdx_(h, SRC_KEYS[k]);
+  function exact(name) {
+    for (var j = 0; j < h.length; j++) if (h[j] === name) return j;
+    return -1;
+  }
+  for (var a = 0; a < SYS_COLS.length; a++) C[SYS_COLS[a][0]] = exact(SYS_COLS[a][1]);
+  for (var b = 0; b < HUM_COLS.length; b++) C[HUM_COLS[b][0]] = exact(HUM_COLS[b][1]);
+  return C;
+}
 
 function colKeys_(defs) { var a = []; for (var i = 0; i < defs.length; i++) a.push(defs[i][0]); return a; }
 function colHeads_(defs) { var a = []; for (var i = 0; i < defs.length; i++) a.push(defs[i][1]); return a; }
-function idxOf_(defs) { var m = {}; for (var i = 0; i < defs.length; i++) m[defs[i][0]] = i; return m; }
 
-/** ชื่อแท็บ — รวมไว้ที่เดียว เวลาเปลี่ยนชื่อจะได้แก้จุดเดียว */
+/** ชื่อแท็บ — รวมไว้ที่เดียว */
 var TAB = {
-  SRC_PO : 'ps_report',              // ของเบียร์ — ระบบอ่านอย่างเดียว ห้ามเขียน
-  SRC_RR : 'RR',                     // ของเบียร์ — ระบบอ่านอย่างเดียว ห้ามเขียน
-  PO     : 'รายงาน PO',
-  EDIT   : 'ช่องที่จัดซื้อกรอก',
-  LINK   : 'ผลการจับคู่',
-  RR     : 'รายงานการรับเข้า',
-  SUM    : 'สรุปภาพรวม',
-  IMPORT : 'ประวัติการนำเข้า',
-  LOG    : 'ประวัติการแก้ไข'
+  PO  : 'ps_report',          // ตารางหลัก (ของเบียร์ + คอลัมน์ที่ระบบต่อท้าย)
+  RR  : 'RR',                 // ใบรับ (ของเบียร์ + คอลัมน์สถานะจับคู่)
+  SUM : 'สรุปภาพรวม'
 };
+var RR_SYS_COLS = [['mstat', 'สถานะจับคู่']];
 
 var SCHEMA = {
-
-  /* ===== แท็บที่ระบบเพิ่มเข้าไปใน "ไฟล์ PO Report ของปีนั้น" ===== */
-  YEAR: {
-    'รายงาน PO':          colHeads_(PO_COLS),
-    'ช่องที่จัดซื้อกรอก': ['รหัสบรรทัด', 'บรรทัด', 'เลขที่ PO', 'ยืนยันรับเอง', 'วันที่ยืนยัน',
-                           'ตั้งเบิกแล้ว (บาท)', 'เลขที่ใบตั้งเบิก', 'นัดส่งใหม่', 'หมายเหตุ',
-                           'สถานะของนำเข้า', 'ปิดรายการ', 'เหตุผลที่ปิด', 'ผู้ทำรายการ', 'อัปเดตเมื่อ'],
-    'ผลการจับคู่':        ['เลขที่ใบรับ', 'บรรทัดใบรับ', 'เลขที่ PO', 'รหัสบรรทัด PO', 'บรรทัด PO',
-                           'จำนวน', 'ชั้นที่จับคู่', 'จับคู่เมื่อ'],
-    'รายงานการรับเข้า':   colHeads_(RR_RPT_COLS),
-    'ประวัติการนำเข้า':   ['รอบที่', 'เวลา', 'ผู้ทำรายการ', 'ชนิด', 'ไฟล์ต้นทาง', 'อ่านมา',
-                           'เขียนลง', 'ข้าม', 'ใช้เวลา (ms)', 'สถานะ', 'รายละเอียด'],
-    'ประวัติการแก้ไข':    ['เวลา', 'ผู้ทำรายการ', 'การกระทำ', 'เป้าหมาย', 'ค่าก่อนแก้', 'ค่าหลังแก้', 'เหตุผล']
-  },
-
-  /* ===== ไฟล์ข้ามปี : STT-PS-RR-ALL (ไฟล์เดียวตลอด 20 ปี) ===== */
+  /* ไฟล์ข้ามปี : STT-PS-RR-ALL */
   RRALL: {
     RR_ALL: ['year_th','docuno','docudate','pono','listno','goodcode','goodcode_n','goodname','goodqty2',
              'goodprice2','gooddiscformula','gooddiscamnt','goodamnt','vendorcode','vendorname',
              'jobcode','jobname','goodunitname','invno','advnamnt','netamnt','imported_at'],
-    PRICE_HISTORY: ['goodcode_n','year_th','qty','amount','wac','last_date','last_price','n_receipt','updated_at'],
     PS_PRICE_LATEST: ['goodcode_n','goodname','unit','last_price','last_date','last_vendor','wac_policy',
-                      'source','n_buy_12m','min_price','max_price','updated_at'],
-    PS_ITEM_MASTER:  ['goodcode_n','goodname','unit','cat','type','warehouse','min_qty','max_qty',
-                      'first_seen','last_seen','updated_at'],
-    PS_VENDOR:       ['vendorcode','vendorname','first_rr','last_rr','n_rr','amount_ytd','lead_days_avg',
-                      'is_new','tax_id','note','updated_at'],
-    PS_MARKET_PRICE: ['goodcode_n','price','unit','incl_vat','source_url','ref_date','screenshot_id',
-                      'by_emp','approve_by','approve_at','expire_at'],
-    PS_SUM_YEAR:     ['year_th','po_lines','po_amount','rr_lines','rr_amount','open_lines','open_amount',
-                      'vendors','items','updated_at']
+                      'source','n_buy_12m','min_price','max_price','updated_at']
   }
 };
 
@@ -144,24 +122,32 @@ function psSetup(auth, poUrl) {
 
   // ---- ไฟล์ของปีนี้ = ไฟล์ PO Report ของเบียร์เอง ----
   var yearId = '';
-  try { yearId = yearFile_(year, 'YEAR'); } catch (_) { yearId = ''; }   // เคยลงทะเบียนไว้แล้วหรือยัง
+  try { yearId = yearFile_(year, 'YEAR'); } catch (_) { yearId = ''; }
   if (s_(poUrl)) yearId = fileIdOf_(poUrl);
   if (!yearId)
     throw new Error('ยังไม่รู้ว่าไฟล์ของปี ' + year + ' คือไฟล์ไหน — วางลิงก์ไฟล์ PO Report ' +
-                    'ที่มีแท็บ ' + TAB.SRC_PO + ' และ ' + TAB.SRC_RR + ' ก่อน');
+                    'ที่มีแท็บ ' + TAB.PO + ' และ ' + TAB.RR + ' ก่อน');
 
   step('ตรวจไฟล์ของปี ' + year, function () {
     var ss = SpreadsheetApp.openById(yearId);
     var miss = [];
-    if (!ss.getSheetByName(TAB.SRC_PO)) miss.push(TAB.SRC_PO);
-    if (!ss.getSheetByName(TAB.SRC_RR)) miss.push(TAB.SRC_RR);
+    if (!ss.getSheetByName(TAB.PO)) miss.push(TAB.PO);
+    if (!ss.getSheetByName(TAB.RR)) miss.push(TAB.RR);
     if (miss.length)
       throw new Error('ไฟล์นี้ไม่มีแท็บ ' + miss.join(' และ ') + ' — ใช่ไฟล์ PO Report หรือเปล่า');
-    return ss.getName() + ' · มีแท็บ ' + TAB.SRC_PO + ' และ ' + TAB.SRC_RR + ' ครบ';
+    return ss.getName();
   });
 
-  step('เพิ่มแท็บของระบบเข้าไปในไฟล์เดียวกัน', function () {
-    return ensureTabs_(yearId, SCHEMA.YEAR);
+  step('ต่อคอลัมน์ในแท็บ ' + TAB.PO, function () {
+    return addCols_(yearId, TAB.PO, SYS_COLS.concat(HUM_COLS));
+  });
+
+  step('ต่อคอลัมน์ในแท็บ ' + TAB.RR, function () {
+    return addCols_(yearId, TAB.RR, RR_SYS_COLS);
+  });
+
+  step('ใส่ช่องกดเลือก + สีหัวตาราง', function () {
+    return dressPo_(yearId);
   });
 
   var rrId = '';
@@ -180,14 +166,9 @@ function psSetup(auth, poUrl) {
     return a + ' · ' + b;
   });
 
-  step('จัดหน้าตาให้อ่านง่าย (ตรึงหัว · ตัวกรอง · คำอธิบายไทย)', function () {
-    var b = psBeautify(auth);
-    return 'จัดแล้ว ' + b.tabs + ' แท็บ' + (b.errors.length ? ' · ข้าม ' + b.errors.length : '');
-  });
-
   step('ล้างแคช', function () {
-    cacheDrop_(['PS_REGISTRY', 'PS_SETTINGS', 'PS_USERS', 'PS_POIDX', 'PS_POEDIT',
-                'PS_RRALL', 'PS_RRLINK', 'PS_PODOCS']);
+    cacheDrop_(['PS_REGISTRY', 'PS_SETTINGS', 'PS_USERS', 'PS_POIDX', 'PS_RRALL',
+                'PS_RRLINK', 'PS_PODOCS']);
     return 'เรียบร้อย';
   });
 
@@ -195,6 +176,60 @@ function psSetup(auth, poUrl) {
   return { year: year, fileId: yearId, steps: log,
            passed: log.length - failed, failed: failed,
            totalMs: new Date().getTime() - t0 };
+}
+
+/**
+ * ต่อคอลัมน์ที่ยังไม่มีไว้ท้ายตาราง — ของเดิมไม่ขยับสักช่อง
+ * หาจากชื่อหัวแบบตรงตัว ถ้ามีแล้วข้าม (กดซ้ำกี่รอบก็ได้ผลเท่าเดิม)
+ */
+function addCols_(fileId, tab, defs) {
+  var sh = SpreadsheetApp.openById(fileId).getSheetByName(tab);
+  if (!sh) throw new Error('ไม่พบแท็บ ' + tab);
+  var lastCol = sh.getLastColumn();
+  var hdr = sh.getRange(1, 1, 1, lastCol).getValues()[0].map(function (x) { return s_(x); });
+
+  var need = [];
+  for (var i = 0; i < defs.length; i++) if (hdr.indexOf(defs[i][1]) < 0) need.push(defs[i][1]);
+  if (!need.length) return 'ครบอยู่แล้ว ' + defs.length + ' คอลัมน์';
+
+  if (sh.getMaxColumns() < lastCol + need.length)
+    sh.insertColumnsAfter(sh.getMaxColumns(), lastCol + need.length - sh.getMaxColumns());
+  sh.getRange(1, lastCol + 1, 1, need.length).setValues([need]);
+  return 'เพิ่ม ' + need.length + ' คอลัมน์ (' + need.join(', ') + ')';
+}
+
+/** สีหัวตาราง + ช่องกดเลือก + ตรึงหัว — ทำกับแท็บ ps_report */
+function dressPo_(fileId) {
+  var sh = SpreadsheetApp.openById(fileId).getSheetByName(TAB.PO);
+  var hdr = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(function (x) { return s_(x); });
+  var C = poColMap_(hdr);
+  var done = [];
+
+  function paint(defs, bg) {
+    for (var i = 0; i < defs.length; i++) {
+      var c = C[defs[i][0]];
+      if (c < 0) continue;
+      sh.getRange(1, c + 1).setBackground(bg).setFontColor('#FFFFFF').setFontWeight('bold');
+      done.push(defs[i][1]);
+    }
+  }
+  paint(SYS_COLS, '#1D6FD1');       // น้ำเงิน = ระบบเติม
+  paint(HUM_COLS, '#B5710A');       // ส้ม = คนกรอก
+
+  var rows = Math.max(sh.getMaxRows() - 1, 1);
+  function dropdown(key, list) {
+    var c = C[key];
+    if (c < 0) return;
+    var rule = SpreadsheetApp.newDataValidation().requireValueInList(list, true)
+                 .setAllowInvalid(false).build();
+    sh.getRange(2, c + 1, rows, 1).setDataValidation(rule);
+  }
+  dropdown('h_status', LIST_STATUS);
+  dropdown('h_doc',    LIST_DOC);
+  dropdown('h_intl',   LIST_INTL);
+
+  sh.setFrozenRows(1);
+  return 'ทาสีหัว ' + done.length + ' คอลัมน์ · ใส่ช่องกดเลือก 3 ช่อง';
 }
 
 /** ---------- เพิ่มแท็บที่ยังไม่มี (ไม่แตะของเดิม) ---------- */
